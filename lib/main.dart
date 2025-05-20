@@ -1,3 +1,5 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'screens/otentikasi/login.dart';
 import 'screens/otentikasi/register.dart';
@@ -5,8 +7,43 @@ import 'screens/pembeli.dart';
 import 'screens/hunter.dart';
 import 'screens/kurir.dart';
 import 'screens/penitip.dart';
+import 'firebase_options.dart';
+import 'services/auth_service.dart';
+import 'services/notification_service.dart';
 
-void main() {
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  print('Handling background message: ${message.messageId}');
+  // You can add custom logic here, e.g., update local data
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Set background message handler
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  final authService = AuthService();
+  final token = await authService.getToken();
+  if (token != null) {
+    final fcmToken = await FirebaseMessaging.instance.getToken();
+    if (fcmToken != null) {
+      await authService.sendFcmTokenToBackend(fcmToken);
+    }
+  }
+
+  FirebaseMessaging.instance.onTokenRefresh.listen((fcmToken) async {
+    await authService.sendFcmTokenToBackend(fcmToken);
+    print('FCM token refreshed: $fcmToken');
+  }).onError((err) {
+    print('Error refreshing FCM token: $err');
+  });
+
   runApp(const MyApp());
 }
 
@@ -15,6 +52,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final notificationService = NotificationService();
+
     return MaterialApp(
       title: 'ReuseMart',
       debugShowCheckedModeBanner: false,
@@ -59,6 +98,14 @@ class MyApp extends StatelessWidget {
         '/hunter_dashboard': (context) => const HunterScreen(),
         '/kurir_dashboard': (context) => const KurirScreen(),
         '/penitip_dashboard': (context) => const PenitipScreen(),
+      },
+      builder: (context, child) {
+        // Initialize notification service
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notificationService.initialize(context);
+          notificationService.checkInitialMessage(context);
+        });
+        return child!;
       },
     );
   }

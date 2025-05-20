@@ -1,13 +1,58 @@
-import 'dart:convert';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   static const String baseUrl = 'http://10.0.2.2:8000/api/auth';
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
 
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('token');
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    NotificationSettings settings = await _messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
+    if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+        settings.authorizationStatus == AuthorizationStatus.provisional) {
+      print('Notification permission granted');
+    } else {
+      print('Notification permission denied');
+    }
+  }
+
+  Future<void> sendFcmTokenToBackend(String? fcmToken) async {
+    if (fcmToken == null) return;
+    final token = await getToken();
+    if (token == null) return;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/update-fcm-token'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'fcm_token': fcmToken}),
+      );
+
+      if (response.statusCode == 200) {
+        print('FCM token sent to backend');
+      } else {
+        print('Failed to send FCM token: ${response.body}');
+      }
+    } catch (e) {
+      print('Error sending FCM token: $e');
+    }
   }
 
   Future<Map<String, dynamic>> login(String email, String password) async {
@@ -28,6 +73,13 @@ class AuthService {
         await prefs.setString('token', data['token']);
         await prefs.setString('user_type', data['user_type']);
         await prefs.setString('role', data['user']['role'][0] ?? '');
+
+        // Request notification permission and send FCM token
+        await _requestNotificationPermission();
+        final fcmToken = await _messaging.getToken();
+        if (fcmToken != null) {
+          await sendFcmTokenToBackend(fcmToken);
+        }
 
         return {
           'success': true,
@@ -72,6 +124,15 @@ class AuthService {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 201) {
+        // Request notification permission and send FCM token
+        await _requestNotificationPermission();
+        final fcmToken = await _messaging.getToken();
+        if (fcmToken != null) {
+          // Note: We can't send the token yet because the user isn't logged in.
+          // We'll send it after login.
+          print('FCM token retrieved: $fcmToken');
+        }
+
         return {
           'success': true,
           'message': data['message'],
