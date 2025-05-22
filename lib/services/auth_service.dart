@@ -12,6 +12,11 @@ class AuthService {
     return prefs.getString('token');
   }
 
+  Future<String?> getRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('role');
+  }
+
   Future<void> _requestNotificationPermission() async {
     NotificationSettings settings = await _messaging.requestPermission(
       alert: true,
@@ -22,6 +27,7 @@ class AuthService {
       provisional: false,
       sound: true,
     );
+    print('Permission: ${settings.authorizationStatus}');
     if (settings.authorizationStatus == AuthorizationStatus.authorized ||
         settings.authorizationStatus == AuthorizationStatus.provisional) {
       print('Notification permission granted');
@@ -79,6 +85,7 @@ class AuthService {
         final fcmToken = await _messaging.getToken();
         if (fcmToken != null) {
           await sendFcmTokenToBackend(fcmToken);
+          print('FCM Token: $fcmToken'); // Debug
         }
 
         return {
