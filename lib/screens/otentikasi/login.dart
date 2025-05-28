@@ -11,6 +11,14 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  bool _obscureText = true;
+  bool _rememberMe = false;
+  bool _isLoading = false;
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final _authService = AuthService();
+
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
@@ -24,24 +32,26 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (result['success']) {
         final role = result['data']['role'];
-        String route = '';
+        final userType = result['data']['user_type'];
+        String? route;
 
-        switch (role) {
-          case 'pembeli':
-            route = '/pembeli_dashboard';
-            break;
-          case 'hunter':
-            route = '/hunter_dashboard';
-            break;
-          case 'kurir':
-            route = '/kurir_dashboard';
-            break;
-          case 'penitip':
-            route = '/penitip_dashboard';
-            break;
+        if (userType == 'pembeli' && role == 'pembeli') {
+          route = '/pembeli_dashboard';
+        } else if (userType == 'penitip' && role == 'penitip') {
+          route = '/penitip_dashboard';
+        } else if (userType == 'pegawai' &&
+            (role == 'hunter' || role == 'kurir')) {
+          route = role == 'hunter' ? '/hunter_dashboard' : '/kurir_dashboard';
         }
 
-        Navigator.pushReplacementNamed(context, route);
+        if (route != null) {
+          Navigator.pushReplacementNamed(context, route);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Role tidak diizinkan untuk login.')),
+          );
+          await _authService.logout(); // Clear invalid session
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(result['message'])),
@@ -49,14 +59,6 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
-
-  bool _obscureText = true;
-  bool _rememberMe = false;
-  bool _isLoading = false;
-  final _formKey = GlobalKey<FormState>();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final _authService = AuthService();
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           return null;
                         },
                         decoration: InputDecoration(
-                          hintText: 'example@gmail.com',
+                          hintText: 'name@email.com',
                           hintStyle: TextStyle(
                             color: Colors.grey[600],
                           ),
@@ -176,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           return null;
                         },
                         decoration: InputDecoration(
-                          hintText: '••••••••••••••••',
+                          hintText: '••••••••',
                           border: InputBorder.none,
                           prefixIcon: Icon(
                             Icons.lock_outline,
@@ -235,7 +237,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                         TextButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            // Implement forgot password navigation
+                          },
                           child: const Text(
                             'Forgot Password',
                             style: TextStyle(
@@ -252,7 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : () => _handleLogin(),
+                        onPressed: _isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF00BFA5),
                           shape: RoundedRectangleBorder(
@@ -271,7 +275,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : Text(
+                                : const Text(
                                     'Login',
                                     style: TextStyle(
                                       fontSize: 16,
@@ -279,13 +283,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                       color: Colors.white,
                                     ),
                                   ),
-                            SizedBox(width: 8),
-                            if (!_isLoading)
+                            if (!_isLoading) ...[
+                              const SizedBox(width: 8),
                               const Icon(
                                 Icons.arrow_forward,
                                 color: Colors.white,
                                 size: 20,
                               ),
+                            ],
                           ],
                         ),
                       ),

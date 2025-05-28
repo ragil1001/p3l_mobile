@@ -13,15 +13,12 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _obscureText = true;
-  bool _obscureConfirmText = true;
   bool _isLoading = false;
   final _authService = AuthService();
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   void _handleRegister() async {
     if (_formKey.currentState!.validate()) {
@@ -30,9 +27,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final result = await _authService.register(
         _nameController.text,
         _emailController.text,
-        _phoneController.text, // Menambahkan nomor handphone
+        _phoneController.text,
         _passwordController.text,
-        _confirmPasswordController.text,
       );
 
       setState(() => _isLoading = false);
@@ -55,7 +51,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background pattern
           Positioned(
             top: 0,
             right: 0,
@@ -118,7 +113,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           return null;
                         },
                         decoration: InputDecoration(
-                          hintText: 'example12345',
+                          hintText: 'Masukkan nama lengkap',
                           hintStyle: TextStyle(
                             color: Colors.grey[600],
                           ),
@@ -165,7 +160,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           return null;
                         },
                         decoration: InputDecoration(
-                          hintText: 'example@gmail.com',
+                          hintText: 'name@email.com',
                           hintStyle: TextStyle(
                             color: Colors.grey[600],
                           ),
@@ -183,7 +178,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 24),
                     const Text(
-                      'No. Handphone',
+                      'Nomor Telepon',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -237,7 +232,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               keyboardType: TextInputType.phone,
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Nomor handphone tidak boleh kosong';
+                                  return 'Nomor telepon tidak boleh kosong';
                                 }
                                 return null;
                               },
@@ -288,7 +283,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           return null;
                         },
                         decoration: InputDecoration(
-                          hintText: '••••••••••••••••',
+                          hintText: '••••••••',
                           border: InputBorder.none,
                           prefixIcon: Icon(
                             Icons.lock_outline,
@@ -304,64 +299,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             onPressed: () {
                               setState(() {
                                 _obscureText = !_obscureText;
-                              });
-                            },
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Konfirmasi Password',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF7F8F9),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFF00BFA5),
-                          width: 1,
-                        ),
-                      ),
-                      child: TextFormField(
-                        controller: _confirmPasswordController,
-                        obscureText: _obscureConfirmText,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Konfirmasi password tidak boleh kosong';
-                          }
-                          if (value != _passwordController.text) {
-                            return 'Password tidak sama';
-                          }
-                          return null;
-                        },
-                        decoration: InputDecoration(
-                          hintText: '••••••••••••••••',
-                          border: InputBorder.none,
-                          prefixIcon: Icon(
-                            Icons.lock_outline,
-                            color: Colors.grey[600],
-                          ),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscureConfirmText
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                              color: Colors.grey[600],
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscureConfirmText = !_obscureConfirmText;
                               });
                             },
                           ),
