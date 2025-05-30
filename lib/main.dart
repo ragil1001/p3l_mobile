@@ -7,6 +7,8 @@ import 'screens/pembeli.dart';
 import 'screens/hunter.dart';
 import 'screens/kurir.dart';
 import 'screens/penitip.dart';
+import 'screens/profile.dart'; // Import ProfileScreen
+import 'screens/catalogue_screen.dart'; // Import CatalogueScreen
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
@@ -16,14 +18,12 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   print('Handling background message: ${message.messageId}');
-  // You can add custom logic here, e.g., update local data
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Set background message handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   final authService = AuthService();
@@ -56,11 +56,30 @@ class MyApp extends StatelessWidget {
       title: 'ReuseMart',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: const Color(0xFF00BFA5),
+        primaryColor: const Color(0xFF1A3C34),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00BFA5),
+          seedColor: const Color(0xFF1A3C34),
+          primary: const Color(0xFF1A3C34),
+          secondary: const Color(0xFF00BFA5),
         ),
         useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+        textTheme: const TextTheme(
+          headlineMedium: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1A3C34),
+          ),
+          bodyMedium: TextStyle(
+            fontSize: 16,
+            color: Color(0xFF6B7280),
+          ),
+          labelMedium: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1A3C34),
+          ),
+        ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: Colors.grey[100],
@@ -74,12 +93,12 @@ class MyApp extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF00BFA5)),
+            borderSide: const BorderSide(color: Color(0xFF1A3C34)),
           ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF00BFA5),
+            backgroundColor: const Color(0xFF1A3C34),
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -93,12 +112,14 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/pembeli_dashboard': (context) => const PembeliScreen(),
+        '/pembeli_dashboard/catalogue': (context) => const CatalogueScreen(),
+        '/pembeli_dashboard/transaksi': (context) => const Center(child: Text('Transaksi Screen')),
+        '/pembeli_dashboard/profile': (context) => const ProfileScreen(),
         '/hunter_dashboard': (context) => const HunterScreen(),
         '/kurir_dashboard': (context) => const KurirScreen(),
         '/penitip_dashboard': (context) => const PenitipScreen(),
       },
       builder: (context, child) {
-        // Initialize notification service
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notificationService.initialize(context);
           notificationService.checkInitialMessage(context);
