@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/otentikasi/login.dart';
 import 'screens/otentikasi/register.dart';
-import 'screens/pembeli.dart';
+import 'screens/homepage.dart';
 import 'screens/hunter.dart';
 import 'screens/kurir.dart';
 import 'screens/penitip.dart';
@@ -58,7 +58,7 @@ class MyApp extends StatelessWidget {
     final authService = AuthService();
     final token = await authService.getToken();
     if (token == null) {
-      return const SplashScreen();
+      return const LoginScreen();
     }
 
     final userType = await authService.getUserType();
