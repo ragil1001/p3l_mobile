@@ -73,14 +73,15 @@ class _ProfileScreenState extends State<ProfileScreen>
       final token = prefs.getString('token');
       if (token == null) {
         setState(() {
-          _errorMessage = 'No token found. Please login again.';
+          _errorMessage = 'Token tidak ditemukan. Silakan login kembali.';
           _isLoading = false;
         });
         Navigator.pushReplacementNamed(context, '/login');
         return;
       }
 
-      final response = await http.get(
+      // Fetch user profile
+      final profileResponse = await http.get(
         Uri.parse('http://10.0.2.2:8000/api/auth/profile'),
         headers: {
           'Authorization': 'Bearer $token',
@@ -88,29 +89,64 @@ class _ProfileScreenState extends State<ProfileScreen>
         },
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['user_type'] == 'pembeli') {
-          setState(() {
-            userProfile = {
-              'nama': data['user']['nama'],
-              'poin': data['user']['poin'],
-              'telepon': data['user']['telepon'] ?? '+62 812-3456-7890',
-              'email': data['user']['email'],
-              'transaksi_aktif': 5, // Placeholder, as backend doesn't provide
-              'total_transaksi': 12, // Placeholder, as backend doesn't provide
-              'member_since': 'Januari 2024', // Static, as not in backend
-              'badge': 'Silver Member', // Static, as not in backend
-            };
-            _isLoading = false;
-          });
+      if (profileResponse.statusCode == 200) {
+        final profileData = jsonDecode(profileResponse.body);
+        if (profileData['user_type'] == 'pembeli') {
+          // Fetch transactions
+          final transactionsResponse = await http.get(
+            Uri.parse('http://10.0.2.2:8000/api/pembeli/transaksi'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          );
+
+          if (transactionsResponse.statusCode == 200) {
+            final transactionsData = jsonDecode(transactionsResponse.body);
+            final List<dynamic> transactions = transactionsData['data'] ?? [];
+
+            // Define active transaction statuses
+            final activeStatuses = [
+              'Menunggu Pembayaran',
+              'Menunggu Verifikasi',
+              'Sedang Dikemas',
+              'Sedang Dikirim',
+              'Siap Diambil'
+            ];
+
+            // Calculate active and total transactions
+            final transaksiAktif = transactions
+                .where((t) => activeStatuses.contains(t['status']))
+                .length;
+            final totalTransaksi = transactions.length;
+
+            setState(() {
+              userProfile = {
+                'nama': profileData['user']['nama'],
+                'poin': profileData['user']['poin'],
+                'telepon': profileData['user']['telepon'] ?? '+62 812-3456-7890',
+                'email': profileData['user']['email'],
+                'transaksi_aktif': transaksiAktif,
+                'total_transaksi': totalTransaksi,
+                'member_since': 'Januari 2024', // Static, as not in backend
+                'badge': 'Silver Member', // Static, as not in backend
+              };
+              _isLoading = false;
+            });
+          } else {
+            setState(() {
+              _errorMessage =
+                  'Gagal memuat transaksi: ${transactionsResponse.statusCode} - ${transactionsResponse.body}';
+              _isLoading = false;
+            });
+          }
         } else {
           setState(() {
             _errorMessage = 'Profile only available for pembeli';
             _isLoading = false;
           });
         }
-      } else if (response.statusCode == 401) {
+      } else if (profileResponse.statusCode == 401) {
         await prefs.remove('token');
         setState(() {
           _errorMessage = 'Session expired. Please login again.';
@@ -120,13 +156,13 @@ class _ProfileScreenState extends State<ProfileScreen>
       } else {
         setState(() {
           _errorMessage =
-              'Failed to load profile: ${response.statusCode} - ${response.body}';
+              'Failed to load profile: ${profileResponse.statusCode} - ${profileResponse.body}';
           _isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error fetching profile: $e';
+        _errorMessage = 'Error fetching profile or transactions: $e';
         _isLoading = false;
       });
     }

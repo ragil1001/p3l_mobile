@@ -100,7 +100,7 @@ class TransactionDetailScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(15.0),
                       child: Row(
                         children: [
-                          const SizedBox(width: 40), // Space for leading button
+                          const SizedBox(width: 40),
                           Expanded(
                             child: FadeInDown(
                               duration: const Duration(milliseconds: 800),
@@ -131,7 +131,6 @@ class TransactionDetailScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Transaction Info
                     FadeInUp(
                       duration: const Duration(milliseconds: 600),
                       child: Card(
@@ -233,7 +232,6 @@ class TransactionDetailScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Product Details
                     ...transaction.penitipItems.asMap().entries.map((entry) {
                       final penitip = entry.value;
                       return FadeInUp(
@@ -296,7 +294,7 @@ class TransactionDetailScreen extends StatelessWidget {
                                         ClipRRect(
                                           borderRadius:
                                               BorderRadius.circular(12),
-                                          child: Image.asset(
+                                          child: Image.network(
                                             item.imagePath,
                                             height: 70,
                                             width: 70,
@@ -359,7 +357,6 @@ class TransactionDetailScreen extends StatelessWidget {
                       );
                     }).toList(),
                     const SizedBox(height: 16),
-                    // Payment Breakdown
                     FadeInUp(
                       duration: const Duration(milliseconds: 1000),
                       child: Card(

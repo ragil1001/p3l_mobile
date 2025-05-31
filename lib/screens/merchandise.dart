@@ -1,5 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:animate_do/animate_do.dart';
+import 'penukaran_history.dart';
 
 class MerchandiseListScreen extends StatefulWidget {
   const MerchandiseListScreen({super.key});
@@ -15,8 +19,10 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
   late Animation<double> _headerSlideAnimation;
   late Animation<double> _headerFadeAnimation;
 
-  // User's current points (you can get this from your app state/database)
-  final int userPoints = 1250;
+  int? userPoints;
+  List<dynamic> merchandise = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -50,6 +56,89 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) _listAnimationController.forward();
     });
+
+    _fetchUserPoints();
+    _fetchMerchandise();
+  }
+
+  Future<void> _fetchUserPoints() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      if (token == null) {
+        setState(() {
+          _errorMessage = 'Token tidak ditemukan. Silakan login kembali.';
+          _isLoading = false;
+        });
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:8000/api/auth/profile'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final profileData = jsonDecode(response.body);
+        setState(() {
+          userPoints = profileData['user']['poin'];
+        });
+      } else {
+        setState(() {
+          _errorMessage = 'Gagal memuat poin pengguna.';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _fetchMerchandise() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      if (token == null) {
+        setState(() {
+          _errorMessage = 'Token tidak ditemukan. Silakan login kembali.';
+          _isLoading = false;
+        });
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:8000/api/pembeli/merchandise'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          merchandise = jsonDecode(response.body);
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = 'Gagal memuat merchandise.';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error: $e';
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -61,6 +150,18 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Scaffold(
+        body: Center(child: Text(_errorMessage!)),
+      );
+    }
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -78,7 +179,6 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            // Enhanced App Bar with Points Display
             SliverAppBar(
               pinned: true,
               floating: false,
@@ -119,6 +219,38 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
                   );
                 },
               ),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white.withOpacity(0.9),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.history,
+                        color: Color(0xFF77784A),
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PenukaranHistoryScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
                   decoration: BoxDecoration(
@@ -155,7 +287,6 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 const SizedBox(height: 15),
-                                // Title with icon
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
@@ -184,7 +315,6 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-                                // Points display
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 16,
@@ -208,7 +338,7 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
-                                        'Poin Anda: $userPoints',
+                                        'Poin Anda: ${userPoints ?? 0}',
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
@@ -237,7 +367,6 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
                 ),
               ),
             ),
-            // Merchandise Grid
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
               sliver: SliverGrid(
@@ -249,20 +378,26 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
+                    final item = merchandise[index];
                     return FadeInUp(
                       duration: const Duration(milliseconds: 500),
                       delay: Duration(milliseconds: 100 + (index * 100)),
                       child: PointsMerchandiseCard(
-                        productName: _getProductName(index),
-                        pointsRequired: _getPointsRequired(index),
-                        stock: _getStock(index),
-                        imageAsset: _getImageAsset(index),
-                        userPoints: userPoints,
+                        merchandiseId: item['ID_MERCHANDISE'],
+                        productName: item['NAMA'],
+                        pointsRequired: item['POIN_DIBUTUHKAN'],
+                        stock: item['STOK'],
+                        imageAsset: item['URL_GAMBAR'],
+                        userPoints: userPoints ?? 0,
                         isPopular: index == 0 || index == 3,
+                        onExchangeSuccess: () {
+                          _fetchUserPoints();
+                          _fetchMerchandise();
+                        },
                       ),
                     );
                   },
-                  childCount: 8,
+                  childCount: merchandise.length,
                 ),
               ),
             ),
@@ -271,53 +406,28 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
       ),
     );
   }
-
-  String _getProductName(int index) {
-    final products = [
-      'Kaos Band Metallica',
-      'Poster Iron Maiden',
-      'Sticker Pack Rock',
-      'Guitar Pick Set',
-      'Band Hoodie',
-      'Vinyl Record',
-      'Mug Band Logo',
-      'Tote Bag Music',
-    ];
-    return products[index % products.length];
-  }
-
-  int _getPointsRequired(int index) {
-    final points = [800, 300, 150, 450, 1200, 600, 200, 350];
-    return points[index % points.length];
-  }
-
-  int _getStock(int index) {
-    final stocks = [5, 12, 25, 8, 3, 7, 15, 10];
-    return stocks[index % stocks.length];
-  }
-
-  String _getImageAsset(int index) {
-    // You can replace these with actual asset paths
-    return 'assets/images/hero-bg.png';
-  }
 }
 
 class PointsMerchandiseCard extends StatelessWidget {
+  final int merchandiseId;
   final String productName;
   final int pointsRequired;
   final int stock;
   final String imageAsset;
   final int userPoints;
   final bool isPopular;
+  final VoidCallback onExchangeSuccess;
 
   const PointsMerchandiseCard({
     super.key,
+    required this.merchandiseId,
     required this.productName,
     required this.pointsRequired,
     required this.stock,
     required this.imageAsset,
     required this.userPoints,
     this.isPopular = false,
+    required this.onExchangeSuccess,
   });
 
   bool get canAfford => userPoints >= pointsRequired;
@@ -354,7 +464,7 @@ class PointsMerchandiseCard extends StatelessWidget {
         child: InkWell(
           onTap: canAfford && inStock
               ? () {
-                  _showExchangeDialog(context);
+                  _showExchangeDialog(context, merchandiseId);
                 }
               : null,
           borderRadius: BorderRadius.circular(16),
@@ -363,7 +473,6 @@ class PointsMerchandiseCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Image container
                   Expanded(
                     flex: 3,
                     child: Container(
@@ -386,7 +495,6 @@ class PointsMerchandiseCard extends StatelessWidget {
                       ),
                       child: Stack(
                         children: [
-                          // Placeholder image
                           const Center(
                             child: Icon(
                               Icons.image_outlined,
@@ -394,7 +502,6 @@ class PointsMerchandiseCard extends StatelessWidget {
                               size: 40,
                             ),
                           ),
-                          // Shimmer effect
                           Positioned.fill(
                             child: Container(
                               decoration: BoxDecoration(
@@ -412,7 +519,6 @@ class PointsMerchandiseCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // Overlay for out of stock or can't afford
                           if (!canAfford || !inStock)
                             Positioned.fill(
                               child: Container(
@@ -437,7 +543,6 @@ class PointsMerchandiseCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Product details
                   Expanded(
                     flex: 2,
                     child: Padding(
@@ -445,7 +550,6 @@ class PointsMerchandiseCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Product name
                           Text(
                             productName,
                             style: const TextStyle(
@@ -458,7 +562,6 @@ class PointsMerchandiseCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 6),
-                          // Stock info
                           Row(
                             children: [
                               Icon(
@@ -480,7 +583,6 @@ class PointsMerchandiseCard extends StatelessWidget {
                             ],
                           ),
                           const Spacer(),
-                          // Points required
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -528,7 +630,6 @@ class PointsMerchandiseCard extends StatelessWidget {
                   ),
                 ],
               ),
-              // Popular badge
               if (isPopular)
                 Positioned(
                   top: 12,
@@ -568,7 +669,7 @@ class PointsMerchandiseCard extends StatelessWidget {
     );
   }
 
-  void _showExchangeDialog(BuildContext context) {
+  void _showExchangeDialog(BuildContext context, int merchandiseId) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -606,15 +707,56 @@ class PointsMerchandiseCard extends StatelessWidget {
               child: const Text('Batal'),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                // Handle exchange logic here
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Penukaran berhasil!'),
-                    backgroundColor: Color(0xFF77784A),
-                  ),
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                final token = prefs.getString('token');
+                if (token == null) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Silakan login kembali.')),
+                  );
+                  return;
+                }
+
+                final response = await http.post(
+                  Uri.parse('http://10.0.2.2:8000/api/pembeli/penukaran'),
+                  headers: {
+                    'Authorization': 'Bearer $token',
+                    'Content-Type': 'application/json',
+                  },
+                  body: jsonEncode({'ID_MERCHANDISE': merchandiseId}),
                 );
+
+                print('Status Code: ${response.statusCode}');
+                print('Response Body: ${response.body}'); // Debugging
+
+                Navigator.of(context).pop();
+                if (response.statusCode == 201) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Penukaran berhasil!'),
+                      backgroundColor: Color(0xFF77784A),
+                    ),
+                  );
+                  onExchangeSuccess();
+                } else {
+                  try {
+                    final errorData = jsonDecode(response.body);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(errorData['message'] ?? 'Penukaran gagal.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Terjadi kesalahan saat memproses penukaran.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF77784A),
