@@ -41,6 +41,7 @@ flutter:
     - assets/images/splash_12.png
     - assets/images/hero-bg.png
     - assets/images/hero-bg.jpg
+    - assets/images/placeholder.png
 
   fonts:
     - family: Inter

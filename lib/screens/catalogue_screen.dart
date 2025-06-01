@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'product_detail.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:intl/intl.dart';
+
+const String baseUrl = 'http://10.0.2.2:8000/api'; // Perbarui ke 10.0.2.2
 
 class CatalogueScreen extends StatefulWidget {
-  const CatalogueScreen({super.key});
+  final String? selectedCategory; // Tambahkan parameter untuk kategori yang dipilih
+
+  const CatalogueScreen({super.key, this.selectedCategory});
 
   @override
   _CatalogueScreenState createState() => _CatalogueScreenState();
@@ -20,114 +29,8 @@ class _CatalogueScreenState extends State<CatalogueScreen>
   Animation<Offset>? _slideAnimation;
   ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
+  List<dynamic> _products = [];
 
-  // Dummy products with images
-  final List<Map<String, dynamic>> dummyProducts = [
-    {
-      'id': '1',
-      'title': 'Baju Metallica Tour 2009',
-      'subcategory': 'Pakaian Pria',
-      'price': 'Rp. 16.000',
-      'volume': 'Ukuran M',
-      'condition': 'Baik',
-      'weight': '300 gr',
-      'warranty': '–',
-      'description':
-          'Kaos resmi dari tur Metallica tahun 2009. Kondisi baik, hanya dipakai beberapa kali. Cocok untuk koleksi atau penggunaan sehari-hari.',
-      'images': [
-        'assets/images/hero-bg.png',
-        'assets/images/hero-bg.png',
-        'assets/images/hero-bg.png'
-      ],
-    },
-    {
-      'id': '2',
-      'title': 'Jaket Vintage 90an',
-      'subcategory': 'Pakaian Pria',
-      'price': 'Rp. 50.000',
-      'volume': 'Ukuran L',
-      'condition': 'Sangat Baik',
-      'weight': '500 gr',
-      'warranty': '–',
-      'description':
-          'Jaket vintage dari era 90an, kondisi sangat baik, cocok untuk koleksi atau penggunaan sehari-hari.',
-      'images': [
-        'assets/images/hero-bg.png',
-        'assets/images/hero-bg.png',
-        'assets/images/hero-bg.png'
-      ],
-    },
-    {
-      'id': '3',
-      'title': 'Jaket Vintage 90an',
-      'subcategory': 'Pakaian Pria',
-      'price': 'Rp. 50.000',
-      'volume': 'Ukuran L',
-      'condition': 'Sangat Baik',
-      'weight': '500 gr',
-      'warranty': '–',
-      'description':
-          'Jaket vintage dari era 90an, kondisi sangat baik, cocok untuk koleksi atau penggunaan sehari-hari.',
-      'images': [
-        'assets/images/hero-bg.png',
-        'assets/images/hero-bg.png',
-        'assets/images/hero-bg.png'
-      ],
-    },
-    {
-      'id': '4',
-      'title': 'Jaket Vintage 90an',
-      'subcategory': 'Pakaian Pria',
-      'price': 'Rp. 50.000',
-      'volume': 'Ukuran L',
-      'condition': 'Sangat Baik',
-      'weight': '500 gr',
-      'warranty': '–',
-      'description':
-          'Jaket vintage dari era 90an, kondisi sangat baik, cocok untuk koleksi atau penggunaan sehari-hari.',
-      'images': [
-        'assets/images/hero-bg.png',
-        'assets/images/hero-bg.png',
-        'assets/images/hero-bg.png'
-      ],
-    },
-    {
-      'id': '5',
-      'title': 'Jaket Vintage 90an',
-      'subcategory': 'Pakaian Pria',
-      'price': 'Rp. 50.000',
-      'volume': 'Ukuran L',
-      'condition': 'Sangat Baik',
-      'weight': '500 gr',
-      'warranty': '–',
-      'description':
-          'Jaket vintage dari era 90an, kondisi sangat baik, cocok untuk koleksi atau penggunaan sehari-hari.',
-      'images': [
-        'assets/images/hero-bg.png',
-        'assets/images/hero-bg.png',
-        'assets/images/hero-bg.png'
-      ],
-    },
-    {
-      'id': '6',
-      'title': 'Jaket Vintage 90an',
-      'subcategory': 'Pakaian Pria',
-      'price': 'Rp. 50.000',
-      'volume': 'Ukuran L',
-      'condition': 'Sangat Baik',
-      'weight': '500 gr',
-      'warranty': '–',
-      'description':
-          'Jaket vintage dari era 90an, kondisi sangat baik, cocok untuk koleksi atau penggunaan sehari-hari.',
-      'images': [
-        'assets/images/hero-bg.png',
-        'assets/images/hero-bg.png',
-        'assets/images/hero-bg.png'
-      ],
-    },
-  ];
-
-  // List of categories with subcategories
   final List<Map<String, dynamic>> categories = [
     {
       'name': 'Elektronik & Gadget',
@@ -189,7 +92,9 @@ class _CatalogueScreenState extends State<CatalogueScreen>
   void initState() {
     super.initState();
 
-    // Initialize animation controller
+    // Jika ada kategori yang dipilih dari homepage, gunakan sebagai filter awal
+    _selectedCategory = widget.selectedCategory;
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -211,24 +116,98 @@ class _CatalogueScreenState extends State<CatalogueScreen>
       curve: Curves.elasticOut,
     ));
 
-    // Start animation
     _animationController!.forward();
 
-    // Listen to scroll changes
     _scrollController.addListener(() {
       setState(() {
         _isScrolled = _scrollController.offset > 50;
       });
     });
 
-    // Simulate loading delay
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+    _fetchProducts();
+  }
+
+  Future<bool> _checkConnectivity() async {
+    try {
+      var connectivityResult = await Connectivity().checkConnectivity();
+      return connectivityResult != ConnectivityResult.none;
+    } catch (e) {
+      print('Connectivity Check Error: $e');
+      return false; // Default ke false jika ada error
+    }
+  }
+
+  Future<void> _fetchProducts() async {
+    if (!await _checkConnectivity()) {
+      setState(() {
+        _isLoading = false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tidak ada koneksi internet'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      });
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/products'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        var jsonResponse = json.decode(response.body);
+        print('API Response: $jsonResponse'); // Logging respons API
+        if (jsonResponse['success'] && jsonResponse['data'] is List) {
+          setState(() {
+            _products = jsonResponse['data'].map((product) {
+              // Pastikan 'images' adalah list string yang valid
+              var images = product['images'];
+              if (images is List && images.isNotEmpty) {
+                return {
+                  ...product,
+                  'images': images
+                      .whereType<String>()
+                      .map((img) => img.startsWith('http') ? img : '$baseUrl$img')
+                      .toList(),
+                };
+              }
+              return {...product, 'images': ['']}; // Fallback ke string kosong
+            }).toList();
+            _isLoading = false;
+          });
+        } else {
+          throw Exception('Unexpected response format: ${response.body}');
+        }
+      } else {
+        throw Exception('Failed to load products: ${response.statusCode}');
       }
-    });
+    } catch (e) {
+      print('Fetch Products Error: $e');
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memuat produk: $e')),
+      );
+    }
+  }
+
+  // Filter produk berdasarkan kategori yang dipilih
+  List<dynamic> get _filteredProducts {
+    if (_selectedCategory == null || _selectedCategory!.isEmpty) {
+      return _products;
+    }
+    return _products.where((product) {
+      String productCategory = product['category']?.toString().toLowerCase() ?? '';
+      String selectedCategoryLower = _selectedCategory!.toLowerCase();
+      return productCategory == selectedCategoryLower;
+    }).toList();
   }
 
   @override
@@ -319,47 +298,33 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                 child: Padding(
                                   padding: const EdgeInsets.all(18.0),
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Row(
                                         children: [
                                           Expanded(
                                             child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
+                                              crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
                                                 FadeInDown(
-                                                  duration: const Duration(
-                                                      milliseconds: 800),
+                                                  duration: const Duration(milliseconds: 800),
                                                   child: LayoutBuilder(
-                                                    builder:
-                                                        (context, constraints) {
-                                                      double availableWidth =
-                                                          constraints.maxWidth;
-                                                      String displayText =
-                                                          _getDisplayText(
-                                                              availableWidth,
-                                                              _isScrolled);
-                                                      double fontSize =
-                                                          _getFontSize(
-                                                              _isScrolled,
-                                                              availableWidth);
+                                                    builder: (context, constraints) {
+                                                      double availableWidth = constraints.maxWidth;
+                                                      String displayText = _getDisplayText(availableWidth, _isScrolled);
+                                                      double fontSize = _getFontSize(_isScrolled, availableWidth);
 
                                                       return Text(
                                                         displayText,
                                                         style: TextStyle(
                                                           color: Colors.white,
                                                           fontSize: fontSize,
-                                                          fontWeight:
-                                                              FontWeight.bold,
+                                                          fontWeight: FontWeight.bold,
                                                           height: 1.2,
                                                         ),
-                                                        maxLines:
-                                                            _isScrolled ? 1 : 2,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
+                                                        maxLines: _isScrolled ? 1 : 2,
+                                                        overflow: TextOverflow.ellipsis,
                                                         softWrap: true,
                                                       );
                                                     },
@@ -368,8 +333,7 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                                 if (!_isScrolled) ...[
                                                   const SizedBox(height: 6),
                                                   FadeInDown(
-                                                    duration: const Duration(
-                                                        milliseconds: 900),
+                                                    duration: const Duration(milliseconds: 900),
                                                     child: Text(
                                                       'Temukan produk preloved berkualitas dengan harga terjangkau',
                                                       style: const TextStyle(
@@ -378,8 +342,7 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                                         height: 1.3,
                                                       ),
                                                       maxLines: 2,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                 ],
@@ -391,34 +354,28 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                       if (!_isScrolled) ...[
                                         const SizedBox(height: 16),
                                         FadeInUp(
-                                          duration: const Duration(
-                                              milliseconds: 1000),
+                                          duration: const Duration(milliseconds: 1000),
                                           child: Container(
                                             height: 48,
                                             decoration: BoxDecoration(
-                                              color: Colors.white
-                                                  .withOpacity(0.95),
-                                              borderRadius:
-                                                  BorderRadius.circular(25),
+                                              color: Colors.white.withOpacity(0.95),
+                                              borderRadius: BorderRadius.circular(25),
                                               boxShadow: [
                                                 BoxShadow(
-                                                  color: Colors.black
-                                                      .withOpacity(0.1),
+                                                  color: Colors.black.withOpacity(0.1),
                                                   blurRadius: 10,
                                                   offset: const Offset(0, 3),
                                                 ),
                                               ],
                                               border: Border.all(
-                                                color: Colors.white
-                                                    .withOpacity(0.3),
+                                                color: Colors.white.withOpacity(0.3),
                                                 width: 1,
                                               ),
                                             ),
                                             child: Row(
                                               children: [
                                                 const Padding(
-                                                  padding: EdgeInsets.symmetric(
-                                                      horizontal: 16),
+                                                  padding: EdgeInsets.symmetric(horizontal: 16),
                                                   child: Icon(
                                                     Icons.search,
                                                     color: Colors.grey,
@@ -428,16 +385,13 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                                 const Expanded(
                                                   child: TextField(
                                                     decoration: InputDecoration(
-                                                      hintText:
-                                                          'Cari produk impianmu...',
+                                                      hintText: 'Cari produk impianmu...',
                                                       hintStyle: TextStyle(
                                                         color: Colors.grey,
                                                         fontSize: 14,
                                                       ),
                                                       border: InputBorder.none,
-                                                      contentPadding:
-                                                          EdgeInsets.symmetric(
-                                                              vertical: 14),
+                                                      contentPadding: EdgeInsets.symmetric(vertical: 14),
                                                     ),
                                                   ),
                                                 ),
@@ -488,7 +442,7 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                             ),
                             const Spacer(),
                             Text(
-                              '${dummyProducts.length} produk',
+                              '${_filteredProducts.length} produk',
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey,
@@ -501,8 +455,7 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                           ? GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
                                 childAspectRatio: 0.75,
                                 crossAxisSpacing: 16,
@@ -526,23 +479,20 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                       ],
                                     ),
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Container(
                                           height: 70,
                                           width: double.infinity,
                                           decoration: const BoxDecoration(
                                             color: Colors.grey,
-                                            borderRadius: BorderRadius.vertical(
-                                                top: Radius.circular(12)),
+                                            borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                                           ),
                                         ),
                                         const Padding(
                                           padding: EdgeInsets.all(8.0),
                                           child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               SizedBox(
                                                 height: 16,
@@ -550,9 +500,7 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                                 child: DecoratedBox(
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey,
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                            Radius.circular(4)),
+                                                    borderRadius: BorderRadius.all(Radius.circular(4)),
                                                   ),
                                                 ),
                                               ),
@@ -563,9 +511,7 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                                 child: DecoratedBox(
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey,
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                            Radius.circular(4)),
+                                                    borderRadius: BorderRadius.all(Radius.circular(4)),
                                                   ),
                                                 ),
                                               ),
@@ -576,9 +522,7 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                                 child: DecoratedBox(
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey,
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                            Radius.circular(4)),
+                                                    borderRadius: BorderRadius.all(Radius.circular(4)),
                                                   ),
                                                 ),
                                               ),
@@ -594,30 +538,29 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                           : GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
                                 childAspectRatio: 0.75,
                                 crossAxisSpacing: 16,
                                 mainAxisSpacing: 16,
                               ),
-                              itemCount: dummyProducts.length,
+                              itemCount: _filteredProducts.length,
                               itemBuilder: (context, index) {
-                                final product = dummyProducts[index];
+                                final product = _filteredProducts[index];
+                                print('Rendering Product $index: $product'); // Logging produk
                                 return FadeInUp(
-                                  duration: Duration(
-                                      milliseconds: 500 + (index * 100)),
+                                  duration: Duration(milliseconds: 500 + (index * 100)),
                                   child: ProductCard(
-                                    id: product['id'],
-                                    title: product['title'],
-                                    subcategory: product['subcategory'],
-                                    price: product['price'],
-                                    volume: product['volume'],
-                                    condition: product['condition'],
-                                    weight: product['weight'],
-                                    warranty: product['warranty'],
-                                    description: product['description'],
-                                    images: product['images'],
+                                    id: product['id'].toString(),
+                                    title: product['name'] ?? 'Produk Tanpa Nama',
+                                    subcategory: product['subcategory'] ?? '',
+                                    price: 'Rp ${product['price']?.toStringAsFixed(0) ?? '0'}',
+                                    volume: product['volume'] ?? 'N/A',
+                                    condition: product['condition'] ?? 'N/A',
+                                    weight: product['weight']?.toString() ?? 'N/A',
+                                    warranty: product['warranty_date'] ?? '–',
+                                    description: product['description'] ?? '',
+                                    images: product['images'] as List<String>,
                                   ),
                                 );
                               },
@@ -722,6 +665,9 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                 leading: const Icon(Icons.sort, color: Color(0xFF1A3C34)),
                 title: const Text('Sort by Price: Low to High'),
                 onTap: () {
+                  setState(() {
+                    _products.sort((a, b) => (a['price'] ?? 0).compareTo(b['price'] ?? 0));
+                  });
                   Navigator.pop(context);
                 },
               ),
@@ -729,6 +675,9 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                 leading: const Icon(Icons.sort, color: Color(0xFF1A3C34)),
                 title: const Text('Sort by Price: High to Low'),
                 onTap: () {
+                  setState(() {
+                    _products.sort((a, b) => (b['price'] ?? 0).compareTo(a['price'] ?? 0));
+                  });
                   Navigator.pop(context);
                 },
               ),
@@ -754,30 +703,30 @@ class _CatalogueScreenState extends State<CatalogueScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Filter by Category',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A3C34),
+        return SingleChildScrollView(
+          child: Container(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Filter by Category',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A3C34),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView.builder(
+                const SizedBox(height: 16),
+                ListView.builder(
                   shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   itemCount: categories.length,
                   itemBuilder: (context, index) {
                     final category = categories[index];
                     return ExpansionTile(
-                      leading: Icon(category['icon'],
-                          color: const Color(0xFF1A3C34)),
+                      leading: Icon(category['icon'], color: const Color(0xFF1A3C34)),
                       title: Text(category['name']),
                       children: (category['subcategories'] as List<String>)
                           .map((subcategory) {
@@ -795,8 +744,19 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                     );
                   },
                 ),
-              ),
-            ],
+                ListTile(
+                  leading: const Icon(Icons.clear, color: Color(0xFF1A3C34)),
+                  title: const Text('Clear Filter'),
+                  onTap: () {
+                    setState(() {
+                      _selectedCategory = null;
+                      _selectedSubcategory = null;
+                    });
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -835,6 +795,10 @@ class ProductCard extends StatefulWidget {
 }
 
 class _ProductCardState extends State<ProductCard> {
+  String _formatRupiah(String price) {
+    final number = int.tryParse(price.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+    return 'Rp ${NumberFormat("#,##0", "id_ID").format(number)}';
+  }
   double _scale = 1.0;
 
   void _onTapDown(TapDownDetails details) {
@@ -850,16 +814,7 @@ class _ProductCardState extends State<ProductCard> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ProductDetailScreen(
-          id: widget.id,
-          title: widget.title,
-          price: widget.price,
-          condition: widget.condition,
-          weight: widget.weight,
-          warranty: widget.warranty,
-          description: widget.description,
-          images: widget.images,
-        ),
+        builder: (context) => ProductDetailScreen(productId: widget.id),
       ),
     );
   }
@@ -881,28 +836,39 @@ class _ProductCardState extends State<ProductCard> {
         duration: const Duration(milliseconds: 200),
         child: Card(
           elevation: 10,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Hero(
-                tag: 'productImage${widget.id}_0', // Use first image for Hero
+                tag: 'productImage${widget.id}_0',
                 child: ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: Image.asset(
-                    widget.images[0],
-                    height: 100,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: 100,
-                      width: double.infinity,
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.broken_image, color: Colors.grey),
-                    ),
-                  ),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: widget.images.isNotEmpty &&
+                          widget.images[0].isNotEmpty &&
+                          widget.images[0].startsWith('http')
+                      ? CachedNetworkImage(
+                          imageUrl: widget.images[0],
+                          height: 100,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) {
+                            print('Image Load Error for $url: $error');
+                            return Image.asset(
+                              'assets/images/placeholder.png',
+                              height: 100,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            );
+                          },
+                        )
+                      : Image.asset(
+                          'assets/images/placeholder.png',
+                          height: 100,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
                 ),
               ),
               Padding(
@@ -930,7 +896,7 @@ class _ProductCardState extends State<ProductCard> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      widget.price,
+                      _formatRupiah(widget.price),
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,

@@ -1,6 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'transaction_detail.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
@@ -13,122 +18,12 @@ class OrderHistoryScreen extends StatefulWidget {
 class _OrderHistoryScreenState extends State<OrderHistoryScreen>
     with TickerProviderStateMixin {
   bool _isLoading = true;
+  String? _errorMessage;
   late AnimationController _fadeController;
   late AnimationController _slideController;
   ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
-
-  final List<Transaction> transactions = [
-    Transaction(
-      transactionId: '2025.05.004',
-      status: 'Menunggu Pembayaran',
-      date: '2025-05-29 18:53:44',
-      total: 'Rp1,576,067',
-      buyerName: 'John Doe',
-      buyerEmail: 'john.doe@example.com',
-      buyerAddress: 'Jl. Merdeka No. 123, Jakarta',
-      deliveryMethod: 'Dikirim',
-      penitipItems: [
-        PenitipItems(
-          penitipName: 'Anton Prabowo',
-          qcStaff: 'Rina QC',
-          items: [
-            TransactionItem(
-              name: 'Coding For Dummies',
-              price: 'Rp1,576,067',
-              imagePath: 'assets/images/hero-bg.png',
-            ),
-          ],
-        ),
-      ],
-      paymentBreakdown: PaymentBreakdown(
-        totalItemPrice: 'Rp1,576,067',
-        shippingCost: 'Rp50,000',
-        pointsUsed: 0,
-        discount: 'Rp0',
-        pointsEarned: 1576,
-        finalTotal: 'Rp1,576,067',
-      ),
-    ),
-    Transaction(
-      transactionId: '2025.05.003',
-      status: 'Diproses',
-      date: '2025-05-28 14:22:10',
-      total: 'Rp1,000,000',
-      buyerName: 'Jane Smith',
-      buyerEmail: 'jane.smith@example.com',
-      buyerAddress: 'Jl. Sudirman No. 45, Bandung',
-      deliveryMethod: 'Diambil Sendiri',
-      penitipItems: [
-        PenitipItems(
-          penitipName: 'Budi Santoso',
-          qcStaff: 'Andi QC',
-          items: [
-            TransactionItem(
-              name: 'Baju Metallica Tour 2009',
-              price: 'Rp500,000',
-              imagePath: 'assets/images/hero-bg.png',
-            ),
-            TransactionItem(
-              name: 'Jaket Vintage 90an',
-              price: 'Rp500,000',
-              imagePath: 'assets/images/hero-bg.png',
-            ),
-          ],
-        ),
-      ],
-      paymentBreakdown: PaymentBreakdown(
-        totalItemPrice: 'Rp1,000,000',
-        shippingCost: 'Rp0',
-        pointsUsed: 0,
-        discount: 'Rp0',
-        pointsEarned: 1000,
-        finalTotal: 'Rp1,000,000',
-      ),
-    ),
-    Transaction(
-      transactionId: '2025.05.002',
-      status: 'Selesai',
-      date: '2025-05-27 09:15:30',
-      total: 'Rp1,050,000',
-      buyerName: 'Alice Johnson',
-      buyerEmail: 'alice.j@example.com',
-      buyerAddress: 'Jl. Gatot Subroto No. 78, Surabaya',
-      deliveryMethod: 'Dikirim',
-      penitipItems: [
-        PenitipItems(
-          penitipName: 'Siti Aminah',
-          qcStaff: 'Sari QC',
-          items: [
-            TransactionItem(
-              name: 'Baju Metallica Tour 2009',
-              price: 'Rp500,000',
-              imagePath: 'assets/images/hero-bg.png',
-            ),
-          ],
-        ),
-        PenitipItems(
-          penitipName: 'Anton Prabowo',
-          qcStaff: 'Rina QC',
-          items: [
-            TransactionItem(
-              name: 'Jaket Vintage 90an',
-              price: 'Rp550,000',
-              imagePath: 'assets/images/hero-bg.png',
-            ),
-          ],
-        ),
-      ],
-      paymentBreakdown: PaymentBreakdown(
-        totalItemPrice: 'Rp1,050,000',
-        shippingCost: 'Rp50,000',
-        pointsUsed: 500,
-        discount: 'Rp50,000',
-        pointsEarned: 1000,
-        finalTotal: 'Rp1,050,000',
-      ),
-    ),
-  ];
+  List<Transaction> _transactions = [];
 
   @override
   void initState() {
@@ -167,13 +62,124 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
       });
     });
 
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
+    _fetchTransactions();
+  }
+
+  Future<void> _fetchTransactions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      print('Token: $token');
+      if (token == null) {
         setState(() {
+          _errorMessage = 'Token tidak ditemukan. Silakan login kembali.';
+          _isLoading = false;
+        });
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:8000/api/pembeli/transaksi'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('Status: ${response.statusCode}, Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+        final List<dynamic> data = jsonResponse['data'] ?? [];
+
+        String formatCurrency(int amount) {
+          final formatter = NumberFormat('#,##0', 'id_ID');
+          return 'Rp${formatter.format(amount)}';
+        }
+
+        final List<Transaction> fetchedTransactions = data.map((item) {
+          final products = item['products'] as List<dynamic>? ?? [];
+          final totalItemPrice = products.fold(
+              0, (sum, p) => sum + (p['product_price_raw'] as int? ?? 0));
+          final pointsDiscount = ((item['poin_digunakan'] as int? ?? 0) / 100).floor() * 10000;
+
+          final Map<String, List<dynamic>> groupedProducts = {};
+          for (var product in products) {
+            final penitipName = product['nama_penitip'] as String? ?? 'Unknown Penitip';
+            if (!groupedProducts.containsKey(penitipName)) {
+              groupedProducts[penitipName] = [];
+            }
+            groupedProducts[penitipName]!.add(product);
+          }
+
+          final penitipItems = groupedProducts.entries.map((entry) {
+            final penitipName = entry.key;
+            final productsList = entry.value;
+            final qcStaff = productsList.isNotEmpty
+                ? productsList[0]['nama_qc'] as String? ?? 'Unknown QC'
+                : 'Unknown QC';
+
+            final items = productsList.map((p) => TransactionItem(
+                  name: p['nama_barang'] as String? ?? 'Unknown Item',
+                  price: p['harga_barang'] as String? ?? 'Rp0',
+                  imagePath: p['image'] as String? ??
+                      'http://10.0.2.2:8000/storage/images/default.jpg',
+                )).toList();
+
+            return PenitipItems(
+              penitipName: penitipName,
+              qcStaff: qcStaff,
+              items: items,
+            );
+          }).toList();
+
+          return Transaction(
+            transactionId: item['no_nota'] as String? ?? 'Unknown ID',
+            status: item['status'] as String? ?? 'Unknown',
+            date: item['tanggal_transaksi'] as String? ?? 'Unknown Date',
+            total: item['total_akhir'] as String? ?? 'Rp0',
+            buyerName: item['nama_pembeli'] as String? ?? 'Unknown Buyer',
+            buyerEmail: item['email_pembeli'] as String? ?? 'Unknown Email',
+            buyerAddress: item['alamat'] as String? ?? 'Unknown Address',
+            deliveryMethod: item['metode_pengiriman'] as String? ?? 'Unknown Method',
+            penitipItems: penitipItems,
+            paymentBreakdown: PaymentBreakdown(
+              totalItemPrice: formatCurrency(totalItemPrice),
+              shippingCost: item['ongkir'] as String? ?? 'Rp0',
+              pointsUsed: item['poin_digunakan'] as int? ?? 0,
+              discount: formatCurrency(pointsDiscount),
+              pointsEarned: item['poin_diperoleh'] as int? ?? 0,
+              finalTotal: item['total_akhir'] as String? ?? 'Rp0',
+            ),
+          );
+        }).toList();
+
+        setState(() {
+          _transactions = fetchedTransactions;
+          _isLoading = false;
+        });
+      } else if (response.statusCode == 401) {
+        await prefs.remove('token');
+        setState(() {
+          _errorMessage = 'Sesi telah berakhir. Silakan login kembali.';
+          _isLoading = false;
+        });
+        Navigator.pushReplacementNamed(context, '/login');
+      } else {
+        setState(() {
+          _errorMessage =
+              'Gagal memuat riwayat pesanan: ${response.statusCode} - ${response.body}';
           _isLoading = false;
         });
       }
-    });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error saat mengambil riwayat pesanan: $e';
+        _isLoading = false;
+      });
+      print('Error: $e');
+    }
   }
 
   @override
@@ -182,6 +188,189 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
     _slideController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  String _getDisplayText(double availableWidth, bool isScrolled) {
+    if (isScrolled) {
+      return availableWidth < 250 ? 'Riwayat Pesanan' : 'Riwayat Pesanan';
+    } else {
+      if (availableWidth < 280) {
+        return 'Riwayat\nPesanan';
+      } else {
+        return 'Riwayat Pesanan';
+      }
+    }
+  }
+
+  double _getFontSize(bool isScrolled, double availableWidth) {
+    if (isScrolled) {
+      return availableWidth < 250 ? 14 : 16;
+    } else {
+      if (availableWidth < 280) {
+        return 18;
+      } else {
+        return 20;
+      }
+    }
+  }
+
+  Widget _buildTransactionList() {
+    return FadeTransition(
+      opacity: _fadeController,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.3),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(
+          parent: _slideController,
+          curve: Curves.elasticOut,
+        )),
+        child: ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          itemCount: _transactions.length,
+          itemBuilder: (context, index) {
+            return FadeInUp(
+              duration: Duration(milliseconds: 600 + (index * 200)),
+              child: SlideInLeft(
+                duration: Duration(milliseconds: 800 + (index * 150)),
+                child: TransactionCard(
+                  transaction: _transactions[index],
+                  index: index,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingShimmer() {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: 3,
+      itemBuilder: (context, index) {
+        return Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            height: 200,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            BounceInDown(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.error_outline,
+                  size: 80,
+                  color: Colors.red[400],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            FadeInUp(
+              delay: const Duration(milliseconds: 300),
+              child: Text(
+                'Gagal Memuat Pesanan',
+                style: TextStyle(
+                  fontSize: 20,
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            FadeInUp(
+              delay: const Duration(milliseconds: 500),
+              child: Text(
+                _errorMessage!,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[500],
+                  fontWeight: FontWeight.w400,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          BounceInDown(
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.receipt_long_outlined,
+                size: 80,
+                color: Colors.grey[400],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          FadeInUp(
+            delay: const Duration(milliseconds: 300),
+            child: Text(
+              'Belum ada riwayat pesanan',
+              style: TextStyle(
+                fontSize: 20,
+                color: Colors.grey[700],
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          FadeInUp(
+            delay: const Duration(milliseconds: 500),
+            child: Text(
+              'Ayo mulai belanja di ReuseMart!',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[500],
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -301,8 +490,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                                 padding: const EdgeInsets.all(10.0),
                                 child: Row(
                                   children: [
-                                    const SizedBox(
-                                        width: 48), // Space for leading button
+                                    const SizedBox(width: 48),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment:
@@ -346,7 +534,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                                               duration: const Duration(
                                                   milliseconds: 900),
                                               child: Text(
-                                                '${transactions.length} Transaksi',
+                                                '${_transactions.length} Transaksi',
                                                 style: const TextStyle(
                                                   color: Colors.white70,
                                                   fontSize: 13,
@@ -376,147 +564,12 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
             SliverToBoxAdapter(
               child: _isLoading
                   ? _buildLoadingShimmer()
-                  : transactions.isEmpty
+                  : _transactions.isEmpty
                       ? _buildEmptyState()
                       : _buildTransactionList(),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  String _getDisplayText(double availableWidth, bool isScrolled) {
-    if (isScrolled) {
-      return availableWidth < 250 ? 'Riwayat Pesanan' : 'Riwayat Pesanan';
-    } else {
-      if (availableWidth < 280) {
-        return 'Riwayat\nPesanan';
-      } else {
-        return 'Riwayat Pesanan';
-      }
-    }
-  }
-
-  double _getFontSize(bool isScrolled, double availableWidth) {
-    if (isScrolled) {
-      return availableWidth < 250 ? 14 : 16;
-    } else {
-      if (availableWidth < 280) {
-        return 18;
-      } else {
-        return 20;
-      }
-    }
-  }
-
-  Widget _buildTransactionList() {
-    return FadeTransition(
-      opacity: _fadeController,
-      child: SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 0.3),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(
-          parent: _slideController,
-          curve: Curves.elasticOut,
-        )),
-        child: ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          itemCount: transactions.length,
-          itemBuilder: (context, index) {
-            return FadeInUp(
-              duration: Duration(milliseconds: 600 + (index * 200)),
-              child: SlideInLeft(
-                duration: Duration(milliseconds: 800 + (index * 150)),
-                child: TransactionCard(
-                  transaction: transactions[index],
-                  index: index,
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadingShimmer() {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: 3,
-      itemBuilder: (context, index) {
-        return Shimmer.fromColors(
-          baseColor: Colors.grey[300]!,
-          highlightColor: Colors.grey[100]!,
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            height: 200,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          BounceInDown(
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.receipt_long_outlined,
-                size: 80,
-                color: Colors.grey[400],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          FadeInUp(
-            delay: const Duration(milliseconds: 300),
-            child: Text(
-              'Belum ada riwayat pesanan',
-              style: TextStyle(
-                fontSize: 20,
-                color: Colors.grey[700],
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          FadeInUp(
-            delay: const Duration(milliseconds: 500),
-            child: Text(
-              'Ayo mulai belanja di ReuseMart!',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[500],
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -630,26 +683,30 @@ class _TransactionCardState extends State<TransactionCard>
   }
 
   Color _getStatusColor() {
-    switch (widget.transaction.status) {
+    switch (widget.transaction.status.toLowerCase()) {
       case 'Selesai':
         return Colors.green;
       case 'Diproses':
         return Colors.orange;
-      case 'Menunggu Pembayaran':
+      case 'Menunggu pembayaran':
         return Colors.red;
+      case 'Pending':
+        return Colors.blue;
       default:
         return Colors.grey;
     }
   }
 
   IconData _getStatusIcon() {
-    switch (widget.transaction.status) {
+    switch (widget.transaction.status.toLowerCase()) {
       case 'Selesai':
         return Icons.check_circle;
       case 'Diproses':
         return Icons.hourglass_empty;
-      case 'Menunggu Pembayaran':
+      case 'Menunggu pembayaran':
         return Icons.payment;
+      case 'Pending':
+        return Icons.pending;
       default:
         return Icons.info;
     }
@@ -1023,12 +1080,12 @@ class TransactionItemWidget extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                item.imagePath,
+              child: CachedNetworkImage(
+                imageUrl: item.imagePath,
                 height: 70,
                 width: 70,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
+                errorWidget: (context, url, error) => Container(
                   height: 70,
                   width: 70,
                   decoration: BoxDecoration(
