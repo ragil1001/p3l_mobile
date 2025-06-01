@@ -19,9 +19,10 @@ dependencies:
   flutter_native_splash: ^2.4.4
   animate_do: ^3.3.4 # For animations
   shimmer: ^3.0.0 # For shimmer loading effect
+  intl: ^0.18.0
+  fl_chart: ^0.68.0
   cached_network_image: ^3.4.1
   connectivity_plus: ^6.0.0
-  intl: ^0.18.1
 
 dev_dependencies:
   flutter_test:

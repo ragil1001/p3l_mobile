@@ -6,8 +6,8 @@ import 'screens/otentikasi/login.dart';
 import 'screens/otentikasi/register.dart';
 import 'screens/homepage.dart';
 import 'screens/hunter.dart';
-import 'screens/kurir.dart';
-import 'screens/penitip.dart';
+import 'screens/kurir/courier_dashboard.dart';
+import 'screens/penitip/dashboardPenitip.dart';
 import 'screens/otentikasi/loadingPage.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
@@ -58,7 +58,7 @@ class MyApp extends StatelessWidget {
     final authService = AuthService();
     final token = await authService.getToken();
     if (token == null) {
-      return const LoginScreen();
+      return const SplashScreen();
     }
 
     final userType = await authService.getUserType();
@@ -66,11 +66,11 @@ class MyApp extends StatelessWidget {
     if (userType == 'pembeli' && role == 'pembeli') {
       return const PembeliScreen();
     } else if (userType == 'penitip' && role == 'penitip') {
-      return const PenitipScreen();
+      return const PenitipDashboard();
     } else if (userType == 'pegawai' && role == 'hunter') {
       return const HunterScreen();
     } else if (userType == 'pegawai' && role == 'kurir') {
-      return const KurirScreen();
+      return CourierDashboard();
     }
     return const LoginScreen();
   }
@@ -132,8 +132,8 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterScreen(),
         '/pembeli_dashboard': (context) => const PembeliScreen(),
         '/hunter_dashboard': (context) => const HunterScreen(),
-        '/kurir_dashboard': (context) => const KurirScreen(),
-        '/penitip_dashboard': (context) => const PenitipScreen(),
+        '/kurir_dashboard': (context) => CourierDashboard(),
+        '/penitip_dashboard': (context) => const PenitipDashboard(),
       },
       builder: (context, child) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
