@@ -1,0 +1,856 @@
+import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:animate_do/animate_do.dart';
+import 'package:shimmer/shimmer.dart';
+import 'ConsignedItemsScreen.dart';
+import 'profile_penitip.dart';
+
+class PenitipDashboard extends StatefulWidget {
+  const PenitipDashboard({super.key});
+
+  @override
+  _PenitipDashboardState createState() => _PenitipDashboardState();
+}
+
+class _PenitipDashboardState extends State<PenitipDashboard>
+    with TickerProviderStateMixin {
+  int _selectedIndex = 0;
+  AnimationController? _animationController;
+  Animation<double>? _scaleAnimation;
+  bool _isLoading = true;
+
+  // Data Statistik
+  final List<Map<String, dynamic>> stats = [
+    {
+      'title': 'Total Barang',
+      'value': 156,
+      'icon': Icons.inventory_2,
+      'color': Colors.blue,
+      'change': 12,
+    },
+    {
+      'title': 'Barang Terjual',
+      'value': 89,
+      'icon': Icons.check_circle,
+      'color': Colors.green,
+      'change': 8,
+    },
+    {
+      'title': 'Pendapatan Bulan Ini',
+      'value': 12500000,
+      'icon': Icons.attach_money,
+      'color': Colors.amber,
+      'change': 15,
+      'isMonetary': true,
+    },
+    {
+      'title': 'Rata-rata Penjualan',
+      'value': 140000,
+      'icon': Icons.trending_up,
+      'color': Colors.purple,
+      'change': 5,
+      'isMonetary': true,
+    },
+  ];
+
+  // Data Tren Penjualan
+  final List<Map<String, dynamic>> salesData = [
+    {'date': '2024-01-01', 'penjualan': 12, 'pendapatan': 1800000},
+    {'date': '2024-01-02', 'penjualan': 8, 'pendapatan': 1200000},
+    {'date': '2024-01-03', 'penjualan': 15, 'pendapatan': 2250000},
+    {'date': '2024-01-04', 'penjualan': 10, 'pendapatan': 1500000},
+    {'date': '2024-01-05', 'penjualan': 18, 'pendapatan': 2700000},
+    {'date': '2024-01-06', 'penjualan': 14, 'pendapatan': 2100000},
+    {'date': '2024-01-07', 'penjualan': 12, 'pendapatan': 1800000},
+  ];
+
+  // Data Distribusi Kategori
+  final List<Map<String, dynamic>> categoryData = [
+    {'name': 'Elektronik', 'value': 35, 'color': Colors.blue},
+    {'name': 'Pakaian', 'value': 28, 'color': Colors.green},
+    {'name': 'Aksesoris', 'value': 20, 'color': Colors.amber},
+    {'name': 'Peralatan', 'value': 17, 'color': Colors.orange},
+  ];
+
+  // Data Performa Bulanan
+  final List<Map<String, dynamic>> monthlyData = [
+    {'month': 'Jan', 'barang': 20, 'terjual': 18, 'pendapatan': 2500000},
+    {'month': 'Feb', 'barang': 25, 'terjual': 22, 'pendapatan': 3200000},
+    {'month': 'Mar', 'barang': 30, 'terjual': 26, 'pendapatan': 3800000},
+    {'month': 'Apr', 'barang': 28, 'terjual': 24, 'pendapatan': 3600000},
+    {'month': 'May', 'barang': 35, 'terjual': 28, 'pendapatan': 4200000},
+    {'month': 'Jun', 'barang': 32, 'terjual': 30, 'pendapatan': 4500000},
+  ];
+
+  final List<Widget> _pages = [
+    const DashboardContent(),
+    const ConsignedItemsScreen(),
+    const ProfilePenitipScreen(),
+  ];
+
+  final List<NavItem> _navItems = [
+    NavItem(icon: Icons.dashboard, label: 'Dashboard'),
+    NavItem(icon: Icons.list, label: 'Daftar Barang'),
+    NavItem(icon: Icons.person, label: 'Profile'),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAnimations();
+    _loadData();
+  }
+
+  void _initializeAnimations() {
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.2,
+    ).animate(CurvedAnimation(
+      parent: _animationController!,
+      curve: Curves.elasticOut,
+    ));
+  }
+
+  Future<void> _loadData() async {
+    print('Memulai pengambilan data...');
+    await Future.delayed(const Duration(seconds: 1));
+    print('Selesai menunggu, mengubah _isLoading menjadi false');
+    setState(() {
+      _isLoading = false;
+    });
+    print('_isLoading sekarang: $_isLoading');
+  }
+
+  @override
+  void dispose() {
+    _animationController?.dispose();
+    super.dispose();
+  }
+
+  void _onItemTapped(int index) {
+    if (_selectedIndex != index) {
+      setState(() {
+        _selectedIndex = index;
+      });
+      _animationController?.forward().then((_) {
+        _animationController?.reverse();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF7A7C52),
+              const Color(0xFF6A6D42),
+              const Color(0xFF5A5D32),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 20,
+              offset: const Offset(0, -8),
+              spreadRadius: 0,
+            ),
+            BoxShadow(
+              color: const Color(0xFF7A7C52).withOpacity(0.3),
+              blurRadius: 40,
+              offset: const Offset(0, -15),
+              spreadRadius: -5,
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(25),
+            topRight: Radius.circular(25),
+          ),
+          child: Container(
+            height: 80,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  const Color(0xFF7A7C52).withOpacity(0.95),
+                  const Color(0xFF7A7C52),
+                ],
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(25),
+                topRight: Radius.circular(25),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(_navItems.length, (index) {
+                return Expanded(
+                  child: _buildNavItem(index),
+                );
+              }),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index) {
+    final isSelected = _selectedIndex == index;
+    final navItem = _navItems[index];
+
+    return GestureDetector(
+      onTap: () => _onItemTapped(index),
+      child: Container(
+        height: 80,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              width: isSelected ? 60 : 0,
+              height: isSelected ? 60 : 0,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(isSelected ? 0.15 : 0),
+                borderRadius: BorderRadius.circular(30),
+              ),
+            ),
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.elasticOut,
+              top: isSelected ? 5 : 20,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: isSelected ? 50 : 0,
+                height: isSelected ? 4 : 0,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(2),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.5),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : [],
+                ),
+              ),
+            ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedBuilder(
+                  animation:
+                      _scaleAnimation ?? const AlwaysStoppedAnimation(1.0),
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: isSelected &&
+                              (_animationController?.isAnimating == true)
+                          ? _scaleAnimation?.value ?? 1.0
+                          : 1.0,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        padding: EdgeInsets.all(isSelected ? 8 : 6),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Colors.white.withOpacity(0.2)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Icon(
+                          navItem.icon,
+                          color: Colors.white,
+                          size: isSelected ? 26 : 24,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                if (isSelected) ...[
+                  const SizedBox(height: 2),
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 300),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    child: Text(navItem.label),
+                  ),
+                ],
+              ],
+            ),
+            if (isSelected)
+              Positioned.fill(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 600),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(40),
+                    gradient: RadialGradient(
+                      center: Alignment.center,
+                      radius: 1.0,
+                      colors: [
+                        Colors.white.withOpacity(0.1),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDashboardContent() {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Dashboard Penitip'),
+        backgroundColor: const Color(0xFF7A7C52),
+        foregroundColor: Colors.white,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            FadeInDown(
+              duration: const Duration(milliseconds: 800),
+              child: _buildWelcomeSection(),
+            ),
+            const SizedBox(height: 24),
+            FadeInUp(
+              duration: const Duration(milliseconds: 1000),
+              child: _buildStatsGrid(),
+            ),
+            const SizedBox(height: 24),
+            FadeInLeft(
+              duration: const Duration(milliseconds: 1200),
+              child: _buildSalesTrendChart(),
+            ),
+            const SizedBox(height: 24),
+            FadeInRight(
+              duration: const Duration(milliseconds: 1400),
+              child: _buildCategoryPieChart(),
+            ),
+            const SizedBox(height: 24),
+            FadeInUp(
+              duration: const Duration(milliseconds: 1600),
+              child: _buildMonthlyBarChart(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomeSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF7A7C52), Color(0xFF5A5D3A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Selamat Datang di Dashboard Penitip!',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Kelola barang titipan Anda dan pantau penjualan dengan mudah',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsGrid() {
+    return FutureBuilder(
+      future: Future.delayed(const Duration(seconds: 2)),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 1.2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+            ),
+            itemCount: 4,
+            itemBuilder: (context, index) => _buildStatCardLoading(),
+          );
+        } else {
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 1.2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+            ),
+            itemCount: stats.length,
+            itemBuilder: (context, index) => _buildStatCard(stats[index]),
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildStatCardLoading() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Container(
+                      height: 14,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Container(
+                height: 20,
+                width: 100,
+                color: Colors.white,
+              ),
+              const SizedBox(height: 4),
+              Container(
+                height: 12,
+                width: 80,
+                color: Colors.white,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(Map<String, dynamic> stat) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, stat['color'].withOpacity(0.1)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(stat['icon'], color: stat['color'], size: 28),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      stat['title'],
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      softWrap: true,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  stat['isMonetary'] == true
+                      ? 'Rp ${stat['value'].toStringAsFixed(0)}'
+                      : stat['value'].toString(),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${stat['change'] > 0 ? '+' : ''}${stat['change']}% dari bulan lalu',
+                style: TextStyle(
+                  color: stat['change'] > 0 ? Colors.green : Colors.red,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSalesTrendChart() {
+    return FutureBuilder(
+      future: Future.delayed(const Duration(
+          seconds: 2)), // Sesuaikan dengan delay _buildStatsGrid()
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 16,
+                      width: 200,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      height: 200,
+                      color: Colors.white,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        } else {
+          return Card(
+            elevation: 4,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Trend Penjualan 7 Hari Terakhir',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 200,
+                    child: LineChart(
+                      LineChartData(
+                        gridData: FlGridData(show: true),
+                        titlesData: FlTitlesData(
+                          leftTitles: AxisTitles(
+                            sideTitles:
+                                SideTitles(showTitles: true, reservedSize: 40),
+                          ),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                final index = value.toInt();
+                                if (index >= 0 && index < salesData.length) {
+                                  return Text(
+                                    salesData[index]['date'].substring(5),
+                                    style: const TextStyle(fontSize: 12),
+                                  );
+                                }
+                                return const Text('');
+                              },
+                            ),
+                          ),
+                        ),
+                        borderData: FlBorderData(show: true),
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: salesData
+                                .asMap()
+                                .entries
+                                .map((e) => FlSpot(e.key.toDouble(),
+                                    e.value['penjualan'].toDouble()))
+                                .toList(),
+                            isCurved: true,
+                            color: Colors.blue,
+                            barWidth: 2,
+                          ),
+                          LineChartBarData(
+                            spots: salesData
+                                .asMap()
+                                .entries
+                                .map((e) => FlSpot(e.key.toDouble(),
+                                    e.value['pendapatan'].toDouble() / 100000))
+                                .toList(),
+                            isCurved: true,
+                            color: Colors.green,
+                            barWidth: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildCategoryPieChart() {
+    return FutureBuilder(
+      future: Future.delayed(const Duration(seconds: 2)),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 16,
+                      width: 200,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      height: 200,
+                      color: Colors.white,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        } else {
+          return Card(
+            elevation: 4,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Distribusi Kategori Barang',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 200,
+                    child: PieChart(
+                      PieChartData(
+                        sections: categoryData
+                            .map((e) => PieChartSectionData(
+                                  color: e['color'],
+                                  value: e['value'].toDouble(),
+                                  title: '${e['name']}\n${e['value']}%',
+                                  radius: 50,
+                                  titleStyle: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ))
+                            .toList(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildMonthlyBarChart() {
+    return FutureBuilder(
+      future: Future.delayed(const Duration(seconds: 2)),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 16,
+                      width: 200,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      height: 200,
+                      color: Colors.white,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        } else {
+          return Card(
+            elevation: 4,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Performa Bulanan',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 200,
+                    child: BarChart(
+                      BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        barGroups: monthlyData
+                            .map((e) => BarChartGroupData(
+                                  x: monthlyData.indexOf(e),
+                                  barRods: [
+                                    BarChartRodData(
+                                      toY: e['barang'].toDouble(),
+                                      color: Colors.blue,
+                                    ),
+                                    BarChartRodData(
+                                      toY: e['terjual'].toDouble(),
+                                      color: Colors.green,
+                                    ),
+                                  ],
+                                ))
+                            .toList(),
+                        titlesData: FlTitlesData(
+                          leftTitles: AxisTitles(
+                            sideTitles:
+                                SideTitles(showTitles: true, reservedSize: 40),
+                          ),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                final index = value.toInt();
+                                if (index >= 0 && index < monthlyData.length) {
+                                  return Text(
+                                    monthlyData[index]['month'],
+                                    style: const TextStyle(fontSize: 12),
+                                  );
+                                }
+                                return const Text('');
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      },
+    );
+  }
+}
+
+class NavItem {
+  final IconData icon;
+  final String label;
+
+  NavItem({required this.icon, required this.label});
+}
+
+class DashboardContent extends StatelessWidget {
+  const DashboardContent({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return _PenitipDashboardState()._buildDashboardContent();
+  }
+}
