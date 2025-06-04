@@ -8,10 +8,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:intl/intl.dart';
 
-const String baseUrl = 'http://10.0.2.2:8000/api'; // Perbarui ke 10.0.2.2
+const String baseUrl =
+    'http://10.0.2.2:8000/api'; // Pastikan sesuai dengan server
 
 class CatalogueScreen extends StatefulWidget {
-  final String? selectedCategory; // Tambahkan parameter untuk kategori yang dipilih
+  final String? selectedCategory;
 
   const CatalogueScreen({super.key, this.selectedCategory});
 
@@ -91,8 +92,6 @@ class _CatalogueScreenState extends State<CatalogueScreen>
   @override
   void initState() {
     super.initState();
-
-    // Jika ada kategori yang dipilih dari homepage, gunakan sebagai filter awal
     _selectedCategory = widget.selectedCategory;
 
     _animationController = AnimationController(
@@ -133,78 +132,103 @@ class _CatalogueScreenState extends State<CatalogueScreen>
       return connectivityResult != ConnectivityResult.none;
     } catch (e) {
       print('Connectivity Check Error: $e');
-      return false; // Default ke false jika ada error
+      return false;
     }
   }
 
   Future<void> _fetchProducts() async {
+    const maxRetries = 3;
+    const retryDelay = Duration(seconds: 2);
+    int attempt = 0;
+
     if (!await _checkConnectivity()) {
-      setState(() {
-        _isLoading = false;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Tidak ada koneksi internet'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      });
-      return;
-    }
-
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/products'),
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 200) {
-        var jsonResponse = json.decode(response.body);
-        print('API Response: $jsonResponse'); // Logging respons API
-        if (jsonResponse['success'] && jsonResponse['data'] is List) {
-          setState(() {
-            _products = jsonResponse['data'].map((product) {
-              // Pastikan 'images' adalah list string yang valid
-              var images = product['images'];
-              if (images is List && images.isNotEmpty) {
-                return {
-                  ...product,
-                  'images': images
-                      .whereType<String>()
-                      .map((img) => img.startsWith('http') ? img : '$baseUrl$img')
-                      .toList(),
-                };
-              }
-              return {...product, 'images': ['']}; // Fallback ke string kosong
-            }).toList();
-            _isLoading = false;
-          });
-        } else {
-          throw Exception('Unexpected response format: ${response.body}');
-        }
-      } else {
-        throw Exception('Failed to load products: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Fetch Products Error: $e');
       setState(() {
         _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memuat produk: $e')),
+        const SnackBar(
+          content: Text('Tidak ada koneksi internet'),
+          backgroundColor: Colors.red,
+        ),
       );
+      return;
+    }
+
+    while (attempt < maxRetries) {
+      try {
+        final response = await http.get(
+          Uri.parse('$baseUrl/products'),
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        ).timeout(const Duration(seconds: 30));
+
+        if (response.statusCode == 200) {
+          var jsonResponse = json.decode(response.body);
+          print('API Response: $jsonResponse'); // Log respons API
+          if (jsonResponse['success'] && jsonResponse['data'] is List) {
+            setState(() {
+              _products = jsonResponse['data'].map((product) {
+                // Menangani baik field 'images' (list) maupun 'image' (string)
+                List<String> images = [];
+                if (product['images'] is List && product['images'].isNotEmpty) {
+                  images = product['images']
+                      .whereType<String>()
+                      .map<String>((img) =>
+                          img.startsWith('http') ? img : '$baseUrl$img')
+                      .toList();
+                } else if (product['image'] is String &&
+                    product['image'].isNotEmpty &&
+                    product['image'] != '/api/placeholder/60/60') {
+                  images = [
+                    product['image'].startsWith('http')
+                        ? product['image']
+                        : '$baseUrl${product['image']}'
+                  ];
+                } else {
+                  images = ['']; // Fallback jika tidak ada gambar valid
+                }
+                print(
+                    'Product Images for ${product['name']}: $images'); // Log URL gambar
+                return {
+                  ...product,
+                  'images': images,
+                };
+              }).toList();
+              _isLoading = false;
+            });
+            return;
+          } else {
+            throw Exception('Unexpected response format: ${response.body}');
+          }
+        } else {
+          throw Exception('Failed to load products: ${response.statusCode}');
+        }
+      } catch (e) {
+        print('Fetch Products Error: $e');
+        attempt++;
+        if (attempt == maxRetries) {
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal memuat produk: $e')),
+          );
+          return;
+        }
+        await Future.delayed(retryDelay);
+      }
     }
   }
 
-  // Filter produk berdasarkan kategori yang dipilih
   List<dynamic> get _filteredProducts {
     if (_selectedCategory == null || _selectedCategory!.isEmpty) {
       return _products;
     }
     return _products.where((product) {
-      String productCategory = product['category']?.toString().toLowerCase() ?? '';
+      String productCategory =
+          product['category']?.toString().toLowerCase() ?? '';
       String selectedCategoryLower = _selectedCategory!.toLowerCase();
       return productCategory == selectedCategoryLower;
     }).toList();
@@ -219,7 +243,7 @@ class _CatalogueScreenState extends State<CatalogueScreen>
 
   @override
   Widget build(BuildContext context) {
-    final oliveGreen = const Color(0xFF7A7C52);
+    const oliveGreen = Color(0xFF7A7C52);
 
     return Container(
       color: Colors.white,
@@ -261,11 +285,6 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                 blurRadius: 15,
                                 offset: const Offset(0, 5),
                               ),
-                              BoxShadow(
-                                color: oliveGreen.withOpacity(0.2),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
-                              ),
                             ],
                           ),
                           child: Stack(
@@ -298,33 +317,47 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                 child: Padding(
                                   padding: const EdgeInsets.all(18.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Row(
                                         children: [
                                           Expanded(
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 FadeInDown(
-                                                  duration: const Duration(milliseconds: 800),
+                                                  duration: const Duration(
+                                                      milliseconds: 800),
                                                   child: LayoutBuilder(
-                                                    builder: (context, constraints) {
-                                                      double availableWidth = constraints.maxWidth;
-                                                      String displayText = _getDisplayText(availableWidth, _isScrolled);
-                                                      double fontSize = _getFontSize(_isScrolled, availableWidth);
+                                                    builder:
+                                                        (context, constraints) {
+                                                      double availableWidth =
+                                                          constraints.maxWidth;
+                                                      String displayText =
+                                                          _getDisplayText(
+                                                              availableWidth,
+                                                              _isScrolled);
+                                                      double fontSize =
+                                                          _getFontSize(
+                                                              _isScrolled,
+                                                              availableWidth);
 
                                                       return Text(
                                                         displayText,
                                                         style: TextStyle(
                                                           color: Colors.white,
                                                           fontSize: fontSize,
-                                                          fontWeight: FontWeight.bold,
+                                                          fontWeight:
+                                                              FontWeight.bold,
                                                           height: 1.2,
                                                         ),
-                                                        maxLines: _isScrolled ? 1 : 2,
-                                                        overflow: TextOverflow.ellipsis,
+                                                        maxLines:
+                                                            _isScrolled ? 1 : 2,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
                                                         softWrap: true,
                                                       );
                                                     },
@@ -333,16 +366,18 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                                 if (!_isScrolled) ...[
                                                   const SizedBox(height: 6),
                                                   FadeInDown(
-                                                    duration: const Duration(milliseconds: 900),
-                                                    child: Text(
+                                                    duration: const Duration(
+                                                        milliseconds: 900),
+                                                    child: const Text(
                                                       'Temukan produk preloved berkualitas dengan harga terjangkau',
-                                                      style: const TextStyle(
+                                                      style: TextStyle(
                                                         color: Colors.white70,
                                                         fontSize: 13,
                                                         height: 1.3,
                                                       ),
                                                       maxLines: 2,
-                                                      overflow: TextOverflow.ellipsis,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                 ],
@@ -354,28 +389,34 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                       if (!_isScrolled) ...[
                                         const SizedBox(height: 16),
                                         FadeInUp(
-                                          duration: const Duration(milliseconds: 1000),
+                                          duration: const Duration(
+                                              milliseconds: 1000),
                                           child: Container(
                                             height: 48,
                                             decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.95),
-                                              borderRadius: BorderRadius.circular(25),
+                                              color: Colors.white
+                                                  .withOpacity(0.95),
+                                              borderRadius:
+                                                  BorderRadius.circular(25),
                                               boxShadow: [
                                                 BoxShadow(
-                                                  color: Colors.black.withOpacity(0.1),
+                                                  color: Colors.black
+                                                      .withOpacity(0.1),
                                                   blurRadius: 10,
                                                   offset: const Offset(0, 3),
                                                 ),
                                               ],
                                               border: Border.all(
-                                                color: Colors.white.withOpacity(0.3),
+                                                color: Colors.white
+                                                    .withOpacity(0.3),
                                                 width: 1,
                                               ),
                                             ),
                                             child: Row(
                                               children: [
                                                 const Padding(
-                                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                                  padding: EdgeInsets.symmetric(
+                                                      horizontal: 16),
                                                   child: Icon(
                                                     Icons.search,
                                                     color: Colors.grey,
@@ -385,13 +426,16 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                                 const Expanded(
                                                   child: TextField(
                                                     decoration: InputDecoration(
-                                                      hintText: 'Cari produk impianmu...',
+                                                      hintText:
+                                                          'Cari produk impianmu...',
                                                       hintStyle: TextStyle(
                                                         color: Colors.grey,
                                                         fontSize: 14,
                                                       ),
                                                       border: InputBorder.none,
-                                                      contentPadding: EdgeInsets.symmetric(vertical: 14),
+                                                      contentPadding:
+                                                          EdgeInsets.symmetric(
+                                                              vertical: 14),
                                                     ),
                                                   ),
                                                 ),
@@ -455,7 +499,8 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                           ? GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
                                 childAspectRatio: 0.75,
                                 crossAxisSpacing: 16,
@@ -479,20 +524,23 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                       ],
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Container(
-                                          height: 70,
+                                          height: 100,
                                           width: double.infinity,
                                           decoration: const BoxDecoration(
                                             color: Colors.grey,
-                                            borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                                            borderRadius: BorderRadius.vertical(
+                                                top: Radius.circular(12)),
                                           ),
                                         ),
                                         const Padding(
                                           padding: EdgeInsets.all(8.0),
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               SizedBox(
                                                 height: 16,
@@ -500,7 +548,9 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                                 child: DecoratedBox(
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey,
-                                                    borderRadius: BorderRadius.all(Radius.circular(4)),
+                                                    borderRadius:
+                                                        BorderRadius.all(
+                                                            Radius.circular(4)),
                                                   ),
                                                 ),
                                               ),
@@ -511,7 +561,9 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                                 child: DecoratedBox(
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey,
-                                                    borderRadius: BorderRadius.all(Radius.circular(4)),
+                                                    borderRadius:
+                                                        BorderRadius.all(
+                                                            Radius.circular(4)),
                                                   ),
                                                 ),
                                               ),
@@ -522,7 +574,9 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                                 child: DecoratedBox(
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey,
-                                                    borderRadius: BorderRadius.all(Radius.circular(4)),
+                                                    borderRadius:
+                                                        BorderRadius.all(
+                                                            Radius.circular(4)),
                                                   ),
                                                 ),
                                               ),
@@ -535,36 +589,49 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                 );
                               },
                             )
-                          : GridView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                childAspectRatio: 0.75,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
-                              ),
-                              itemCount: _filteredProducts.length,
-                              itemBuilder: (context, index) {
-                                final product = _filteredProducts[index];
-                                print('Rendering Product $index: $product'); // Logging produk
-                                return FadeInUp(
-                                  duration: Duration(milliseconds: 500 + (index * 100)),
-                                  child: ProductCard(
-                                    id: product['id'].toString(),
-                                    title: product['name'] ?? 'Produk Tanpa Nama',
-                                    subcategory: product['subcategory'] ?? '',
-                                    price: 'Rp ${product['price']?.toStringAsFixed(0) ?? '0'}',
-                                    volume: product['volume'] ?? 'N/A',
-                                    condition: product['condition'] ?? 'N/A',
-                                    weight: product['weight']?.toString() ?? 'N/A',
-                                    warranty: product['warranty_date'] ?? '–',
-                                    description: product['description'] ?? '',
-                                    images: product['images'] as List<String>,
+                          : _filteredProducts.isEmpty
+                              ? const Center(
+                                  child: Text('Tidak ada produk tersedia'))
+                              : GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    childAspectRatio: 0.75,
+                                    crossAxisSpacing: 16,
+                                    mainAxisSpacing: 16,
                                   ),
-                                );
-                              },
-                            ),
+                                  itemCount: _filteredProducts.length,
+                                  itemBuilder: (context, index) {
+                                    final product = _filteredProducts[index];
+                                    print('Rendering Product $index: $product');
+                                    return FadeInUp(
+                                      duration: Duration(
+                                          milliseconds: 500 + (index * 100)),
+                                      child: ProductCard(
+                                        id: product['id'].toString(),
+                                        title: product['name'] ??
+                                            'Produk Tanpa Nama',
+                                        subcategory:
+                                            product['subcategory'] ?? '',
+                                        price:
+                                            'Rp ${product['price']?.toStringAsFixed(0) ?? '0'}',
+                                        volume: product['volume'] ?? 'N/A',
+                                        condition:
+                                            product['condition'] ?? 'N/A',
+                                        weight: product['weight']?.toString() ??
+                                            'N/A',
+                                        warranty:
+                                            product['warranty_date'] ?? '–',
+                                        description:
+                                            product['description'] ?? '',
+                                        images: List<String>.from(
+                                            product['images'] ?? ['']),
+                                      ),
+                                    );
+                                  },
+                                ),
                       const SizedBox(height: 80),
                     ],
                   ),
@@ -617,8 +684,6 @@ class _CatalogueScreenState extends State<CatalogueScreen>
     } else {
       if (availableWidth < 280) {
         return 'Jelajahi Barang\nBekas Terbaik';
-      } else if (availableWidth < 350) {
-        return 'Jelajahi Barang Bekas Terbaik';
       } else {
         return 'Jelajahi Barang Bekas Terbaik';
       }
@@ -631,8 +696,6 @@ class _CatalogueScreenState extends State<CatalogueScreen>
     } else {
       if (availableWidth < 280) {
         return 18;
-      } else if (availableWidth < 350) {
-        return 19;
       } else {
         return 20;
       }
@@ -666,7 +729,8 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                 title: const Text('Sort by Price: Low to High'),
                 onTap: () {
                   setState(() {
-                    _products.sort((a, b) => (a['price'] ?? 0).compareTo(b['price'] ?? 0));
+                    _products.sort(
+                        (a, b) => (a['price'] ?? 0).compareTo(b['price'] ?? 0));
                   });
                   Navigator.pop(context);
                 },
@@ -676,7 +740,8 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                 title: const Text('Sort by Price: High to Low'),
                 onTap: () {
                   setState(() {
-                    _products.sort((a, b) => (b['price'] ?? 0).compareTo(a['price'] ?? 0));
+                    _products.sort(
+                        (a, b) => (b['price'] ?? 0).compareTo(a['price'] ?? 0));
                   });
                   Navigator.pop(context);
                 },
@@ -726,7 +791,8 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                   itemBuilder: (context, index) {
                     final category = categories[index];
                     return ExpansionTile(
-                      leading: Icon(category['icon'], color: const Color(0xFF1A3C34)),
+                      leading: Icon(category['icon'],
+                          color: const Color(0xFF1A3C34)),
                       title: Text(category['name']),
                       children: (category['subcategories'] as List<String>)
                           .map((subcategory) {
@@ -799,6 +865,7 @@ class _ProductCardState extends State<ProductCard> {
     final number = int.tryParse(price.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
     return 'Rp ${NumberFormat("#,##0", "id_ID").format(number)}';
   }
+
   double _scale = 1.0;
 
   void _onTapDown(TapDownDetails details) {
@@ -827,6 +894,7 @@ class _ProductCardState extends State<ProductCard> {
 
   @override
   Widget build(BuildContext context) {
+    print('ProductCard Image URLs: ${widget.images}'); // Log URL gambar
     return GestureDetector(
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
@@ -836,14 +904,16 @@ class _ProductCardState extends State<ProductCard> {
         duration: const Duration(milliseconds: 200),
         child: Card(
           elevation: 10,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Hero(
                 tag: 'productImage${widget.id}_0',
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
                   child: widget.images.isNotEmpty &&
                           widget.images[0].isNotEmpty &&
                           widget.images[0].startsWith('http')
@@ -852,9 +922,11 @@ class _ProductCardState extends State<ProductCard> {
                           height: 100,
                           width: double.infinity,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                          placeholder: (context, url) =>
+                              const Center(child: CircularProgressIndicator()),
                           errorWidget: (context, url, error) {
-                            print('Image Load Error for $url: $error');
+                            print(
+                                'Image Load Error for ${widget.images[0]}: $error');
                             return Image.asset(
                               'assets/images/placeholder.png',
                               height: 100,
