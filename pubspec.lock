@@ -241,7 +241,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
-
   fl_chart:
     dependency: "direct main"
     description:
@@ -250,7 +249,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.68.0"
-
   flutter:
     dependency: "direct main"
     description: flutter
