@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'riwayat_pesanan.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart';
 
 class TransactionDetailScreen extends StatelessWidget {
   final Transaction transaction;
@@ -30,6 +33,17 @@ class TransactionDetailScreen extends StatelessWidget {
         return Icons.payment;
       default:
         return Icons.info;
+    }
+  }
+
+  // Fungsi untuk memformat tanggal menjadi "tanggal bulan tahun"
+  String _formatDate(String date) {
+    try {
+      final parsedDate = DateTime.parse(date);
+      final formatter = DateFormat('d MMMM y', 'id_ID');
+      return formatter.format(parsedDate);
+    } catch (e) {
+      return date.split(' ')[0]; // Fallback jika parsing gagal
     }
   }
 
@@ -220,12 +234,12 @@ class TransactionDetailScreen extends StatelessWidget {
                               _buildDetailRow(
                                   'Nama Pembeli', transaction.buyerName),
                               _buildDetailRow('Email', transaction.buyerEmail),
-                              _buildDetailRow(
+                              _buildAddressRow(
                                   'Alamat', transaction.buyerAddress),
                               _buildDetailRow('Metode Delivery',
                                   transaction.deliveryMethod),
                               _buildDetailRow(
-                                  'Tanggal', transaction.date.split(' ')[0]),
+                                  'Tanggal', _formatDate(transaction.date)),
                             ],
                           ),
                         ),
@@ -291,29 +305,52 @@ class TransactionDetailScreen extends StatelessWidget {
                                     padding: const EdgeInsets.only(bottom: 12),
                                     child: Row(
                                       children: [
-                                        ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          child: Image.network(
-                                            item.imagePath,
-                                            height: 70,
-                                            width: 70,
-                                            fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (context, error, stackTrace) =>
-                                                    Container(
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black
+                                                    .withOpacity(0.1),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            child: CachedNetworkImage(
+                                              imageUrl: item.imagePath,
                                               height: 70,
                                               width: 70,
-                                              decoration: BoxDecoration(
-                                                color: Colors.grey[200],
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
+                                              fit: BoxFit.cover,
+                                              placeholder: (context, url) =>
+                                                  Shimmer.fromColors(
+                                                baseColor: Colors.grey[300]!,
+                                                highlightColor:
+                                                    Colors.grey[100]!,
+                                                child: Container(
+                                                  color: Colors.grey,
+                                                ),
                                               ),
-                                              child: const Icon(
-                                                Icons
-                                                    .image_not_supported_outlined,
-                                                color: Colors.grey,
-                                                size: 32,
+                                              errorWidget:
+                                                  (context, url, error) =>
+                                                      Container(
+                                                height: 70,
+                                                width: 70,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.grey[200],
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: const Icon(
+                                                  Icons
+                                                      .image_not_supported_outlined,
+                                                  color: Colors.grey,
+                                                  size: 32,
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -456,6 +493,40 @@ class TransactionDetailScreen extends StatelessWidget {
               color: valueColor ?? const Color(0xFF1A3C34),
             ),
             textAlign: TextAlign.right,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddressRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Flexible(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A3C34),
+              ),
+              textAlign: TextAlign.right,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

@@ -9,7 +9,7 @@ import 'package:p3l_mobile/screens/otentikasi/login.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:intl/intl.dart';
 
-const String baseUrl = 'http://10.0.2.2:8000/api'; // Perbarui ke 10.0.2.2
+const String baseUrl = 'http://10.0.2.2:8000/api';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -29,10 +29,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String? _errorMessage;
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final TextEditingController _discussionController = TextEditingController();
   final AuthService _authService = AuthService();
   bool _isLoggedIn = false;
   String? _userId;
+  List<bool> _imageLoaded = []; // Track loading state of each image
 
   String _formatRupiah(num price) {
     return 'Rp ${NumberFormat("#,##0", "id_ID").format(price)}';
@@ -71,7 +71,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     try {
       if (token != null) {
         final response = await http.get(
-          Uri.parse('$baseUrl/profile'),
+          Uri.parse('$baseUrl/auth/profile'),
           headers: {
             'Accept': 'application/json',
             'Authorization': 'Bearer $token',
@@ -108,7 +108,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/products/${widget.productId}'),
+        Uri.parse('$baseUrl/products/mobile/${widget.productId}'),
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -118,8 +118,29 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
         if (jsonResponse['success'] && jsonResponse['data'] is Map) {
+          var productData = jsonResponse['data'];
+          if (productData['photos'] != null &&
+              productData['photos'].isNotEmpty) {
+            productData['photos'] = productData['photos'].map((photo) {
+              photo['url'] = photo['id'] != null
+                  ? '$baseUrl/photos/${photo['id']}/optimized'
+                  : '/api/placeholder/60/60';
+              return photo;
+            }).toList();
+            setState(() {
+              _imageLoaded =
+                  List<bool>.filled(productData['photos'].length, false);
+            });
+          } else {
+            productData['photos'] = [
+              {'url': '/api/placeholder/60/60', 'is_utama': true}
+            ];
+            setState(() {
+              _imageLoaded = [true]; // Placeholder is considered loaded
+            });
+          }
           setState(() {
-            _product = jsonResponse['data'];
+            _product = productData;
             _isLoading = false;
             _errorMessage = null;
           });
@@ -170,17 +191,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
         setState(() {
-          // Petakan data dari format index() ke format yang diharapkan UI
           _discussions = (jsonResponse as List).map((discussion) {
             return {
-              'NAMA_PELANGGAN': discussion['pembeli']?['NAMA'] ?? 'Pengguna Tidak Dikenal',
+              'NAMA_PELANGGAN':
+                  discussion['pembeli']?['NAMA'] ?? 'Pengguna Tidak Dikenal',
               'PESAN_DISKUSI': discussion['PESAN'] ?? 'Pesan tidak tersedia',
               'TANGGAL_DISKUSI': discussion['TANGGAL_DIBUAT'],
-              'STATUS_BALASAN': (discussion['balasan'] != null && discussion['balasan'].isNotEmpty) ? 'Sudah Dibalas' : 'Belum Dibalas',
-              'BALASAN': (discussion['balasan'] != null && discussion['balasan'].isNotEmpty) ? discussion['balasan'][0]['PESAN'] : null,
-              'TANGGAL_BALASAN': (discussion['balasan'] != null && discussion['balasan'].isNotEmpty) ? discussion['balasan'][0]['TANGGAL_DIBUAT'] : null,
-              'NAMA_CS': (discussion['balasan'] != null && discussion['balasan'].isNotEmpty)
-                  ? (discussion['balasan'][0]['pegawai'] != null && discussion['balasan'][0]['pegawai']['NAMA'] != null
+              'STATUS_BALASAN': (discussion['balasan'] != null &&
+                      discussion['balasan'].isNotEmpty)
+                  ? 'Sudah Dibalas'
+                  : 'Belum Dibalas',
+              'BALASAN': (discussion['balasan'] != null &&
+                      discussion['balasan'].isNotEmpty)
+                  ? discussion['balasan'][0]['PESAN']
+                  : null,
+              'TANGGAL_BALASAN': (discussion['balasan'] != null &&
+                      discussion['balasan'].isNotEmpty)
+                  ? discussion['balasan'][0]['TANGGAL_DIBUAT']
+                  : null,
+              'NAMA_CS': (discussion['balasan'] != null &&
+                      discussion['balasan'].isNotEmpty)
+                  ? (discussion['balasan'][0]['pegawai'] != null &&
+                          discussion['balasan'][0]['pegawai']['NAMA'] != null
                       ? discussion['balasan'][0]['pegawai']['NAMA']
                       : 'CS Tidak Dikenal')
                   : null,
@@ -227,7 +259,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         var jsonResponse = json.decode(response.body);
         if (jsonResponse['success'] && jsonResponse['data'] is List) {
           setState(() {
-            _otherProducts = jsonResponse['data'].take(5).toList();
+            _otherProducts = jsonResponse['data'].take(5).map((product) {
+              product['image'] = product['image'] != '/api/placeholder/60/60'
+                  ? '$baseUrl/products/${product['id']}/thumbnail'
+                  : '/api/placeholder/60/60';
+              return product;
+            }).toList();
           });
         }
       }
@@ -238,96 +275,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
-  Future<void> _submitDiscussion() async {
-    if (!_isLoggedIn) {
-      bool? shouldLogin = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Login Diperlukan'),
-          content: const Text('Anda harus login untuk mengirim pesan diskusi.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Batal'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Login'),
-            ),
-          ],
-        ),
-      );
-
-      if (shouldLogin == true) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
-      }
-      return;
-    }
-
-    if (_discussionController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pesan tidak boleh kosong'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (!await _checkConnectivity()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tidak ada koneksi internet'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/diskusi'),
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: json.encode({
-          'KODE_PRODUK': widget.productId,
-          'PESAN': _discussionController.text,
-          'TANGGAL_DIBUAT': DateTime.now().toIso8601String(),
-          'ID_PEMBELI': _userId,
-        }),
-      ).timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 201) {
-        _discussionController.clear();
-        _fetchDiscussions();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Pesan diskusi berhasil dikirim'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        throw Exception('Failed to submit discussion: ${response.statusCode}');
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal mengirim pesan: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
   @override
   void dispose() {
     _pageController.dispose();
-    _discussionController.dispose();
     super.dispose();
   }
 
@@ -400,6 +350,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           expandedHeight: 350,
           backgroundColor: Colors.white,
           elevation: 0,
+          flexibleSpace: FlexibleSpaceBar(
+            background: Shimmer.fromColors(
+              baseColor: Colors.grey[300]!,
+              highlightColor: Colors.grey[100]!,
+              child: Container(
+                color: Colors.grey,
+              ),
+            ),
+          ),
         ),
         SliverToBoxAdapter(
           child: Container(
@@ -478,13 +437,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Error: $_errorMessage', style: const TextStyle(color: Colors.red)),
+            Text('Error: $_errorMessage',
+                style: const TextStyle(color: Colors.red)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
                 setState(() {
                   _isLoading = true;
                   _errorMessage = null;
+                  _imageLoaded = [];
                 });
                 _fetchProductDetails();
                 _fetchDiscussions();
@@ -497,10 +458,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       );
     }
 
-    final images = _product!['photos']?.map((photo) => photo['url'] as String).toList() ?? ['/api/placeholder/60/60'];
+    final images =
+        _product!['photos']?.map((photo) => photo['url'] as String).toList() ??
+            ['/api/placeholder/60/60'];
     final warranty = _product!['warranty_date'] != null
         ? DateTime.parse(_product!['warranty_date']).toString().split(' ')[0]
         : 'Tidak Ada';
+    final penitipName = _product!['penitip_name'] ?? 'Penitip Tidak Dikenal';
+    final penitipRating = _product!['penitip_rating']?.toDouble() ?? 0.0;
+    final penitipBadge = _product!['penitip_badge'] ?? 0;
+    final penitipSalesCount = _product!['penitip_sales_count'] ?? 0;
 
     return CustomScrollView(
       slivers: [
@@ -522,16 +489,60 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     });
                   },
                   itemBuilder: (context, index) {
+                    if (images[index] == '/api/placeholder/60/60') {
+                      return Hero(
+                        tag: 'productImage${_product!['id']}_$index',
+                        child: Image.asset(
+                          'assets/images/placeholder.png',
+                          fit: BoxFit.cover,
+                        ),
+                      );
+                    }
                     return Hero(
                       tag: 'productImage${_product!['id']}_$index',
                       child: CachedNetworkImage(
                         imageUrl: images[index],
                         fit: BoxFit.cover,
-                        placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                        errorWidget: (context, url, error) => Image.asset(
-                          'assets/images/placeholder.png',
-                          fit: BoxFit.cover,
+                        placeholder: (context, url) => Shimmer.fromColors(
+                          baseColor: Colors.grey[300]!,
+                          highlightColor: Colors.grey[100]!,
+                          child: Container(
+                            color: Colors.grey,
+                          ),
                         ),
+                        imageBuilder: (context, imageProvider) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (!_imageLoaded[index]) {
+                              setState(() {
+                                _imageLoaded[index] = true;
+                                print('Image loaded: ${images[index]}');
+                              });
+                            }
+                          });
+                          return Container(
+                            decoration: BoxDecoration(
+                              image: DecorationImage(
+                                image: imageProvider,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          );
+                        },
+                        errorWidget: (context, url, error) {
+                          print('Image load error: $error, URL: $url');
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (!_imageLoaded[index]) {
+                              setState(() {
+                                _imageLoaded[index] =
+                                    true; // Prevent infinite shimmer
+                              });
+                            }
+                          });
+                          return Image.asset(
+                            'assets/images/placeholder.png',
+                            fit: BoxFit.cover,
+                          );
+                        },
                       ),
                     );
                   },
@@ -541,7 +552,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   left: 0,
                   right: 0,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(
@@ -579,7 +591,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 color: const Color(0xFF7A7C52).withOpacity(0.7),
               ),
               child: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                    color: Colors.white),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -595,9 +608,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 children: [
                   FadeInDown(
                     duration: const Duration(milliseconds: 600),
-                    child: 
-                    Text(
-                      _formatRupiah(_product!['price'] ?? 0), // Ambil dari _product!
+                    child: Text(
+                      _formatRupiah(_product!['price'] ?? 0),
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -698,6 +710,142 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           Row(
                             children: [
                               const Icon(
+                                Icons.store,
+                                color: Color(0xFF7A7C52),
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Informasi Penitip',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      penitipName,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    if (penitipBadge == 1) ...[
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            colors: [
+                                              Color(0xFFFFD700),
+                                              Color(0xFFFFB700)
+                                            ],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color:
+                                                  Colors.black.withOpacity(0.2),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Text(
+                                          'Top Seller',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.shopping_bag,
+                                color: Colors.grey[700],
+                                size: 20,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '$penitipSalesCount Barang Terjual',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[700],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.star,
+                                color: Colors.yellow[700],
+                                size: 20,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                penitipRating > 0
+                                    ? penitipRating.toStringAsFixed(1)
+                                    : 'Belum ada rating',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[700],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  FadeInUp(
+                    duration: const Duration(milliseconds: 900),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
                                 Icons.description,
                                 color: Color(0xFF7A7C52),
                                 size: 20,
@@ -768,27 +916,36 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           _isLoadingDiscussions
                               ? const Center(child: CircularProgressIndicator())
                               : _discussions.isEmpty
-                                  ? const Text('Belum ada diskusi untuk produk ini.')
+                                  ? const Text(
+                                      'Belum ada diskusi untuk produk ini.')
                                   : Column(
                                       children: _discussions.map((discussion) {
                                         return Padding(
-                                          padding: const EdgeInsets.only(bottom: 16.0),
+                                          padding: const EdgeInsets.only(
+                                              bottom: 16.0),
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Row(
                                                 children: [
                                                   Text(
-                                                    discussion['NAMA_PELANGGAN'] ?? 'Pengguna Tidak Dikenal',
+                                                    discussion[
+                                                            'NAMA_PELANGGAN'] ??
+                                                        'Pengguna Tidak Dikenal',
                                                     style: const TextStyle(
-                                                      fontWeight: FontWeight.bold,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                       fontSize: 14,
                                                     ),
                                                   ),
                                                   const SizedBox(width: 8),
                                                   Text(
-                                                    discussion['TANGGAL_DISKUSI'] != null
-                                                        ? discussion['TANGGAL_DISKUSI'].split(' ')[0]
+                                                    discussion['TANGGAL_DISKUSI'] !=
+                                                            null
+                                                        ? discussion[
+                                                                'TANGGAL_DISKUSI']
+                                                            .split(' ')[0]
                                                         : 'Tanggal Tidak Tersedia',
                                                     style: TextStyle(
                                                       color: Colors.grey[600],
@@ -798,42 +955,65 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                 ],
                                               ),
                                               const SizedBox(height: 4),
-                                              Text(discussion['PESAN_DISKUSI'] ?? 'Pesan tidak tersedia'),
-                                              if (discussion['STATUS_BALASAN'] == 'Sudah Dibalas' &&
-                                                  discussion['BALASAN'] != null) ...[
+                                              Text(
+                                                  discussion['PESAN_DISKUSI'] ??
+                                                      'Pesan tidak tersedia'),
+                                              if (discussion[
+                                                          'STATUS_BALASAN'] ==
+                                                      'Sudah Dibalas' &&
+                                                  discussion['BALASAN'] !=
+                                                      null) ...[
                                                 const SizedBox(height: 8),
                                                 Container(
-                                                  padding: const EdgeInsets.all(8),
+                                                  padding:
+                                                      const EdgeInsets.all(8),
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey[100],
-                                                    borderRadius: BorderRadius.circular(8),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
                                                   ),
                                                   child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
                                                     children: [
                                                       Row(
                                                         children: [
                                                           Text(
-                                                            discussion['NAMA_CS'] ?? 'CS Tidak Dikenal',
-                                                            style: const TextStyle(
-                                                              fontWeight: FontWeight.bold,
+                                                            discussion[
+                                                                    'NAMA_CS'] ??
+                                                                'CS Tidak Dikenal',
+                                                            style:
+                                                                const TextStyle(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
                                                               fontSize: 14,
                                                             ),
                                                           ),
-                                                          const SizedBox(width: 8),
+                                                          const SizedBox(
+                                                              width: 8),
                                                           Text(
-                                                            discussion['TANGGAL_BALASAN'] != null
-                                                                ? discussion['TANGGAL_BALASAN'].split(' ')[0]
+                                                            discussion['TANGGAL_BALASAN'] !=
+                                                                    null
+                                                                ? discussion[
+                                                                        'TANGGAL_BALASAN']
+                                                                    .split(
+                                                                        ' ')[0]
                                                                 : 'Tanggal Tidak Tersedia',
                                                             style: TextStyle(
-                                                              color: Colors.grey[600],
+                                                              color: Colors
+                                                                  .grey[600],
                                                               fontSize: 12,
                                                             ),
                                                           ),
                                                         ],
                                                       ),
                                                       const SizedBox(height: 4),
-                                                      Text(discussion['BALASAN'] ?? 'Balasan tidak tersedia'),
+                                                      Text(discussion[
+                                                              'BALASAN'] ??
+                                                          'Balasan tidak tersedia'),
                                                     ],
                                                   ),
                                                 ),
@@ -844,28 +1024,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                         );
                                       }).toList(),
                                     ),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _discussionController,
-                            decoration: InputDecoration(
-                              hintText: 'Tulis pertanyaan atau komentar...',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              suffixIcon: IconButton(
-                                icon: const Icon(Icons.send, color: Color(0xFF7A7C52)),
-                                onPressed: _submitDiscussion,
-                              ),
-                            ),
-                            maxLines: 3,
-                          ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 32),
                   FadeInUp(
-                    duration: const Duration(milliseconds: 1000),
+                    duration: const Duration(milliseconds: 1100),
                     child: Row(
                       children: [
                         const Icon(
@@ -889,14 +1054,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   SizedBox(
                     height: 200,
                     child: _otherProducts.isEmpty
-                        ? const Center(child: Text('Tidak ada produk lain tersedia'))
+                        ? const Center(
+                            child: Text('Tidak ada produk lain tersedia'))
                         : ListView.builder(
                             scrollDirection: Axis.horizontal,
                             itemCount: _otherProducts.length,
                             itemBuilder: (context, index) {
                               return FadeInRight(
                                 delay: Duration(milliseconds: index * 100),
-                                child: _ModernProductCard(product: _otherProducts[index]),
+                                child:
+                                    _ModernProductCard(_otherProducts[index]),
                               );
                             },
                           ),
@@ -980,7 +1147,8 @@ class _ModernDetailChip extends StatelessWidget {
 class _ModernProductCard extends StatelessWidget {
   final Map<String, dynamic> product;
 
-  const _ModernProductCard({required this.product});
+  const _ModernProductCard(this.product);
+
   String _formatRupiah(num price) {
     return 'Rp ${NumberFormat("#,##0", "id_ID").format(price)}';
   }
@@ -995,7 +1163,8 @@ class _ModernProductCard extends StatelessWidget {
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
                 ProductDetailScreen(productId: product['id'].toString()),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
               return SlideTransition(
                 position: Tween<Offset>(
                   begin: const Offset(1.0, 0.0),
@@ -1026,17 +1195,22 @@ class _ModernProductCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
               child: CachedNetworkImage(
                 imageUrl: imageUrl,
                 height: 110,
                 width: 160,
                 fit: BoxFit.cover,
-                placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                errorWidget: (context, url, error) => Image.asset(
-                  'assets/images/placeholder.png',
-                  fit: BoxFit.cover,
-                ),
+                placeholder: (context, url) =>
+                    const Center(child: CircularProgressIndicator()),
+                errorWidget: (context, url, error) {
+                  print('Image load error: $error, URL: $url');
+                  return Image.asset(
+                    'assets/images/placeholder.png',
+                    fit: BoxFit.cover,
+                  );
+                },
               ),
             ),
             Padding(
@@ -1056,7 +1230,7 @@ class _ModernProductCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _formatRupiah(product['price']),
+                    _formatRupiah(product['price'] ?? 0),
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,

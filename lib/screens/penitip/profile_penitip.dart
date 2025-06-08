@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/auth_service.dart';
 import 'ConsignedItemsScreen.dart';
+import 'package:p3l_mobile/screens/homepage.dart';
 import '../merchandise.dart';
 
 class ProfilePenitipScreen extends StatefulWidget {
@@ -71,11 +72,13 @@ class _ProfilePenitipScreenState extends State<ProfilePenitipScreen>
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
       if (token == null) {
-        setState(() {
-          _errorMessage = 'No token found. Please login again.';
-          _isLoading = false;
-        });
-        Navigator.pushReplacementNamed(context, '/login');
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'No token found. Please login again.';
+            _isLoading = false;
+          });
+          Navigator.pushReplacementNamed(context, '/login');
+        }
         return;
       }
 
@@ -90,43 +93,53 @@ class _ProfilePenitipScreenState extends State<ProfilePenitipScreen>
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['user_type'] == 'penitip') {
-          setState(() {
-            userProfile = {
-              'nama': data['user']['nama'],
-              'email': data['user']['email'],
-              'telepon': data['user']['telepon'] ?? '+62 812-3456-7890',
-              'alamat': data['user']['alamat'] ?? 'Alamat tidak tersedia',
-              'saldo': data['user']['saldo'] ?? 0,
-              'poin': data['user']['poin'] ?? 0,
-              'badge': data['user']['badge'] == 1 ? 'Top Seller' : null,
-            };
-            _isLoading = false;
-          });
+          if (mounted) {
+            setState(() {
+              userProfile = {
+                'nama': data['user']['nama'],
+                'email': data['user']['email'],
+                'telepon': data['user']['telepon'] ?? '+62 812-3456-7890',
+                'alamat': data['user']['alamat'] ?? 'Alamat tidak tersedia',
+                'saldo': data['user']['saldo'] ?? 0,
+                'poin': data['user']['poin'] ?? 0,
+                'badge': data['user']['badge'] == 1 ? 'Top Seller' : null,
+              };
+              _isLoading = false;
+            });
+          }
         } else {
-          setState(() {
-            _errorMessage = 'Profile only available for penitip';
-            _isLoading = false;
-          });
+          if (mounted) {
+            setState(() {
+              _errorMessage = 'Profile only available for penitip';
+              _isLoading = false;
+            });
+          }
         }
       } else if (response.statusCode == 401) {
         await prefs.remove('token');
-        setState(() {
-          _errorMessage = 'Session expired. Please login again.';
-          _isLoading = false;
-        });
-        Navigator.pushReplacementNamed(context, '/login');
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Session expired. Please login again.';
+            _isLoading = false;
+          });
+          Navigator.pushReplacementNamed(context, '/login');
+        }
       } else {
+        if (mounted) {
+          setState(() {
+            _errorMessage =
+                'Failed to load profile: ${response.statusCode} - ${response.body}';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         setState(() {
-          _errorMessage =
-              'Failed to load profile: ${response.statusCode} - ${response.body}';
+          _errorMessage = 'Error fetching profile: $e';
           _isLoading = false;
         });
       }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Error fetching profile: $e';
-        _isLoading = false;
-      });
     }
   }
 
@@ -547,20 +560,6 @@ class _ProfilePenitipScreenState extends State<ProfilePenitipScreen>
   Widget _buildMenuSection(Color oliveGreen) {
     final menuItems = [
       {
-        'icon': Icons.inventory_2,
-        'title': 'Daftar Barang Titipan',
-        'subtitle': 'Lihat barang yang dititipkan',
-        'color': Colors.blue,
-        'onTap': () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ConsignedItemsScreen(),
-            ),
-          );
-        },
-      },
-      {
         'icon': Icons.store,
         'title': 'Tukar Poin dengan Merchandise',
         'subtitle': 'Dapatkan hadiah menarik',
@@ -580,13 +579,59 @@ class _ProfilePenitipScreenState extends State<ProfilePenitipScreen>
         'subtitle': 'Logout dari aplikasi',
         'color': Colors.red,
         'onTap': () async {
-          final result = await _authService.logout();
-          if (result['success']) {
-            Navigator.pushReplacementNamed(context, '/login');
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(result['message'])),
-            );
+          final bool? confirm = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Text(
+                'Konfirmasi Logout',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF77784A),
+                ),
+              ),
+              content: const Text(
+                'Apakah Anda yakin ingin keluar dari akun?',
+                style: TextStyle(color: Colors.black87),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text(
+                    'Batal',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text(
+                    'Keluar',
+                    style: TextStyle(color: Color(0xFF77784A)),
+                  ),
+                ),
+              ],
+            ),
+          );
+
+          if (confirm == true && mounted) {
+            final result = await _authService.logout();
+            if (result['success']) {
+              if (mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const PembeliScreen()),
+                );
+              }
+            } else {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(result['message'])),
+                );
+              }
+            }
           }
         },
       },
@@ -683,14 +728,16 @@ class _ProfilePenitipScreenState extends State<ProfilePenitipScreen>
   void _copyToClipboard(String text) {
     if (text.isNotEmpty) {
       Clipboard.setData(ClipboardData(text: text));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$text disalin ke clipboard'),
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$text disalin ke clipboard'),
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
     }
   }
 }

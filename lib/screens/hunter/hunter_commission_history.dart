@@ -6,23 +6,25 @@ import 'package:intl/intl.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'transaction_detail.dart';
-import '../screens/otentikasi/login.dart';
+import 'hunter_commission_detail.dart';
+import '../otentikasi/login.dart';
+import '../../models/comission.dart';
 
-class OrderHistoryScreen extends StatefulWidget {
-  const OrderHistoryScreen({super.key});
+class CommissionHistoryScreen extends StatefulWidget {
+  const CommissionHistoryScreen({super.key});
 
   @override
-  _OrderHistoryScreenState createState() => _OrderHistoryScreenState();
+  _CommissionHistoryScreenState createState() =>
+      _CommissionHistoryScreenState();
 }
 
-class _OrderHistoryScreenState extends State<OrderHistoryScreen>
+class _CommissionHistoryScreenState extends State<CommissionHistoryScreen>
     with TickerProviderStateMixin {
   bool _isLoading = true;
   String? _errorMessage;
   late AnimationController _fadeController;
   late AnimationController _slideController;
-  List<Transaction> _transactions = [];
+  List<Commission> _commissions = [];
 
   @override
   void initState() {
@@ -39,10 +41,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
     _fadeController.forward();
     _slideController.forward();
 
-    _fetchTransactions();
+    _fetchCommissions();
   }
 
-  Future<void> _fetchTransactions() async {
+  Future<void> _fetchCommissions() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
@@ -61,7 +63,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
       }
 
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/pembeli/transaksi'),
+        Uri.parse('http://10.0.2.2:8000/api/hunter/komisi'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -69,81 +71,26 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
-        final List<dynamic> data = jsonResponse['data'] ?? [];
-
-        String formatCurrency(int amount) {
-          final formatter = NumberFormat('#,##0', 'id_ID');
-          return 'Rp${formatter.format(amount)}';
-        }
-
-        final List<Transaction> fetchedTransactions = data.map((item) {
-          final products = item['products'] as List<dynamic>? ?? [];
-          final totalItemPrice = products.fold(
-              0, (sum, p) => sum + (p['product_price_raw'] as int? ?? 0));
-          final pointsDiscount =
-              ((item['poin_digunakan'] as int? ?? 0) / 100).floor() * 10000;
-
-          final Map<String, List<dynamic>> groupedProducts = {};
-          for (var product in products) {
-            final penitipName =
-                product['nama_penitip'] as String? ?? 'Unknown Penitip';
-            product['image'] = product['image'] != '/api/placeholder/60/60'
-                ? 'http://10.0.2.2:8000/api/products/${product['product_id']}/thumbnail'
-                : 'http://10.0.2.2:8000/api/placeholder/60/60';
-            if (!groupedProducts.containsKey(penitipName)) {
-              groupedProducts[penitipName] = [];
-            }
-            groupedProducts[penitipName]!.add(product);
-          }
-
-          final penitipItems = groupedProducts.entries.map((entry) {
-            final penitipName = entry.key;
-            final productsList = entry.value;
-            final qcStaff = productsList.isNotEmpty
-                ? productsList[0]['nama_qc'] as String? ?? 'Unknown QC'
-                : 'Unknown QC';
-
-            final items = productsList
-                .map((p) => TransactionItem(
-                      name: p['nama_barang'] as String? ?? 'Unknown Item',
-                      price: p['harga_barang'] as String? ?? 'Rp0',
-                      imagePath: p['image'] as String,
-                    ))
-                .toList();
-
-            return PenitipItems(
-              penitipName: penitipName,
-              qcStaff: qcStaff,
-              items: items,
-            );
-          }).toList();
-
-          return Transaction(
-            transactionId: item['no_nota'] as String? ?? 'Unknown ID',
-            status: item['status'] as String? ?? 'Unknown',
-            date: item['tanggal_transaksi'] as String? ?? 'Unknown Date',
-            total: item['total_akhir'] as String? ?? 'Rp0',
-            buyerName: item['nama_pembeli'] as String? ?? 'Unknown Buyer',
-            buyerEmail: item['email_pembeli'] as String? ?? 'Unknown Email',
-            buyerAddress: item['alamat'] as String? ?? 'Unknown Address',
-            deliveryMethod:
-                item['metode_pengiriman'] as String? ?? 'Unknown Method',
-            penitipItems: penitipItems,
-            paymentBreakdown: PaymentBreakdown(
-              totalItemPrice: formatCurrency(totalItemPrice),
-              shippingCost: item['ongkir'] as String? ?? 'Rp0',
-              pointsUsed: item['poin_digunakan'] as int? ?? 0,
-              discount: formatCurrency(pointsDiscount),
-              pointsEarned: item['poin_diperoleh'] as int? ?? 0,
-              finalTotal: item['total_akhir'] as String? ?? 'Rp0',
-            ),
+        final List<dynamic> data = jsonDecode(response.body);
+        final List<Commission> fetchedCommissions = data.map((item) {
+          return Commission(
+            commissionId: item['KODE_PRODUK'] ?? 'Unknown ID',
+            productName: item['product_name'] ?? 'Unknown Product',
+            penitipName: item['penitip_name'] ?? 'Unknown Penitip',
+            amount: int.parse(item['KOMISI_HUNTER'].toString()) ?? 0,
+            date: item['commission_date'] ?? 'Unknown Date',
+            status: item['status'] ?? 'Pending',
+            imagePath: item['product_image'] != null &&
+                    item['product_image'] !=
+                        'http://10.0.2.2:8000/api/placeholder/60/60'
+                ? 'http://10.0.2.2:8000/api/products/${item['KODE_PRODUK']}/thumbnail'
+                : 'http://10.0.2.2:8000/api/placeholder/60/60',
           );
         }).toList();
 
         if (mounted) {
           setState(() {
-            _transactions = fetchedTransactions;
+            _commissions = fetchedCommissions;
             _isLoading = false;
           });
         }
@@ -157,10 +104,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
           Navigator.pushReplacementNamed(context, '/login');
         }
       } else {
+        final errorData = jsonDecode(response.body);
         if (mounted) {
           setState(() {
             _errorMessage =
-                'Gagal memuat riwayat pesanan: ${response.statusCode} - ${response.body}';
+                'Gagal memuat komisi: ${errorData['message'] ?? response.statusCode}';
             _isLoading = false;
           });
         }
@@ -168,9 +116,12 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Error saat mengambil riwayat pesanan: $e';
+          _errorMessage = 'Error: Koneksi gagal. Silakan coba lagi.';
           _isLoading = false;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat komisi: $e')),
+        );
       }
       print('Error: $e');
     }
@@ -184,14 +135,14 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
   }
 
   String _getDisplayText(double availableWidth) {
-    return availableWidth < 280 ? 'Riwayat\nPesanan' : 'Riwayat Pesanan';
+    return availableWidth < 280 ? 'Riwayat\nKomisi' : 'Riwayat Komisi';
   }
 
   double _getFontSize(double availableWidth) {
     return availableWidth < 280 ? 18 : 20;
   }
 
-  Widget _buildTransactionList() {
+  Widget _buildCommissionList() {
     return FadeTransition(
       opacity: _fadeController,
       child: SlideTransition(
@@ -206,14 +157,14 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          itemCount: _transactions.length,
+          itemCount: _commissions.length,
           itemBuilder: (context, index) {
             return FadeInUp(
               duration: Duration(milliseconds: 600 + (index * 200)),
               child: SlideInLeft(
                 duration: Duration(milliseconds: 800 + (index * 150)),
-                child: TransactionCard(
-                  transaction: _transactions[index],
+                child: CommissionCard(
+                  commission: _commissions[index],
                   index: index,
                 ),
               ),
@@ -278,7 +229,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
             FadeInUp(
               delay: const Duration(milliseconds: 300),
               child: Text(
-                'Gagal Memuat Pesanan',
+                'Gagal Memuat Komisi',
                 style: TextStyle(
                   fontSize: 20,
                   color: Colors.grey[700],
@@ -315,7 +266,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.receipt_long_outlined,
+                Icons.monetization_on_outlined,
                 size: 80,
                 color: Colors.grey[400],
               ),
@@ -325,7 +276,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
           FadeInUp(
             delay: const Duration(milliseconds: 300),
             child: Text(
-              'Belum ada riwayat pesanan',
+              'Belum ada riwayat komisi',
               style: TextStyle(
                 fontSize: 20,
                 color: Colors.grey[700],
@@ -337,7 +288,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
           FadeInUp(
             delay: const Duration(milliseconds: 500),
             child: Text(
-              'Ayo mulai belanja di ReuseMart!',
+              'Mulai hunting untuk mendapatkan komisi!',
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey[500],
@@ -467,7 +418,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                                   const SizedBox(height: 8),
                                   Flexible(
                                     child: Text(
-                                      '${_transactions.length} Transaksi',
+                                      '${_commissions.length} Komisi',
                                       style: const TextStyle(
                                         color: Colors.white70,
                                         fontSize: 14,
@@ -491,11 +442,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
             SliverToBoxAdapter(
               child: _isLoading
                   ? _buildLoadingShimmer()
-                  : _transactions.isEmpty
+                  : _commissions.isEmpty
                       ? _buildEmptyState()
                       : Column(
                           children: [
-                            _buildTransactionList(),
+                            _buildCommissionList(),
                             const SizedBox(height: 80),
                           ],
                         ),
@@ -507,89 +458,21 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
   }
 }
 
-class Transaction {
-  final String transactionId;
-  final String status;
-  final String date;
-  final String total;
-  final String buyerName;
-  final String buyerEmail;
-  final String buyerAddress;
-  final String deliveryMethod;
-  final List<PenitipItems> penitipItems;
-  final PaymentBreakdown paymentBreakdown;
-
-  Transaction({
-    required this.transactionId,
-    required this.status,
-    required this.date,
-    required this.total,
-    required this.buyerName,
-    required this.buyerEmail,
-    required this.buyerAddress,
-    required this.deliveryMethod,
-    required this.penitipItems,
-    required this.paymentBreakdown,
-  });
-}
-
-class PaymentBreakdown {
-  final String totalItemPrice;
-  final String shippingCost;
-  final int pointsUsed;
-  final String discount;
-  final int pointsEarned;
-  final String finalTotal;
-
-  PaymentBreakdown({
-    required this.totalItemPrice,
-    required this.shippingCost,
-    required this.pointsUsed,
-    required this.discount,
-    required this.pointsEarned,
-    required this.finalTotal,
-  });
-}
-
-class PenitipItems {
-  final String penitipName;
-  final String qcStaff;
-  final List<TransactionItem> items;
-
-  PenitipItems({
-    required this.penitipName,
-    required this.qcStaff,
-    required this.items,
-  });
-}
-
-class TransactionItem {
-  final String name;
-  final String price;
-  final String imagePath;
-
-  TransactionItem({
-    required this.name,
-    required this.price,
-    required this.imagePath,
-  });
-}
-
-class TransactionCard extends StatefulWidget {
-  final Transaction transaction;
+class CommissionCard extends StatefulWidget {
+  final Commission commission;
   final int index;
 
-  const TransactionCard({
+  const CommissionCard({
     super.key,
-    required this.transaction,
+    required this.commission,
     required this.index,
   });
 
   @override
-  _TransactionCardState createState() => _TransactionCardState();
+  _CommissionCardState createState() => _CommissionCardState();
 }
 
-class _TransactionCardState extends State<TransactionCard>
+class _CommissionCardState extends State<CommissionCard>
     with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
   late AnimationController _animationController;
@@ -615,30 +498,22 @@ class _TransactionCardState extends State<TransactionCard>
   }
 
   Color _getStatusColor() {
-    switch (widget.transaction.status.toLowerCase()) {
-      case 'Selesai':
+    switch (widget.commission.status.toLowerCase()) {
+      case 'completed':
         return Colors.green;
-      case 'Diproses':
+      case 'pending':
         return Colors.orange;
-      case 'Menunggu pembayaran':
-        return Colors.red;
-      case 'Pending':
-        return Colors.blue;
       default:
         return Colors.grey;
     }
   }
 
   IconData _getStatusIcon() {
-    switch (widget.transaction.status.toLowerCase()) {
-      case 'Selesai':
+    switch (widget.commission.status.toLowerCase()) {
+      case 'completed':
         return Icons.check_circle;
-      case 'Diproses':
+      case 'pending':
         return Icons.hourglass_empty;
-      case 'Menunggu pembayaran':
-        return Icons.payment;
-      case 'Pending':
-        return Icons.pending;
       default:
         return Icons.info;
     }
@@ -652,7 +527,7 @@ class _TransactionCardState extends State<TransactionCard>
           context,
           MaterialPageRoute(
             builder: (context) =>
-                TransactionDetailScreen(transaction: widget.transaction),
+                CommissionDetailScreen(commission: widget.commission),
           ),
         );
       },
@@ -745,7 +620,7 @@ class _TransactionCardState extends State<TransactionCard>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'No. ${widget.transaction.transactionId}',
+                        'No. ${widget.commission.commissionId}',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -779,7 +654,7 @@ class _TransactionCardState extends State<TransactionCard>
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  widget.transaction.status,
+                                  widget.commission.status,
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -814,7 +689,7 @@ class _TransactionCardState extends State<TransactionCard>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Tanggal Pesanan',
+                        'Tanggal',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],
@@ -823,7 +698,7 @@ class _TransactionCardState extends State<TransactionCard>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        widget.transaction.date.split(' ')[0],
+                        widget.commission.date.split(' ')[0],
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -837,7 +712,7 @@ class _TransactionCardState extends State<TransactionCard>
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      'Total Pesanan',
+                      'Jumlah Komisi',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -846,7 +721,7 @@ class _TransactionCardState extends State<TransactionCard>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      widget.transaction.total,
+                      'Rp ${NumberFormat("#,##0", "id_ID").format(widget.commission.amount)}',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -865,8 +740,8 @@ class _TransactionCardState extends State<TransactionCard>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => TransactionDetailScreen(
-                          transaction: widget.transaction),
+                      builder: (context) =>
+                          CommissionDetailScreen(commission: widget.commission),
                     ),
                   );
                 },
@@ -903,86 +778,94 @@ class _TransactionCardState extends State<TransactionCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ...widget.transaction.penitipItems.asMap().entries.map((entry) {
-            int penitipIndex = entry.key;
-            PenitipItems penitip = entry.value;
-
-            return FadeInUp(
-              duration: Duration(milliseconds: 300 + (penitipIndex * 100)),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFF7A7C52).withOpacity(0.1),
-                    width: 1,
+          FadeInUp(
+            duration: const Duration(milliseconds: 300),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFF7A7C52).withOpacity(0.1),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF7A7C52).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.store,
-                            size: 16,
-                            color: Color(0xFF7A7C52),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            penitip.penitipName,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A3C34),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    ...penitip.items.asMap().entries.map((itemEntry) {
-                      int itemIndex = itemEntry.key;
-                      TransactionItem item = itemEntry.value;
-
-                      return SlideInLeft(
-                        duration:
-                            Duration(milliseconds: 400 + (itemIndex * 100)),
-                        child: TransactionItemWidget(item: item),
-                      );
-                    }).toList(),
-                  ],
-                ),
+                ],
               ),
-            );
-          }).toList(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF7A7C52).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.store,
+                          size: 16,
+                          color: Color(0xFF7A7C52),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          widget.commission.penitipName,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1A3C34),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  SlideInLeft(
+                    duration: const Duration(milliseconds: 400),
+                    child: CommissionItemWidget(
+                      item: CommissionItem(
+                        name: widget.commission.productName,
+                        price:
+                            'Rp ${NumberFormat("#,##0", "id_ID").format(widget.commission.amount)}',
+                        imagePath: widget.commission.imagePath,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class TransactionItemWidget extends StatelessWidget {
-  final TransactionItem item;
+class CommissionItem {
+  final String name;
+  final String price;
+  final String imagePath;
 
-  const TransactionItemWidget({super.key, required this.item});
+  CommissionItem({
+    required this.name,
+    required this.price,
+    required this.imagePath,
+  });
+}
+
+class CommissionItemWidget extends StatelessWidget {
+  final CommissionItem item;
+
+  const CommissionItemWidget({super.key, required this.item});
 
   @override
   Widget build(BuildContext context) {

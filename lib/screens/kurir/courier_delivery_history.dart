@@ -2,27 +2,39 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/intl.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'transaction_detail.dart';
-import '../screens/otentikasi/login.dart';
+import '../../services/auth_service.dart';
+import 'courier_delivery_detail.dart';
+import '../otentikasi/login.dart';
 
-class OrderHistoryScreen extends StatefulWidget {
-  const OrderHistoryScreen({super.key});
-
-  @override
-  _OrderHistoryScreenState createState() => _OrderHistoryScreenState();
+String _formatDate(String date) {
+  try {
+    final parsedDate = DateTime.parse(date);
+    final wibDate = parsedDate.add(const Duration(hours: 7));
+    final formatter = DateFormat('d MMMM y HH:mm', 'id_ID');
+    return formatter.format(wibDate);
+  } catch (e) {
+    return date;
+  }
 }
 
-class _OrderHistoryScreenState extends State<OrderHistoryScreen>
+class DeliveryHistoryScreen extends StatefulWidget {
+  const DeliveryHistoryScreen({super.key});
+
+  @override
+  _DeliveryHistoryScreenState createState() => _DeliveryHistoryScreenState();
+}
+
+class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
     with TickerProviderStateMixin {
   bool _isLoading = true;
   String? _errorMessage;
   late AnimationController _fadeController;
   late AnimationController _slideController;
-  List<Transaction> _transactions = [];
+  List<Map<String, dynamic>> _deliveries = [];
 
   @override
   void initState() {
@@ -39,10 +51,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
     _fadeController.forward();
     _slideController.forward();
 
-    _fetchTransactions();
+    _fetchDeliveries();
   }
 
-  Future<void> _fetchTransactions() async {
+  Future<void> _fetchDeliveries() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
@@ -52,16 +64,18 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
             _errorMessage = 'Token tidak ditemukan. Silakan login kembali.';
             _isLoading = false;
           });
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-          );
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+            );
+          });
         }
         return;
       }
 
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/pembeli/transaksi'),
+        Uri.parse('http://10.0.2.2:8000/api/kurir/transaksi-penjualan'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -72,78 +86,54 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
         final List<dynamic> data = jsonResponse['data'] ?? [];
 
-        String formatCurrency(int amount) {
-          final formatter = NumberFormat('#,##0', 'id_ID');
-          return 'Rp${formatter.format(amount)}';
-        }
-
-        final List<Transaction> fetchedTransactions = data.map((item) {
-          final products = item['products'] as List<dynamic>? ?? [];
-          final totalItemPrice = products.fold(
-              0, (sum, p) => sum + (p['product_price_raw'] as int? ?? 0));
-          final pointsDiscount =
-              ((item['poin_digunakan'] as int? ?? 0) / 100).floor() * 10000;
-
-          final Map<String, List<dynamic>> groupedProducts = {};
-          for (var product in products) {
-            final penitipName =
-                product['nama_penitip'] as String? ?? 'Unknown Penitip';
-            product['image'] = product['image'] != '/api/placeholder/60/60'
-                ? 'http://10.0.2.2:8000/api/products/${product['product_id']}/thumbnail'
-                : 'http://10.0.2.2:8000/api/placeholder/60/60';
-            if (!groupedProducts.containsKey(penitipName)) {
-              groupedProducts[penitipName] = [];
-            }
-            groupedProducts[penitipName]!.add(product);
-          }
-
-          final penitipItems = groupedProducts.entries.map((entry) {
-            final penitipName = entry.key;
-            final productsList = entry.value;
-            final qcStaff = productsList.isNotEmpty
-                ? productsList[0]['nama_qc'] as String? ?? 'Unknown QC'
-                : 'Unknown QC';
-
-            final items = productsList
-                .map((p) => TransactionItem(
-                      name: p['nama_barang'] as String? ?? 'Unknown Item',
-                      price: p['harga_barang'] as String? ?? 'Rp0',
-                      imagePath: p['image'] as String,
-                    ))
-                .toList();
-
-            return PenitipItems(
-              penitipName: penitipName,
-              qcStaff: qcStaff,
-              items: items,
-            );
-          }).toList();
-
-          return Transaction(
-            transactionId: item['no_nota'] as String? ?? 'Unknown ID',
-            status: item['status'] as String? ?? 'Unknown',
-            date: item['tanggal_transaksi'] as String? ?? 'Unknown Date',
-            total: item['total_akhir'] as String? ?? 'Rp0',
-            buyerName: item['nama_pembeli'] as String? ?? 'Unknown Buyer',
-            buyerEmail: item['email_pembeli'] as String? ?? 'Unknown Email',
-            buyerAddress: item['alamat'] as String? ?? 'Unknown Address',
-            deliveryMethod:
-                item['metode_pengiriman'] as String? ?? 'Unknown Method',
-            penitipItems: penitipItems,
-            paymentBreakdown: PaymentBreakdown(
-              totalItemPrice: formatCurrency(totalItemPrice),
-              shippingCost: item['ongkir'] as String? ?? 'Rp0',
-              pointsUsed: item['poin_digunakan'] as int? ?? 0,
-              discount: formatCurrency(pointsDiscount),
-              pointsEarned: item['poin_diperoleh'] as int? ?? 0,
-              finalTotal: item['total_akhir'] as String? ?? 'Rp0',
-            ),
+        final List<Map<String, dynamic>> fetchedDeliveries = [];
+        for (var transaction in data) {
+          final detailResponse = await http.get(
+            Uri.parse(
+                'http://10.0.2.2:8000/api/kurir/transaksi-penjualan/${transaction['no_nota']}'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
           );
-        }).toList();
+
+          if (detailResponse.statusCode == 200) {
+            final detailData = jsonDecode(detailResponse.body)['data'];
+            final products = detailData['products'] as List<dynamic>? ?? [];
+            final items = products.map((p) {
+              final imageUrl = p['image'] != '/api/placeholder/60/60'
+                  ? 'http://10.0.2.2:8000/api/products/${p['product_id']}/thumbnail'
+                  : 'http://10.0.2.2:8000/api/placeholder/60/60';
+              print(
+                  'Image URL for ${p['nama_barang']}: $imageUrl'); // Debug log
+              return {
+                'name': p['nama_barang'] as String? ?? 'Unknown Item',
+                'price': p['harga_barang'] as String? ?? 'Rp0',
+                'image': imageUrl,
+                'product_id': p['product_id'] as String? ?? '',
+              };
+            }).toList();
+
+            fetchedDeliveries.add({
+              'id_penjualan': transaction['id_penjualan'],
+              'order_id': transaction['no_nota'] as String? ?? 'Unknown ID',
+              'customer_name':
+                  detailData['nama_pembeli'] as String? ?? 'Unknown Buyer',
+              'address': detailData['alamat'] as String? ?? 'Unknown Address',
+              'status': transaction['status'] as String? ?? 'Unknown',
+              'date':
+                  transaction['tanggal_transaksi'] as String? ?? 'Unknown Date',
+              'items': items,
+            });
+          } else {
+            print(
+                'Failed to fetch details for ${transaction['no_nota']}: ${detailResponse.statusCode}');
+          }
+        }
 
         if (mounted) {
           setState(() {
-            _transactions = fetchedTransactions;
+            _deliveries = fetchedDeliveries;
             _isLoading = false;
           });
         }
@@ -154,13 +144,18 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
             _errorMessage = 'Sesi telah berakhir. Silakan login kembali.';
             _isLoading = false;
           });
-          Navigator.pushReplacementNamed(context, '/login');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+            );
+          });
         }
       } else {
         if (mounted) {
           setState(() {
             _errorMessage =
-                'Gagal memuat riwayat pesanan: ${response.statusCode} - ${response.body}';
+                'Gagal memuat riwayat pengiriman: ${response.statusCode}';
             _isLoading = false;
           });
         }
@@ -168,11 +163,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Error saat mengambil riwayat pesanan: $e';
+          _errorMessage = 'Error mengambil riwayat pengiriman: $e';
           _isLoading = false;
         });
       }
-      print('Error: $e');
     }
   }
 
@@ -184,14 +178,14 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
   }
 
   String _getDisplayText(double availableWidth) {
-    return availableWidth < 280 ? 'Riwayat\nPesanan' : 'Riwayat Pesanan';
+    return availableWidth < 280 ? 'Riwayat\nPengiriman' : 'Riwayat Pengiriman';
   }
 
   double _getFontSize(double availableWidth) {
     return availableWidth < 280 ? 18 : 20;
   }
 
-  Widget _buildTransactionList() {
+  Widget _buildDeliveryList() {
     return FadeTransition(
       opacity: _fadeController,
       child: SlideTransition(
@@ -206,15 +200,16 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          itemCount: _transactions.length,
+          itemCount: _deliveries.length,
           itemBuilder: (context, index) {
             return FadeInUp(
               duration: Duration(milliseconds: 600 + (index * 200)),
               child: SlideInLeft(
                 duration: Duration(milliseconds: 800 + (index * 150)),
-                child: TransactionCard(
-                  transaction: _transactions[index],
+                child: DeliveryCard(
+                  delivery: _deliveries[index],
                   index: index,
+                  onStatusUpdated: _fetchDeliveries,
                 ),
               ),
             );
@@ -278,7 +273,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
             FadeInUp(
               delay: const Duration(milliseconds: 300),
               child: Text(
-                'Gagal Memuat Pesanan',
+                'Gagal Memuat Pengiriman',
                 style: TextStyle(
                   fontSize: 20,
                   color: Colors.grey[700],
@@ -315,7 +310,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.receipt_long_outlined,
+                Icons.local_shipping_outlined,
                 size: 80,
                 color: Colors.grey[400],
               ),
@@ -325,7 +320,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
           FadeInUp(
             delay: const Duration(milliseconds: 300),
             child: Text(
-              'Belum ada riwayat pesanan',
+              'Belum ada riwayat pengiriman',
               style: TextStyle(
                 fontSize: 20,
                 color: Colors.grey[700],
@@ -337,7 +332,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
           FadeInUp(
             delay: const Duration(milliseconds: 500),
             child: Text(
-              'Ayo mulai belanja di ReuseMart!',
+              'Mulai pengiriman untuk mencatat riwayat!',
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey[500],
@@ -394,11 +389,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                       color: Colors.black.withOpacity(0.3),
                       blurRadius: 15,
                       offset: const Offset(0, 5),
-                    ),
-                    BoxShadow(
-                      color: oliveGreen.withOpacity(0.2),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
@@ -467,7 +457,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                                   const SizedBox(height: 8),
                                   Flexible(
                                     child: Text(
-                                      '${_transactions.length} Transaksi',
+                                      '${_deliveries.length} Pengiriman',
                                       style: const TextStyle(
                                         color: Colors.white70,
                                         fontSize: 14,
@@ -491,11 +481,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
             SliverToBoxAdapter(
               child: _isLoading
                   ? _buildLoadingShimmer()
-                  : _transactions.isEmpty
+                  : _deliveries.isEmpty
                       ? _buildEmptyState()
                       : Column(
                           children: [
-                            _buildTransactionList(),
+                            _buildDeliveryList(),
                             const SizedBox(height: 80),
                           ],
                         ),
@@ -507,89 +497,23 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
   }
 }
 
-class Transaction {
-  final String transactionId;
-  final String status;
-  final String date;
-  final String total;
-  final String buyerName;
-  final String buyerEmail;
-  final String buyerAddress;
-  final String deliveryMethod;
-  final List<PenitipItems> penitipItems;
-  final PaymentBreakdown paymentBreakdown;
-
-  Transaction({
-    required this.transactionId,
-    required this.status,
-    required this.date,
-    required this.total,
-    required this.buyerName,
-    required this.buyerEmail,
-    required this.buyerAddress,
-    required this.deliveryMethod,
-    required this.penitipItems,
-    required this.paymentBreakdown,
-  });
-}
-
-class PaymentBreakdown {
-  final String totalItemPrice;
-  final String shippingCost;
-  final int pointsUsed;
-  final String discount;
-  final int pointsEarned;
-  final String finalTotal;
-
-  PaymentBreakdown({
-    required this.totalItemPrice,
-    required this.shippingCost,
-    required this.pointsUsed,
-    required this.discount,
-    required this.pointsEarned,
-    required this.finalTotal,
-  });
-}
-
-class PenitipItems {
-  final String penitipName;
-  final String qcStaff;
-  final List<TransactionItem> items;
-
-  PenitipItems({
-    required this.penitipName,
-    required this.qcStaff,
-    required this.items,
-  });
-}
-
-class TransactionItem {
-  final String name;
-  final String price;
-  final String imagePath;
-
-  TransactionItem({
-    required this.name,
-    required this.price,
-    required this.imagePath,
-  });
-}
-
-class TransactionCard extends StatefulWidget {
-  final Transaction transaction;
+class DeliveryCard extends StatefulWidget {
+  final Map<String, dynamic> delivery;
   final int index;
+  final VoidCallback onStatusUpdated;
 
-  const TransactionCard({
+  const DeliveryCard({
     super.key,
-    required this.transaction,
+    required this.delivery,
     required this.index,
+    required this.onStatusUpdated,
   });
 
   @override
-  _TransactionCardState createState() => _TransactionCardState();
+  _DeliveryCardState createState() => _DeliveryCardState();
 }
 
-class _TransactionCardState extends State<TransactionCard>
+class _DeliveryCardState extends State<DeliveryCard>
     with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
   late AnimationController _animationController;
@@ -615,104 +539,207 @@ class _TransactionCardState extends State<TransactionCard>
   }
 
   Color _getStatusColor() {
-    switch (widget.transaction.status.toLowerCase()) {
-      case 'Selesai':
+    switch (widget.delivery['status']) {
+      case 'Sudah Diterima':
         return Colors.green;
-      case 'Diproses':
-        return Colors.orange;
-      case 'Menunggu pembayaran':
-        return Colors.red;
-      case 'Pending':
+      case 'Sedang Dikirim':
         return Colors.blue;
+      case 'Siap Dikirim':
+        return Colors.orange;
       default:
         return Colors.grey;
     }
   }
 
   IconData _getStatusIcon() {
-    switch (widget.transaction.status.toLowerCase()) {
-      case 'Selesai':
+    switch (widget.delivery['status']) {
+      case 'Sudah Diterima':
         return Icons.check_circle;
-      case 'Diproses':
+      case 'Sedang Dikirim':
+        return Icons.local_shipping;
+      case 'Siap Dikirim':
         return Icons.hourglass_empty;
-      case 'Menunggu pembayaran':
-        return Icons.payment;
-      case 'Pending':
-        return Icons.pending;
       default:
         return Icons.info;
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                TransactionDetailScreen(transaction: widget.transaction),
+  Future<void> _updateStatus() async {
+    String? newStatus;
+    String confirmationMessage;
+    String actionText;
+
+    if (widget.delivery['status'] == 'Siap Dikirim') {
+      newStatus = 'Sedang Dikirim';
+      confirmationMessage = 'Konfirmasi bahwa pengiriman telah dimulai?';
+      actionText = 'Konfirmasi Pengiriman';
+    } else if (widget.delivery['status'] == 'Sedang Dikirim') {
+      newStatus = 'Sudah Diterima';
+      confirmationMessage = 'Konfirmasi bahwa pengiriman telah diterima?';
+      actionText = 'Konfirmasi Diterima';
+    } else {
+      return; // No action for 'Sudah Diterima' or other statuses
+    }
+
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          'Konfirmasi Status',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF7A7C52),
+          ),
+        ),
+        content: Text(
+          confirmationMessage,
+          style: TextStyle(color: Colors.black87),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Batal',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              actionText,
+              style: TextStyle(color: Color(0xFF7A7C52)),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final token = prefs.getString('token');
+        if (token == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+            );
+          });
+          return;
+        }
+
+        final response = await http.put(
+          Uri.parse(
+              'http://10.0.2.2:8000/api/kurir/transaksi-penjualan/${widget.delivery['id_penjualan']}'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'STATUS': newStatus,
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          setState(() {
+            widget.delivery['status'] = newStatus;
+          });
+          widget.onStatusUpdated();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Status diubah menjadi $newStatus'),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        } else {
+          final responseBody = jsonDecode(response.body);
+          final errorMessage = responseBody['message'] ??
+              'Gagal memperbarui status: ${response.statusCode}';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error memperbarui status: $e'),
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
-      },
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 16),
-        elevation: 0,
-        shape: RoundedRectangleBorder(
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [
+              Colors.white,
+              Colors.grey[50]!,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(
+            color: const Color(0xFF7A7C52).withOpacity(0.2),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: LinearGradient(
-              colors: [
-                Colors.white,
-                Colors.grey[50]!,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            border: Border.all(
-              color: const Color(0xFF7A7C52).withOpacity(0.2),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 15,
-                offset: const Offset(0, 8),
+        child: Column(
+          children: [
+            _buildCardHeader(),
+            AnimatedBuilder(
+              animation: _expandAnimation,
+              builder: (context, child) {
+                return ClipRect(
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    heightFactor: _expandAnimation.value,
+                    child: child,
+                  ),
+                );
+              },
+              child: Column(
+                children: [
+                  const Divider(
+                    height: 1,
+                    color: Color(0xFF7A7C52),
+                    indent: 16,
+                    endIndent: 16,
+                  ),
+                  _buildExpandedContent(),
+                ],
               ),
-            ],
-          ),
-          child: Column(
-            children: [
-              _buildCardHeader(),
-              AnimatedBuilder(
-                animation: _expandAnimation,
-                builder: (context, child) {
-                  return ClipRect(
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      heightFactor: _expandAnimation.value,
-                      child: child,
-                    ),
-                  );
-                },
-                child: Column(
-                  children: [
-                    const Divider(
-                      height: 1,
-                      color: Color(0xFF7A7C52),
-                      indent: 16,
-                      endIndent: 16,
-                    ),
-                    _buildExpandedContent(),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -745,7 +772,7 @@ class _TransactionCardState extends State<TransactionCard>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'No. ${widget.transaction.transactionId}',
+                        'No Nota. ${widget.delivery['order_id']}',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -779,7 +806,7 @@ class _TransactionCardState extends State<TransactionCard>
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  widget.transaction.status,
+                                  widget.delivery['status'],
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -814,7 +841,7 @@ class _TransactionCardState extends State<TransactionCard>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Tanggal Pesanan',
+                        'Tanggal',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],
@@ -823,7 +850,7 @@ class _TransactionCardState extends State<TransactionCard>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        widget.transaction.date.split(' ')[0],
+                        _formatDate(widget.delivery['date']),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -837,7 +864,7 @@ class _TransactionCardState extends State<TransactionCard>
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      'Total Pesanan',
+                      'Pembeli',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -846,10 +873,10 @@ class _TransactionCardState extends State<TransactionCard>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      widget.transaction.total,
+                      widget.delivery['customer_name'],
                       style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                         color: Color(0xFF7A7C52),
                       ),
                     ),
@@ -858,38 +885,90 @@ class _TransactionCardState extends State<TransactionCard>
               ],
             ),
             const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => TransactionDetailScreen(
-                          transaction: widget.transaction),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7A7C52),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  elevation: 2,
-                ),
-                child: const Text(
-                  'Lihat Detail',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+            Text(
+              'Alamat',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
               ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.delivery['address'],
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A3C34),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CourierDeliveryDetailScreen(
+                          delivery: widget.delivery,
+                          onStatusUpdated: widget.onStatusUpdated,
+                        ),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Color(0xFF7A7C52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(color: Color(0xFF7A7C52)),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    elevation: 2,
+                  ),
+                  child: const Text(
+                    'Lihat Detail',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: widget.delivery['status'] == 'Sudah Diterima'
+                      ? null
+                      : _updateStatus,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF7A7C52),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    elevation: 2,
+                  ),
+                  child: Text(
+                    widget.delivery['status'] == 'Siap Dikirim'
+                        ? 'Konfirmasi Pengiriman'
+                        : widget.delivery['status'] == 'Sedang Dikirim'
+                            ? 'Konfirmasi Diterima'
+                            : 'Selesai',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -898,91 +977,103 @@ class _TransactionCardState extends State<TransactionCard>
   }
 
   Widget _buildExpandedContent() {
+    final items = widget.delivery['items'] as List<dynamic>? ?? [];
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ...widget.transaction.penitipItems.asMap().entries.map((entry) {
-            int penitipIndex = entry.key;
-            PenitipItems penitip = entry.value;
-
-            return FadeInUp(
-              duration: Duration(milliseconds: 300 + (penitipIndex * 100)),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFF7A7C52).withOpacity(0.1),
-                    width: 1,
+          FadeInRight(
+            duration: const Duration(milliseconds: 300),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFF7A7C52).withOpacity(0.1),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF7A7C52).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.store,
-                            size: 16,
-                            color: Color(0xFF7A7C52),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            penitip.penitipName,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A3C34),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    ...penitip.items.asMap().entries.map((itemEntry) {
-                      int itemIndex = itemEntry.key;
-                      TransactionItem item = itemEntry.value;
-
-                      return SlideInLeft(
-                        duration:
-                            Duration(milliseconds: 400 + (itemIndex * 100)),
-                        child: TransactionItemWidget(item: item),
-                      );
-                    }).toList(),
-                  ],
-                ),
+                ],
               ),
-            );
-          }).toList(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF7A7C52).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.local_shipping,
+                          size: 16,
+                          color: Color(0xFF7A7C52),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Items in Delivery',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1A3C34),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ...items.asMap().entries.map((entry) {
+                    final itemIndex = entry.key;
+                    final item = entry.value;
+                    return SlideInLeft(
+                      duration: Duration(milliseconds: 400 + (itemIndex * 100)),
+                      child: DeliveryItem(
+                        item: DeliveryMapItem(
+                          name: item['name'] as String,
+                          price: item['price'] as String,
+                          image: item['image'] as String,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class TransactionItemWidget extends StatelessWidget {
-  final TransactionItem item;
+class DeliveryMapItem {
+  final String name;
+  final String price;
+  final String image;
 
-  const TransactionItemWidget({super.key, required this.item});
+  DeliveryMapItem({
+    required this.name,
+    required this.price,
+    required this.image,
+  });
+}
+
+class DeliveryItem extends StatelessWidget {
+  final DeliveryMapItem item;
+
+  const DeliveryItem({super.key, required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -999,43 +1090,31 @@ class TransactionItemWidget extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: CachedNetworkImage(
+              imageUrl: item.image,
+              height: 60,
+              width: 60,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Shimmer.fromColors(
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.grey[100]!,
+                child: Container(
+                  color: Colors.grey,
                 ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: CachedNetworkImage(
-                imageUrl: item.imagePath,
-                height: 70,
-                width: 70,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Shimmer.fromColors(
-                  baseColor: Colors.grey[300]!,
-                  highlightColor: Colors.grey[100]!,
-                  child: Container(
-                    color: Colors.grey,
-                  ),
+              ),
+              errorWidget: (context, url, error) => Container(
+                height: 60,
+                width: 60,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                errorWidget: (context, url, error) => Container(
-                  height: 70,
-                  width: 70,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.image_not_supported_outlined,
-                    color: Colors.grey,
-                    size: 32,
-                  ),
+                child: const Icon(
+                  Icons.image_not_supported_outlined,
+                  color: Colors.grey,
+                  size: 32,
                 ),
               ),
             ),

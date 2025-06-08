@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/otentikasi/login.dart';
 import 'screens/otentikasi/register.dart';
 import 'screens/homepage.dart';
-import 'screens/hunter.dart';
+import 'screens/hunter/hunter_dashboard.dart';
 import 'screens/kurir/courier_dashboard.dart';
 import 'screens/penitip/dashboardPenitip.dart';
 import 'screens/otentikasi/loadingPage.dart';
@@ -58,7 +58,7 @@ class MyApp extends StatelessWidget {
     final authService = AuthService();
     final token = await authService.getToken();
     if (token == null) {
-      return const SplashScreen();
+      return const LoginScreen(); // Default to LoginScreen if no token
     }
 
     final userType = await authService.getUserType();
@@ -68,11 +68,11 @@ class MyApp extends StatelessWidget {
     } else if (userType == 'penitip' && role == 'penitip') {
       return const PenitipDashboard();
     } else if (userType == 'pegawai' && role == 'hunter') {
-      return const HunterScreen();
+      return const HunterDashboard();
     } else if (userType == 'pegawai' && role == 'kurir') {
-      return CourierDashboard();
+      return const CourierDashboard();
     }
-    return const LoginScreen();
+    return const LoginScreen(); // Fallback to LoginScreen for invalid roles
   }
 
   @override
@@ -116,23 +116,23 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: FutureBuilder<Widget>(
-        future: _getInitialScreen(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-          return snapshot.data ?? const SplashScreen();
-        },
-      ),
+      // Set initialRoute to avoid conflicts with home
+      initialRoute: '/loading',
       routes: {
+        '/loading': (context) => FutureBuilder<Widget>(
+              future: _getInitialScreen(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const SplashScreen();
+                }
+                return snapshot.data ?? const LoginScreen();
+              },
+            ),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/pembeli_dashboard': (context) => const PembeliScreen(),
-        '/hunter_dashboard': (context) => const HunterScreen(),
-        '/kurir_dashboard': (context) => CourierDashboard(),
+        '/hunter_dashboard': (context) => const HunterDashboard(),
+        '/kurir_dashboard': (context) => const CourierDashboard(),
         '/penitip_dashboard': (context) => const PenitipDashboard(),
       },
       builder: (context, child) {

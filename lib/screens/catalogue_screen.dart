@@ -8,8 +8,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:intl/intl.dart';
 
-const String baseUrl =
-    'http://10.0.2.2:8000/api'; // Pastikan sesuai dengan server
+const String baseUrl = 'http://10.0.2.2:8000/api';
 
 class CatalogueScreen extends StatefulWidget {
   final String? selectedCategory;
@@ -31,63 +30,7 @@ class _CatalogueScreenState extends State<CatalogueScreen>
   ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
   List<dynamic> _products = [];
-
-  final List<Map<String, dynamic>> categories = [
-    {
-      'name': 'Elektronik & Gadget',
-      'icon': Icons.devices,
-      'subcategories': ['Smartphone', 'Laptop', 'Aksesori Elektronik']
-    },
-    {
-      'name': 'Pakaian & Aksesori',
-      'icon': Icons.shopping_bag,
-      'subcategories': ['Pakaian Pria', 'Pakaian Wanita', 'Aksesori Fashion']
-    },
-    {
-      'name': 'Perabotan Rumah Tangga',
-      'icon': Icons.home,
-      'subcategories': ['Furniture', 'Dekorasi', 'Peralatan Dapur']
-    },
-    {
-      'name': 'Buku, Alat Tulis, & Peralatan Sekolah',
-      'icon': Icons.book,
-      'subcategories': ['Buku Pelajaran', 'Alat Tulis', 'Peralatan Sekolah']
-    },
-    {
-      'name': 'Hobi, Mainan, & Koleksi',
-      'icon': Icons.toys,
-      'subcategories': ['Mainan Anak', 'Koleksi Barang', 'Peralatan Hobi']
-    },
-    {
-      'name': 'Perlengkapan Bayi & Anak',
-      'icon': Icons.child_care,
-      'subcategories': ['Pakaian Bayi', 'Mainan Bayi', 'Peralatan Bayi']
-    },
-    {
-      'name': 'Otomotif & Aksesori',
-      'icon': Icons.directions_car,
-      'subcategories': ['Sparepart', 'Aksesori Mobil', 'Aksesori Motor']
-    },
-    {
-      'name': 'Perlengkapan Taman & Outdoor',
-      'icon': Icons.local_florist,
-      'subcategories': [
-        'Peralatan Taman',
-        'Dekorasi Outdoor',
-        'Peralatan Camping'
-      ]
-    },
-    {
-      'name': 'Peralatan Kantor & Industri',
-      'icon': Icons.print,
-      'subcategories': ['Peralatan Kantor', 'Mesin Industri', 'Alat Berat']
-    },
-    {
-      'name': 'Kosmetik & Perawatan Diri',
-      'icon': Icons.spa,
-      'subcategories': ['Makeup', 'Perawatan Kulit', 'Perawatan Rambut']
-    },
-  ];
+  List<dynamic> _categories = [];
 
   @override
   void initState() {
@@ -118,11 +61,14 @@ class _CatalogueScreenState extends State<CatalogueScreen>
     _animationController!.forward();
 
     _scrollController.addListener(() {
-      setState(() {
-        _isScrolled = _scrollController.offset > 50;
-      });
+      if (mounted) {
+        setState(() {
+          _isScrolled = _scrollController.offset > 50;
+        });
+      }
     });
 
+    _fetchCategories();
     _fetchProducts();
   }
 
@@ -136,28 +82,108 @@ class _CatalogueScreenState extends State<CatalogueScreen>
     }
   }
 
-  Future<void> _fetchProducts() async {
+  Future<void> _fetchCategories() async {
+    if (!await _checkConnectivity()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tidak ada koneksi internet'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/categories'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        var jsonResponse = json.decode(response.body);
+        if (jsonResponse['success'] && jsonResponse['data'] is List) {
+          List<dynamic> categories = jsonResponse['data'];
+          for (var category in categories) {
+            final subResponse = await http.get(
+              Uri.parse(
+                  '$baseUrl/categories/${category['ID_KATEGORI']}/subcategories'),
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+              },
+            );
+            if (subResponse.statusCode == 200) {
+              var subJson = json.decode(subResponse.body);
+              if (subJson['success'] && subJson['data'] is List) {
+                category['subcategories'] =
+                    subJson['data'].map((sub) => sub['NAMASUB']).toList();
+              } else {
+                category['subcategories'] = [];
+              }
+            } else {
+              category['subcategories'] = [];
+            }
+            category['icon'] = Icons.category; // Default icon
+          }
+          if (mounted) {
+            setState(() {
+              _categories = categories;
+            });
+          }
+        } else {
+          throw Exception('Unexpected response format: ${response.body}');
+        }
+      } else {
+        throw Exception('Failed to load categories: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Fetch Categories Error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat kategori: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _fetchProducts({String? category, String? subcategory}) async {
     const maxRetries = 3;
     const retryDelay = Duration(seconds: 2);
     int attempt = 0;
 
     if (!await _checkConnectivity()) {
-      setState(() {
-        _isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tidak ada koneksi internet'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tidak ada koneksi internet'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
 
     while (attempt < maxRetries) {
       try {
+        var uri = Uri.parse('$baseUrl/products');
+        if (category != null && category.isNotEmpty) {
+          uri = uri.replace(queryParameters: {
+            'category': category,
+            if (subcategory != null && subcategory.isNotEmpty)
+              'subcategory': subcategory,
+          });
+        }
+
         final response = await http.get(
-          Uri.parse('$baseUrl/products'),
+          uri,
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
@@ -166,38 +192,22 @@ class _CatalogueScreenState extends State<CatalogueScreen>
 
         if (response.statusCode == 200) {
           var jsonResponse = json.decode(response.body);
-          print('API Response: $jsonResponse'); // Log respons API
           if (jsonResponse['success'] && jsonResponse['data'] is List) {
-            setState(() {
-              _products = jsonResponse['data'].map((product) {
-                // Menangani baik field 'images' (list) maupun 'image' (string)
-                List<String> images = [];
-                if (product['images'] is List && product['images'].isNotEmpty) {
-                  images = product['images']
-                      .whereType<String>()
-                      .map<String>((img) =>
-                          img.startsWith('http') ? img : '$baseUrl$img')
-                      .toList();
-                } else if (product['image'] is String &&
-                    product['image'].isNotEmpty &&
-                    product['image'] != '/api/placeholder/60/60') {
-                  images = [
-                    product['image'].startsWith('http')
-                        ? product['image']
-                        : '$baseUrl${product['image']}'
-                  ];
-                } else {
-                  images = ['']; // Fallback jika tidak ada gambar valid
-                }
-                print(
-                    'Product Images for ${product['name']}: $images'); // Log URL gambar
-                return {
-                  ...product,
-                  'images': images,
-                };
-              }).toList();
-              _isLoading = false;
-            });
+            if (mounted) {
+              setState(() {
+                _products = jsonResponse['data'].map((product) {
+                  product['image'] =
+                      product['image'] != '/api/placeholder/60/60'
+                          ? '$baseUrl/products/${product['id']}/thumbnail'
+                          : '/api/placeholder/60/60';
+                  return {
+                    ...product,
+                    'images': [product['image']],
+                  };
+                }).toList();
+                _isLoading = false;
+              });
+            }
             return;
           } else {
             throw Exception('Unexpected response format: ${response.body}');
@@ -209,12 +219,14 @@ class _CatalogueScreenState extends State<CatalogueScreen>
         print('Fetch Products Error: $e');
         attempt++;
         if (attempt == maxRetries) {
-          setState(() {
-            _isLoading = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal memuat produk: $e')),
-          );
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Gagal memuat produk: $e')),
+            );
+          }
           return;
         }
         await Future.delayed(retryDelay);
@@ -223,15 +235,7 @@ class _CatalogueScreenState extends State<CatalogueScreen>
   }
 
   List<dynamic> get _filteredProducts {
-    if (_selectedCategory == null || _selectedCategory!.isEmpty) {
-      return _products;
-    }
-    return _products.where((product) {
-      String productCategory =
-          product['category']?.toString().toLowerCase() ?? '';
-      String selectedCategoryLower = _selectedCategory!.toLowerCase();
-      return productCategory == selectedCategoryLower;
-    }).toList();
+    return _products; // Filtering handled by API
   }
 
   @override
@@ -244,6 +248,8 @@ class _CatalogueScreenState extends State<CatalogueScreen>
   @override
   Widget build(BuildContext context) {
     const oliveGreen = Color(0xFF7A7C52);
+    const double bottomNavBarHeight =
+        56.0; // Standard BottomNavigationBar height
 
     return Container(
       color: Colors.white,
@@ -459,7 +465,7 @@ class _CatalogueScreenState extends State<CatalogueScreen>
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16.0, 10.0, 16.0, 0),
+                  padding: const EdgeInsets.fromLTRB(16.0, 5.0, 16.0, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -502,9 +508,9 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                               gridDelegate:
                                   const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
-                                childAspectRatio: 0.75,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
+                                childAspectRatio: 0.7,
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
                               ),
                               itemCount: 6,
                               itemBuilder: (context, index) {
@@ -605,7 +611,6 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                   itemCount: _filteredProducts.length,
                                   itemBuilder: (context, index) {
                                     final product = _filteredProducts[index];
-                                    print('Rendering Product $index: $product');
                                     return FadeInUp(
                                       duration: Duration(
                                           milliseconds: 500 + (index * 100)),
@@ -615,15 +620,14 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                             'Produk Tanpa Nama',
                                         subcategory:
                                             product['subcategory'] ?? '',
-                                        price:
-                                            'Rp ${product['price']?.toStringAsFixed(0) ?? '0'}',
-                                        volume: product['volume'] ?? 'N/A',
+                                        price: _formatRupiah(
+                                            product['price'] ?? 0),
                                         condition:
                                             product['condition'] ?? 'N/A',
                                         weight: product['weight']?.toString() ??
                                             'N/A',
                                         warranty:
-                                            product['warranty_date'] ?? '–',
+                                            product['warranty_date'] ?? '-',
                                         description:
                                             product['description'] ?? '',
                                         images: List<String>.from(
@@ -640,8 +644,8 @@ class _CatalogueScreenState extends State<CatalogueScreen>
             ],
           ),
           Positioned(
-            bottom: 20,
-            right: 20,
+            bottom: 100, // Above bottom navigation bar with 16px margin
+            right: 16,
             child: ZoomIn(
               duration: const Duration(milliseconds: 800),
               child: Container(
@@ -676,6 +680,10 @@ class _CatalogueScreenState extends State<CatalogueScreen>
         ],
       ),
     );
+  }
+
+  String _formatRupiah(num price) {
+    return 'Rp ${NumberFormat("#,##0", "id_ID").format(price)}';
   }
 
   String _getDisplayText(double availableWidth, bool isScrolled) {
@@ -728,10 +736,12 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                 leading: const Icon(Icons.sort, color: Color(0xFF1A3C34)),
                 title: const Text('Sort by Price: Low to High'),
                 onTap: () {
-                  setState(() {
-                    _products.sort(
-                        (a, b) => (a['price'] ?? 0).compareTo(b['price'] ?? 0));
-                  });
+                  if (mounted) {
+                    setState(() {
+                      _products.sort((a, b) =>
+                          (a['price'] ?? 0).compareTo(b['price'] ?? 0));
+                    });
+                  }
                   Navigator.pop(context);
                 },
               ),
@@ -739,10 +749,12 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                 leading: const Icon(Icons.sort, color: Color(0xFF1A3C34)),
                 title: const Text('Sort by Price: High to Low'),
                 onTap: () {
-                  setState(() {
-                    _products.sort(
-                        (a, b) => (b['price'] ?? 0).compareTo(a['price'] ?? 0));
-                  });
+                  if (mounted) {
+                    setState(() {
+                      _products.sort((a, b) =>
+                          (b['price'] ?? 0).compareTo(a['price'] ?? 0));
+                    });
+                  }
                   Navigator.pop(context);
                 },
               ),
@@ -787,22 +799,28 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: categories.length,
+                  itemCount: _categories.length,
                   itemBuilder: (context, index) {
-                    final category = categories[index];
+                    final category = _categories[index];
                     return ExpansionTile(
                       leading: Icon(category['icon'],
                           color: const Color(0xFF1A3C34)),
-                      title: Text(category['name']),
-                      children: (category['subcategories'] as List<String>)
+                      title: Text(category['NAMA']),
+                      children: (category['subcategories'] as List<dynamic>)
                           .map((subcategory) {
                         return ListTile(
                           title: Text(subcategory),
                           onTap: () {
-                            setState(() {
-                              _selectedCategory = category['name'];
-                              _selectedSubcategory = subcategory;
-                            });
+                            if (mounted) {
+                              setState(() {
+                                _selectedCategory = category['NAMA'];
+                                _selectedSubcategory = subcategory;
+                                _isLoading = true;
+                              });
+                            }
+                            _fetchProducts(
+                                category: category['NAMA'],
+                                subcategory: subcategory);
                             Navigator.pop(context);
                           },
                         );
@@ -814,10 +832,14 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                   leading: const Icon(Icons.clear, color: Color(0xFF1A3C34)),
                   title: const Text('Clear Filter'),
                   onTap: () {
-                    setState(() {
-                      _selectedCategory = null;
-                      _selectedSubcategory = null;
-                    });
+                    if (mounted) {
+                      setState(() {
+                        _selectedCategory = null;
+                        _selectedSubcategory = null;
+                        _isLoading = true;
+                      });
+                    }
+                    _fetchProducts();
                     Navigator.pop(context);
                   },
                 ),
@@ -835,7 +857,6 @@ class ProductCard extends StatefulWidget {
   final String title;
   final String subcategory;
   final String price;
-  final String volume;
   final String condition;
   final String weight;
   final String warranty;
@@ -848,7 +869,6 @@ class ProductCard extends StatefulWidget {
     required this.title,
     required this.subcategory,
     required this.price,
-    required this.volume,
     required this.condition,
     required this.weight,
     required this.warranty,
@@ -861,11 +881,6 @@ class ProductCard extends StatefulWidget {
 }
 
 class _ProductCardState extends State<ProductCard> {
-  String _formatRupiah(String price) {
-    final number = int.tryParse(price.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-    return 'Rp ${NumberFormat("#,##0", "id_ID").format(number)}';
-  }
-
   double _scale = 1.0;
 
   void _onTapDown(TapDownDetails details) {
@@ -894,7 +909,9 @@ class _ProductCardState extends State<ProductCard> {
 
   @override
   Widget build(BuildContext context) {
-    print('ProductCard Image URLs: ${widget.images}'); // Log URL gambar
+    final imageUrl = widget.images.isNotEmpty && widget.images[0].isNotEmpty
+        ? widget.images[0]
+        : '/api/placeholder/60/60';
     return GestureDetector(
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
@@ -914,33 +931,28 @@ class _ProductCardState extends State<ProductCard> {
                 child: ClipRRect(
                   borderRadius:
                       const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: widget.images.isNotEmpty &&
-                          widget.images[0].isNotEmpty &&
-                          widget.images[0].startsWith('http')
-                      ? CachedNetworkImage(
-                          imageUrl: widget.images[0],
-                          height: 100,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              const Center(child: CircularProgressIndicator()),
-                          errorWidget: (context, url, error) {
-                            print(
-                                'Image Load Error for ${widget.images[0]}: $error');
-                            return Image.asset(
-                              'assets/images/placeholder.png',
-                              height: 100,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            );
-                          },
-                        )
-                      : Image.asset(
-                          'assets/images/placeholder.png',
-                          height: 100,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    height: 100,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        color: Colors.grey,
+                      ),
+                    ),
+                    errorWidget: (context, url, error) {
+                      print('Image Load Error for $url: $error');
+                      return Image.asset(
+                        'assets/images/placeholder.png',
+                        height: 100,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      );
+                    },
+                  ),
                 ),
               ),
               Padding(
@@ -959,16 +971,12 @@ class _ProductCardState extends State<ProductCard> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      widget.volume,
-                      style: const TextStyle(fontSize: 10, color: Colors.grey),
-                    ),
-                    Text(
                       widget.subcategory,
                       style: const TextStyle(fontSize: 10, color: Colors.grey),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _formatRupiah(widget.price),
+                      widget.price,
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,

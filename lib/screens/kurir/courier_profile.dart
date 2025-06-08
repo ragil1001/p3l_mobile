@@ -3,21 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'riwayat_pesanan.dart';
-import 'homepage.dart';
-import 'merchandise.dart';
-import '../services/auth_service.dart';
+import 'package:animate_do/animate_do.dart';
+import '../../services/auth_service.dart';
+import '../otentikasi/login.dart';
+import '../../screens/homepage.dart';
 
-class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+class CourierProfileScreen extends StatefulWidget {
+  const CourierProfileScreen({super.key});
 
   @override
-  _ProfileScreenState createState() => _ProfileScreenState();
+  _CourierProfileScreenState createState() => _CourierProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen>
+class _CourierProfileScreenState extends State<CourierProfileScreen>
     with TickerProviderStateMixin {
-  int _currentIndex = 3;
   final _authService = AuthService();
   AnimationController? _fadeController;
   AnimationController? _slideController;
@@ -78,10 +77,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             _errorMessage = 'Token tidak ditemukan. Silakan login kembali.';
             _isLoading = false;
           });
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const PembeliScreen()),
-          );
+          Navigator.pushReplacementNamed(context, '/login');
         }
         return;
       }
@@ -97,57 +93,54 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       if (profileResponse.statusCode == 200) {
         final profileData = jsonDecode(profileResponse.body);
-        if (profileData['user_type'] == 'pembeli') {
-          // Fetch transactions
+        if (profileData['user_type'] == 'pegawai' &&
+            profileData['user']['role'].contains('kurir')) {
+          // Fetch transactions assigned to this courier
           final transactionsResponse = await http.get(
-            Uri.parse('http://10.0.2.2:8000/api/pembeli/transaksi'),
+            Uri.parse('http://10.0.2.2:8000/api/kurir/transaksi-penjualan'),
             headers: {
               'Authorization': 'Bearer $token',
               'Content-Type': 'application/json',
             },
           );
 
+          int totalDeliveries = 0;
+          int completedDeliveries = 0;
           if (transactionsResponse.statusCode == 200) {
-            final transactionsData = jsonDecode(transactionsResponse.body);
-            final List<dynamic> transactions = transactionsData['data'] ?? [];
-
-            // Calculate active and total transactions
-            final transaksiAktif = transactions
-                .where((t) =>
-                    t['status'] != 'Sudah Diterima' &&
-                    t['status'] != 'Sudah Diambil')
+            final transactions = jsonDecode(transactionsResponse.body)['data'];
+            totalDeliveries = transactions.length;
+            completedDeliveries = transactions
+                .where((t) => t['status'] == 'Sudah Diterima')
                 .length;
-            final totalTransaksi = transactions.length;
-
-            if (mounted) {
-              setState(() {
-                userProfile = {
-                  'nama': profileData['user']['nama'],
-                  'poin': profileData['user']['poin'],
-                  'telepon':
-                      profileData['user']['telepon'] ?? '+62 812-3456-7890',
-                  'email': profileData['user']['email'],
-                  'transaksi_aktif': transaksiAktif,
-                  'total_transaksi': totalTransaksi,
-                  'member_since': 'Januari 2024', // Static, as not in backend
-                  'badge': 'Silver Member', // Static, as not in backend
-                };
-                _isLoading = false;
-              });
-            }
           } else {
             if (mounted) {
               setState(() {
                 _errorMessage =
-                    'Gagal memuat transaksi: ${transactionsResponse.statusCode} - ${transactionsResponse.body}';
+                    'Gagal memuat data transaksi: ${transactionsResponse.statusCode}';
                 _isLoading = false;
               });
             }
+            return;
+          }
+
+          if (mounted) {
+            setState(() {
+              userProfile = {
+                'nama': profileData['user']['nama'],
+                'email': profileData['user']['email'],
+                'telepon': profileData['user']['telepon'] ?? 'Tidak tersedia',
+                'alamat': profileData['user']['alamat'] ?? 'Tidak tersedia',
+                'total_deliveries': totalDeliveries,
+                'completed_deliveries': completedDeliveries,
+                'role': 'Kurir',
+              };
+              _isLoading = false;
+            });
           }
         } else {
           if (mounted) {
             setState(() {
-              _errorMessage = 'Profile only available for pembeli';
+              _errorMessage = 'Profil hanya tersedia untuk kurir';
               _isLoading = false;
             });
           }
@@ -156,7 +149,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         await prefs.remove('token');
         if (mounted) {
           setState(() {
-            _errorMessage = 'Session expired. Please login again.';
+            _errorMessage = 'Sesi telah berakhir. Silakan login kembali.';
             _isLoading = false;
           });
           Navigator.pushReplacementNamed(context, '/login');
@@ -165,7 +158,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (mounted) {
           setState(() {
             _errorMessage =
-                'Failed to load profile: ${profileResponse.statusCode} - ${profileResponse.body}';
+                'Gagal memuat profil: ${profileResponse.statusCode}';
             _isLoading = false;
           });
         }
@@ -173,7 +166,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Error fetching profile or transactions: $e';
+          _errorMessage = 'Error mengambil profil: $e';
           _isLoading = false;
         });
       }
@@ -188,29 +181,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.dispose();
   }
 
-  void _onTabTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/pembeli_dashboard');
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, '/pembeli_dashboard/catalogue');
-        break;
-      case 2:
-        Navigator.pushReplacementNamed(context, '/pembeli_dashboard/transaksi');
-        break;
-      case 3:
-        break;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    const oliveGreen = Color(0xFF77784A);
+    const oliveGreen = Color(0xFF7A7C52);
 
     if (_isLoading) {
       return Scaffold(
@@ -291,9 +265,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                 _fadeAnimation != null
                     ? FadeTransition(
                         opacity: _fadeAnimation!,
-                        child: _buildQuickActionsSection(),
+                        child: _buildContactInfoSection(),
                       )
-                    : _buildQuickActionsSection(),
+                    : _buildContactInfoSection(),
                 _fadeAnimation != null
                     ? FadeTransition(
                         opacity: _fadeAnimation!,
@@ -323,7 +297,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   colors: [
                     oliveGreen,
                     oliveGreen.withOpacity(0.9),
-                    const Color(0xFF5A5C3A),
+                    const Color(0xFF5A5D3A),
                   ],
                 ),
               ),
@@ -374,16 +348,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                     child: CircleAvatar(
                       radius: 42,
                       backgroundColor: Colors.grey[300],
-                      backgroundImage: userProfile?['foto_pembeli'] != null
-                          ? NetworkImage(userProfile!['foto_pembeli'])
-                          : null,
-                      child: userProfile?['foto_pembeli'] == null
-                          ? const Icon(
-                              Icons.person,
-                              size: 50,
-                              color: Colors.white,
-                            )
-                          : null,
+                      child: const Icon(
+                        Icons.person,
+                        size: 50,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -406,13 +375,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(
-                      Icons.stars,
+                      Icons.local_shipping,
                       color: Colors.amber,
                       size: 20,
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      '${userProfile?['poin'] ?? 0} Poin',
+                      userProfile?['role'] ?? 'Kurir',
                       style: const TextStyle(
                         fontSize: 16,
                         color: Colors.white70,
@@ -438,18 +407,18 @@ class _ProfileScreenState extends State<ProfileScreen>
           children: [
             Expanded(
               child: _buildStatCard(
-                'Transaksi Aktif',
-                '${userProfile?['transaksi_aktif'] ?? 0}',
-                Icons.shopping_cart,
+                'Total Pengiriman',
+                userProfile?['total_deliveries'].toString() ?? '0',
+                Icons.local_shipping,
                 Colors.blue,
               ),
             ),
-            const SizedBox(width: 20),
+            const SizedBox(width: 16),
             Expanded(
               child: _buildStatCard(
-                'Total Transaksi',
-                '${userProfile?['total_transaksi'] ?? 0}',
-                Icons.receipt_long,
+                'Selesai',
+                userProfile?['completed_deliveries'].toString() ?? '0',
+                Icons.check_circle,
                 Colors.green,
               ),
             ),
@@ -508,7 +477,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildQuickActionsSection() {
+  Widget _buildContactInfoSection() {
     return Container(
       margin: const EdgeInsets.all(20),
       padding: const EdgeInsets.all(20),
@@ -531,10 +500,17 @@ class _ProfileScreenState extends State<ProfileScreen>
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF77784A),
+              color: Color(0xFF7A7C52),
             ),
           ),
           const SizedBox(height: 15),
+          _buildContactInfo(
+            Icons.email,
+            'Email',
+            userProfile?['email'] ?? 'Tidak tersedia',
+            () => _copyToClipboard(userProfile?['email'] ?? ''),
+          ),
+          const SizedBox(height: 10),
           _buildContactInfo(
             Icons.phone,
             'Nomor Telepon',
@@ -543,10 +519,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           const SizedBox(height: 10),
           _buildContactInfo(
-            Icons.email,
-            'Email',
-            userProfile?['email'] ?? 'Tidak tersedia',
-            () => _copyToClipboard(userProfile?['email'] ?? ''),
+            Icons.location_on,
+            'Alamat',
+            userProfile?['alamat'] ?? 'Tidak tersedia',
+            () => _copyToClipboard(userProfile?['alamat'] ?? ''),
           ),
         ],
       ),
@@ -569,10 +545,10 @@ class _ProfileScreenState extends State<ProfileScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF77784A).withOpacity(0.1),
+                color: const Color(0xFF7A7C52).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: const Color(0xFF77784A), size: 16),
+              child: Icon(icon, color: const Color(0xFF7A7C52), size: 16),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -608,20 +584,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildMenuSection(Color oliveGreen) {
     final menuItems = [
       {
-        'icon': Icons.store,
-        'title': 'Tukar Poin dengan Merchandise',
-        'subtitle': 'Dapatkan hadiah menarik',
-        'color': Colors.purple,
-        'onTap': () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const MerchandiseListScreen(),
-            ),
-          );
-        },
-      },
-      {
         'icon': Icons.logout,
         'title': 'Keluar Akun',
         'subtitle': 'Logout dari aplikasi',
@@ -637,7 +599,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 'Konfirmasi Logout',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF77784A),
+                  color: Color(0xFF7A7C52),
                 ),
               ),
               content: const Text(
@@ -656,7 +618,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   onPressed: () => Navigator.pop(context, true),
                   child: const Text(
                     'Keluar',
-                    style: TextStyle(color: Color(0xFF77784A)),
+                    style: TextStyle(color: Color(0xFF7A7C52)),
                   ),
                 ),
               ],

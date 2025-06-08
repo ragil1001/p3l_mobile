@@ -38,7 +38,7 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
 
     _headerSlideAnimation = Tween<double>(
       begin: -100.0,
-      end: 0.0,
+      end: 0,
     ).animate(CurvedAnimation(
       parent: _headerAnimationController,
       curve: Curves.easeOutBack,
@@ -115,7 +115,7 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
       }
 
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/pembeli/merchandise'),
+        Uri.parse('http://10.0.2.2:8000/api/merchandise'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -243,7 +243,8 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const PenukaranHistoryScreen(),
+                            builder: (context) =>
+                                const PenukaranHistoryScreen(),
                           ),
                         );
                       },
@@ -387,7 +388,7 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
                         productName: item['NAMA'],
                         pointsRequired: item['POIN_DIBUTUHKAN'],
                         stock: item['STOK'],
-                        imageAsset: item['URL_GAMBAR'],
+                        imageUrl: item['URL_GAMBAR'],
                         userPoints: userPoints ?? 0,
                         isPopular: index == 0 || index == 3,
                         onExchangeSuccess: () {
@@ -413,7 +414,7 @@ class PointsMerchandiseCard extends StatelessWidget {
   final String productName;
   final int pointsRequired;
   final int stock;
-  final String imageAsset;
+  final String? imageUrl;
   final int userPoints;
   final bool isPopular;
   final VoidCallback onExchangeSuccess;
@@ -424,7 +425,7 @@ class PointsMerchandiseCard extends StatelessWidget {
     required this.productName,
     required this.pointsRequired,
     required this.stock,
-    required this.imageAsset,
+    required this.imageUrl,
     required this.userPoints,
     this.isPopular = false,
     required this.onExchangeSuccess,
@@ -495,12 +496,31 @@ class PointsMerchandiseCard extends StatelessWidget {
                       ),
                       child: Stack(
                         children: [
-                          const Center(
-                            child: Icon(
-                              Icons.image_outlined,
-                              color: Color(0xFF77784A),
-                              size: 40,
-                            ),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: imageUrl != null
+                                ? Image.network(
+                                    imageUrl!,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Center(
+                                      child: Icon(
+                                        Icons.image_outlined,
+                                        color: Color(0xFF77784A),
+                                        size: 40,
+                                      ),
+                                    ),
+                                  )
+                                : const Center(
+                                    child: Icon(
+                                      Icons.image_outlined,
+                                      color: Color(0xFF77784A),
+                                      size: 40,
+                                    ),
+                                  ),
                           ),
                           Positioned.fill(
                             child: Container(
@@ -670,104 +690,141 @@ class PointsMerchandiseCard extends StatelessWidget {
   }
 
   void _showExchangeDialog(BuildContext context, int merchandiseId) {
+    bool isProcessing = false;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Text(
-            'Konfirmasi Penukaran',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A3C34),
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Apakah Anda yakin ingin menukar:'),
-              const SizedBox(height: 8),
-              Text(
-                productName,
-                style: const TextStyle(
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Text(
+                'Konfirmasi Penukaran',
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF77784A),
+                  color: Color(0xFF1A3C34),
                 ),
               ),
-              const SizedBox(height: 8),
-              Text('Dengan $pointsRequired poin?'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final prefs = await SharedPreferences.getInstance();
-                final token = prefs.getString('token');
-                if (token == null) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Silakan login kembali.')),
-                  );
-                  return;
-                }
-
-                final response = await http.post(
-                  Uri.parse('http://10.0.2.2:8000/api/pembeli/penukaran'),
-                  headers: {
-                    'Authorization': 'Bearer $token',
-                    'Content-Type': 'application/json',
-                  },
-                  body: jsonEncode({'ID_MERCHANDISE': merchandiseId}),
-                );
-
-                print('Status Code: ${response.statusCode}');
-                print('Response Body: ${response.body}'); // Debugging
-
-                Navigator.of(context).pop();
-                if (response.statusCode == 201) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Penukaran berhasil!'),
-                      backgroundColor: Color(0xFF77784A),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Apakah Anda yakin ingin menukar:'),
+                  const SizedBox(height: 8),
+                  Text(
+                    productName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF77784A),
                     ),
-                  );
-                  onExchangeSuccess();
-                } else {
-                  try {
-                    final errorData = jsonDecode(response.body);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(errorData['message'] ?? 'Penukaran gagal.'),
-                        backgroundColor: Colors.red,
+                  ),
+                  const SizedBox(height: 8),
+                  Text('Dengan $pointsRequired poin?'),
+                  if (isProcessing)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 16),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF77784A),
+                        ),
                       ),
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Terjadi kesalahan saat memproses penukaran.'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF77784A),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                    ),
+                ],
               ),
-              child: const Text('Tukar'),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed:
+                      isProcessing ? null : () => Navigator.of(context).pop(),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: isProcessing
+                      ? null
+                      : () async {
+                          setDialogState(() {
+                            isProcessing = true;
+                          });
+
+                          final prefs = await SharedPreferences.getInstance();
+                          final token = prefs.getString('token');
+                          if (token == null) {
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Silakan login kembali.'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+
+                          try {
+                            final response = await http.post(
+                              Uri.parse('http://10.0.2.2:8000/api/penukaran'),
+                              headers: {
+                                'Authorization': 'Bearer $token',
+                                'Content-Type': 'application/json',
+                              },
+                              body:
+                                  jsonEncode({'ID_MERCHANDISE': merchandiseId}),
+                            );
+
+                            Navigator.of(context).pop();
+                            if (response.statusCode == 201) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Penukaran berhasil!'),
+                                  backgroundColor: Color(0xFF77784A),
+                                ),
+                              );
+                              onExchangeSuccess();
+                            } else {
+                              final errorData = jsonDecode(response.body);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    errorData['message'] ?? 'Penukaran gagal.',
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Terjadi kesalahan: ${e.toString()}',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF77784A),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: isProcessing
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Tukar'),
+                ),
+              ],
+            );
+          },
         );
       },
     );

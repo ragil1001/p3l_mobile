@@ -35,7 +35,7 @@ class _PenukaranHistoryScreenState extends State<PenukaranHistoryScreen> {
       }
 
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/pembeli/penukaran'),
+        Uri.parse('http://10.0.2.2:8000/api/penukaran'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -50,7 +50,8 @@ class _PenukaranHistoryScreenState extends State<PenukaranHistoryScreen> {
         });
       } else {
         setState(() {
-          _errorMessage = 'Gagal memuat riwayat penukaran. Status: ${response.statusCode}';
+          _errorMessage =
+              'Gagal memuat riwayat penukaran. Status: ${response.statusCode}';
           _isLoading = false;
         });
       }
@@ -153,7 +154,8 @@ class _PenukaranHistoryScreenState extends State<PenukaranHistoryScreen> {
                       ),
                     )
                   : Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                       child: ListView.builder(
                         itemCount: penukaran.length,
                         itemBuilder: (context, index) {
@@ -173,7 +175,8 @@ class _PenukaranHistoryScreenState extends State<PenukaranHistoryScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF77784A).withOpacity(0.1),
+                                      color: const Color(0xFF77784A)
+                                          .withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: const Icon(
@@ -185,10 +188,12 @@ class _PenukaranHistoryScreenState extends State<PenukaranHistoryScreen> {
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          item['NAMA_MERCHANDISE'] ?? 'Nama Tidak Tersedia',
+                                          item['NAMA_MERCHANDISE'] ??
+                                              'Nama Tidak Tersedia',
                                           style: const TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.bold,
@@ -216,18 +221,21 @@ class _PenukaranHistoryScreenState extends State<PenukaranHistoryScreen> {
                                           'Tanggal Diklaim: ${item['TANGGAL_DIKLAIM'] ?? 'Belum Diklaim'}',
                                           style: TextStyle(
                                             fontSize: 14,
-                                            color: item['TANGGAL_DIKLAIM'] == null
-                                                ? Colors.orangeAccent
-                                                : Colors.grey[600],
+                                            color:
+                                                item['TANGGAL_DIKLAIM'] == null
+                                                    ? Colors.orangeAccent
+                                                    : Colors.grey[600],
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF77784A).withOpacity(0.9),
+                                      color: const Color(0xFF77784A)
+                                          .withOpacity(0.9),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(

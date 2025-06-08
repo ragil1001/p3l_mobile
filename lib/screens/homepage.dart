@@ -11,7 +11,8 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'product_detail.dart';
 import 'package:intl/intl.dart';
-import 'package:shimmer/shimmer.dart'; 
+import 'package:shimmer/shimmer.dart';
+import 'dart:ui';
 
 const String baseUrl = 'http://10.0.2.2:8000/api';
 
@@ -37,10 +38,10 @@ class _PembeliScreenState extends State<PembeliScreen>
   ];
 
   final List<NavItem> _navItems = [
-    NavItem(icon: Icons.home_rounded, label: 'Home'),
-    NavItem(icon: Icons.search_rounded, label: 'Catalogue'),
-    NavItem(icon: Icons.receipt_long_rounded, label: 'Orders'),
-    NavItem(icon: Icons.person_rounded, label: 'Profile'),
+    NavItem(icon: Icons.home_rounded, label: 'Beranda'),
+    NavItem(icon: Icons.search_rounded, label: 'Katalog'),
+    NavItem(icon: Icons.receipt_long_rounded, label: 'Riwayat Pesanan'),
+    NavItem(icon: Icons.person_rounded, label: 'Profil'),
   ];
 
   @override
@@ -76,24 +77,39 @@ class _PembeliScreenState extends State<PembeliScreen>
         bool? shouldLogin = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Login Diperlukan'),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text(
+              'Login Diperlukan',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF77784A),
+              ),
+            ),
             content: const Text(
                 'Anda harus login untuk mengakses halaman ini. Apakah Anda ingin login sekarang?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Batal'),
+                child: const Text(
+                  'Batal',
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Login'),
+                child: const Text(
+                  'Login',
+                  style: TextStyle(color: Color(0xFF77784A)),
+                ),
               ),
             ],
           ),
         );
 
-        if (shouldLogin == true) {
-          Navigator.push(
+        if (shouldLogin == true && mounted) {
+          Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (context) => const LoginScreen(),
@@ -116,62 +132,86 @@ class _PembeliScreenState extends State<PembeliScreen>
 
   @override
   Widget build(BuildContext context) {
+    final Size size = MediaQuery.of(context).size;
+
     return Scaffold(
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(25),
-          topRight: Radius.circular(25),
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFF7A7C52),
-                const Color(0xFF6A6D42),
-                const Color(0xFF5A5D32),
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 20,
-                offset: const Offset(0, -8),
-                spreadRadius: 0,
-              ),
-              BoxShadow(
-                color: const Color(0xFF7A7C52).withOpacity(0.3),
-                blurRadius: 40,
-                offset: const Offset(0, -15),
-                spreadRadius: -5,
-              ),
-            ],
-          ),
-          height: 80,
-          child: Container(
-            height: 80,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  const Color(0xFF7A7C52).withOpacity(0.95),
-                  const Color(0xFF7A7C52),
+      body: Stack(
+        children: [
+          _pages[_selectedIndex],
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 80,
+              margin: const EdgeInsets.symmetric(horizontal: 0),
+              child: Stack(
+                children: [
+                  PhysicalModel(
+                    color: Colors.transparent,
+                    elevation: 10,
+                    shadowColor: Colors.black.withOpacity(0.4),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(25),
+                      topRight: Radius.circular(25),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(25),
+                        topRight: Radius.circular(25),
+                      ),
+                      child: Container(
+                        height: 80,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              const Color(0xFF7A7C52),
+                              const Color(0xFF6A6D42),
+                              const Color(0xFF5A5D32),
+                            ],
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: List.generate(_navItems.length, (index) {
+                            return Expanded(
+                              child: _buildNavItem(index),
+                            );
+                          }),
+                        ),
+                      ),
+                    ),
+                  ),
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOutQuint,
+                    left: (_selectedIndex * (size.width / 4)) +
+                        (size.width / 8) -
+                        25,
+                    top: 5,
+                    child: Container(
+                      width: 50,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.5),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(_navItems.length, (index) {
-                return Expanded(
-                  child: _buildNavItem(index),
-                );
-              }),
-            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -195,29 +235,6 @@ class _PembeliScreenState extends State<PembeliScreen>
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(isSelected ? 0.15 : 0),
                 borderRadius: BorderRadius.circular(30),
-              ),
-            ),
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.elasticOut,
-              top: isSelected ? 5 : 20,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: isSelected ? 50 : 0,
-                height: isSelected ? 4 : 0,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(2),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.5),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ]
-                      : [],
-                ),
               ),
             ),
             Column(
@@ -324,70 +341,79 @@ class _HomeTabState extends State<HomeTab> {
 
   Future<void> _checkLoginStatus() async {
     final token = await _authService.getToken();
-    setState(() {
-      _isLoggedIn = token != null;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoggedIn = token != null;
+      });
+    }
   }
 
   Future<void> _fetchCategories() async {
-  const maxRetries = 3;
-  const retryDelay = Duration(seconds: 2);
-  int attempt = 0;
+    const maxRetries = 3;
+    const retryDelay = Duration(seconds: 2);
+    int attempt = 0;
 
-  while (attempt < maxRetries) {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/categories'),
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 30));
+    while (attempt < maxRetries) {
+      try {
+        final response = await http.get(
+          Uri.parse('$baseUrl/categories'),
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        ).timeout(const Duration(seconds: 30));
 
-      if (response.statusCode == 200) {
-        var jsonResponse = json.decode(response.body);
-        List<dynamic> categories;
+        if (response.statusCode == 200) {
+          var jsonResponse = json.decode(response.body);
+          List<dynamic> categories;
 
-        if (jsonResponse is List) {
-          categories = jsonResponse;
-        } else if (jsonResponse is Map && jsonResponse.containsKey('data')) {
-          categories = jsonResponse['data'];
+          if (jsonResponse is List) {
+            categories = jsonResponse;
+          } else if (jsonResponse is Map && jsonResponse.containsKey('data')) {
+            categories = jsonResponse['data'];
+          } else {
+            throw Exception('Unexpected response format: ${response.body}');
+          }
+
+          if (categories.isNotEmpty &&
+              categories
+                  .every((cat) => cat is Map && cat.containsKey('NAMA'))) {
+            if (mounted) {
+              setState(() {
+                _categories = categories;
+                _isLoadingCategories = false;
+                _errorMessage = null;
+              });
+            }
+            return;
+          } else {
+            throw Exception('Categories missing NAMA field: ${response.body}');
+          }
         } else {
-          throw Exception('Unexpected response format: ${response.body}');
+          throw Exception(
+              'Failed to load categories: ${response.statusCode} - ${response.body}');
         }
-
-        if (categories.isNotEmpty && categories.every((cat) => cat is Map && cat.containsKey('NAMA'))) {
-          setState(() {
-            _categories = categories;
-            _isLoadingCategories = false;
-            _errorMessage = null;
-          });
+      } catch (e) {
+        attempt++;
+        if (attempt == maxRetries) {
+          if (mounted) {
+            setState(() {
+              _isLoadingCategories = false;
+              _errorMessage = e.toString();
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Gagal memuat kategori: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
           return;
-        } else {
-          throw Exception('Categories missing NAMA field: ${response.body}');
         }
-      } else {
-        throw Exception('Failed to load categories: ${response.statusCode} - ${response.body}');
+        await Future.delayed(retryDelay);
       }
-    } catch (e) {
-      attempt++;
-      if (attempt == maxRetries) {
-        setState(() {
-          _isLoadingCategories = false;
-          _errorMessage = e.toString();
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal memuat kategori: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-      await Future.delayed(retryDelay);
     }
   }
-}
 
   IconData _getIconForCategory(String categoryName) {
     switch (categoryName.toLowerCase()) {
@@ -417,59 +443,68 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Future<void> _fetchProducts() async {
-  const maxRetries = 3;
-  const retryDelay = Duration(seconds: 2);
-  int attempt = 0;
+    const maxRetries = 3;
+    const retryDelay = Duration(seconds: 2);
+    int attempt = 0;
 
-  while (attempt < maxRetries) {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/products'),
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 30));
+    while (attempt < maxRetries) {
+      try {
+        final response = await http.get(
+          Uri.parse('$baseUrl/products/mobile'),
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        ).timeout(const Duration(seconds: 30));
 
-      if (response.statusCode == 200) {
-        var jsonResponse = json.decode(response.body);
-        List<dynamic> products;
+        if (response.statusCode == 200) {
+          var jsonResponse = json.decode(response.body);
+          List<dynamic> products;
 
-        if (jsonResponse['success'] && jsonResponse['data'] is List) {
-          products = jsonResponse['data'];
-          products.shuffle();
-          products = products.take(10).toList();
-          setState(() {
-            _products = products;
-            _isLoadingProducts = false;
-            _errorMessage = null;
-          });
-          return;
+          if (jsonResponse['success'] && jsonResponse['data'] is List) {
+            products = jsonResponse['data'].map((product) {
+              product['image'] = product['image'] != '/api/placeholder/60/60'
+                  ? '$baseUrl/products/${product['id']}/thumbnail'
+                  : '/api/placeholder/60/60';
+              return product;
+            }).toList();
+            products.shuffle();
+            products = products.take(10).toList();
+            if (mounted) {
+              setState(() {
+                _products = products;
+                _isLoadingProducts = false;
+                _errorMessage = null;
+              });
+            }
+            return;
+          } else {
+            throw Exception('Unexpected response format: ${response.body}');
+          }
         } else {
-          throw Exception('Unexpected response format: ${response.body}');
+          throw Exception('Failed to load products: ${response.statusCode}');
         }
-      } else {
-        throw Exception('Failed to load products: ${response.statusCode}');
+      } catch (e) {
+        attempt++;
+        if (attempt == maxRetries) {
+          if (mounted) {
+            setState(() {
+              _isLoadingProducts = false;
+              _errorMessage = e.toString();
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Gagal memuat produk: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+        await Future.delayed(retryDelay);
       }
-    } catch (e) {
-      attempt++;
-      if (attempt == maxRetries) {
-        setState(() {
-          _isLoadingProducts = false;
-          _errorMessage = e.toString();
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal memuat produk: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-      await Future.delayed(retryDelay);
     }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -477,347 +512,371 @@ class _HomeTabState extends State<HomeTab> {
     final backgroundColor = Colors.white;
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 280,
-            floating: false,
-            pinned: false,
-            automaticallyImplyLeading: false,
-            backgroundColor: oliveGreen,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                children: [
-                  Container(
-                    decoration: const BoxDecoration(
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/hero-bg.png'),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    color: oliveGreen.withOpacity(0.7),
-                  ),
-                  SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          FadeInDown(
-                            duration: const Duration(milliseconds: 800),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Container(
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.9),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: const TextField(
-                                      decoration: InputDecoration(
-                                        hintText: 'Cari Produk....',
-                                        prefixIcon: Icon(Icons.search,
-                                            color: Colors.grey),
-                                        border: InputBorder.none,
-                                        contentPadding:
-                                            EdgeInsets.symmetric(vertical: 10),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                _isLoggedIn
-                                    ? Container(
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.4),
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                        child: IconButton(
-                                          icon: const Icon(Icons.notifications,
-                                              color: Colors.white),
-                                          onPressed: () {},
-                                        ),
-                                      )
-                                    : Container(
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.4),
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                        child: IconButton(
-                                          icon: const Icon(Icons.login,
-                                              color: Colors.white),
-                                          onPressed: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    const LoginScreen(),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 43),
-                          FadeInLeft(
-                            duration: const Duration(milliseconds: 1000),
-                            child: const Text(
-                              'Temukan\nKesempatan Baru\ndalam Barang Lama',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w600,
-                                height: 1.3,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          FadeInUp(
-                            duration: const Duration(milliseconds: 1200),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: const [
-                                _StatItem(
-                                  label: '200+',
-                                  description: 'Pembeli Puas',
-                                ),
-                                _StatItem(
-                                  label: '100+',
-                                  description: 'Dipercaya Penitip',
-                                ),
-                                _StatItem(
-                                  label: '100%',
-                                  description: 'Barang Layak Pakai',
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+      body: Stack(
+        children: [
+          Container(
+            height: double.infinity,
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/images/hero-bg.png'),
+                fit: BoxFit.cover,
               ),
             ),
-          ),
-          SliverToBoxAdapter(
             child: Container(
-              decoration: BoxDecoration(
-                color: backgroundColor,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
+              color: oliveGreen.withOpacity(0.7),
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FadeInDown(
+                        duration: const Duration(milliseconds: 800),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.9),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const TextField(
+                                  decoration: InputDecoration(
+                                    hintText: 'Cari Produk....',
+                                    prefixIcon:
+                                        Icon(Icons.search, color: Colors.grey),
+                                    border: InputBorder.none,
+                                    contentPadding:
+                                        EdgeInsets.symmetric(vertical: 10),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            _isLoggedIn
+                                ? Container(
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.4),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: IconButton(
+                                      icon: const Icon(Icons.notifications,
+                                          color: Colors.white),
+                                      onPressed: () {},
+                                    ),
+                                  )
+                                : Container(
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.4),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: IconButton(
+                                      icon: const Icon(Icons.login,
+                                          color: Colors.white),
+                                      onPressed: () {
+                                        Navigator.pushReplacement(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const LoginScreen(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      FadeInLeft(
+                        duration: const Duration(milliseconds: 1000),
+                        child: const Text(
+                          'Temukan\nKesempatan Baru\ndalam Barang Lama',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  ProductSection(
-                    products: _products,
-                    isLoading: _isLoadingProducts,
-                    errorMessage: _errorMessage,
-                    onRetry: _fetchProducts,
-                  ),
-                  CategorySection(
-                    categories: _categories,
-                    getIcon: _getIconForCategory,
-                    isLoading: _isLoadingCategories,
-                    errorMessage: _errorMessage,
-                    onRetry: _fetchCategories,
-                  ),
-                  const SizedBox(height: 24),
-                  FadeInUp(
-                    duration: const Duration(milliseconds: 1000),
-                    child: Container(
-                      color: oliveGreen.withOpacity(0.3),
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Mengapa Memilih ReuseMart',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                              color: oliveGreen,
-                            ),
-                          ),
-                          const SizedBox(height: 25),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _InfoCard(
-                                icon: Icons.eco,
-                                label: 'Ramah Lingkungan',
-                              ),
-                              const SizedBox(width: 12),
-                              _InfoCard(
-                                icon: Icons.verified,
-                                label: 'Terpercaya',
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          _InfoCard(
-                            icon: Icons.savings,
-                            label: 'Hemat Budget',
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  FadeInUp(
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: FadeInUp(
                     duration: const Duration(milliseconds: 1200),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          image: const DecorationImage(
-                            image: AssetImage('assets/images/hero-bg.png'),
-                            fit: BoxFit.cover,
-                          ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        _StatItem(
+                          label: '200+',
+                          description: 'Pembeli Puas',
                         ),
-                        height: 390,
-                        width: double.infinity,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            gradient: const LinearGradient(
-                              colors: [
-                                Colors.black12,
-                                Colors.black54,
-                                Colors.black,
-                              ],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
+                        _StatItem(
+                          label: '100+',
+                          description: 'Dipercaya Penitip',
+                        ),
+                        _StatItem(
+                          label: '100%',
+                          description: 'Barang Layak Pakai',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      PhysicalModel(
+                        color: Colors.transparent,
+                        elevation: 10,
+                        shadowColor: Colors.black.withOpacity(0.2),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(30),
+                          topRight: Radius.circular(30),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(30),
+                            topRight: Radius.circular(30),
                           ),
-                          padding: const EdgeInsets.all(25),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 140),
-                              const Text(
-                                'Temukan Barang Berkualitas dengan Mudah',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Daftar sekarang sebagai pembeli dan jelajahi ribuan produk preloved yang telah dikurasi. Hemat lebih banyak, temukan lebih cepat.',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                ),
-                                textAlign: TextAlign.justify,
-                              ),
-                              const SizedBox(height: 12),
-                              Center(
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: oliveGreen,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12, horizontal: 24),
-                                  ),
-                                  onPressed: () {},
-                                  child: const Text(
-                                    'Lanjutkan Pembelian di Website Kami',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                          child: Container(
+                            width: double.infinity,
+                            color: backgroundColor,
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SlideInUp(
-                    duration: const Duration(milliseconds: 1000),
-                    child: Container(
-                      color: const Color(0xFF7A7C52),
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'ReUseMart',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                      SingleChildScrollView(
+                        physics: const ClampingScrollPhysics(),
+                        child: Column(
+                          children: [
+                            ProductSection(
+                              products: _products,
+                              isLoading: _isLoadingProducts,
+                              errorMessage: _errorMessage,
+                              onRetry: _fetchProducts,
                             ),
-                            textAlign: TextAlign.right,
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'ReuseMart adalah platform jual beli barang bekas terpercaya di Yogyakarta, mendukung transaksi mudah dan ramah lingkungan. Gabunglah dengan kami untuk menemukan barang berkualitas dengan harga terjangkau.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 12, color: Colors.white70),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            '© 2025 ReuseMart. All Rights Reserved.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 12, color: Colors.white70),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Privacy Policy',
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.white70,
-                                    decoration: TextDecoration.underline),
+                            CategorySection(
+                              categories: _categories,
+                              getIcon: _getIconForCategory,
+                              isLoading: _isLoadingCategories,
+                              errorMessage: _errorMessage,
+                              onRetry: _fetchCategories,
+                            ),
+                            const SizedBox(height: 24),
+                            FadeInUp(
+                              duration: const Duration(milliseconds: 1000),
+                              child: Container(
+                                color: oliveGreen.withOpacity(0.3),
+                                width: double.infinity,
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 24, 16, 24),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Mengapa Memilih ReuseMart',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                        color: oliveGreen,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 25),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        _InfoCard(
+                                          icon: Icons.eco,
+                                          label: 'Ramah Lingkungan',
+                                        ),
+                                        const SizedBox(width: 12),
+                                        _InfoCard(
+                                          icon: Icons.verified,
+                                          label: 'Terpercaya',
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    _InfoCard(
+                                      icon: Icons.savings,
+                                      label: 'Hemat Budget',
+                                    ),
+                                  ],
+                                ),
                               ),
-                              const SizedBox(width: 16),
-                              Text(
-                                'Terms of Service',
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.white70,
-                                    decoration: TextDecoration.underline),
+                            ),
+                            const SizedBox(height: 24),
+                            FadeInUp(
+                              duration: const Duration(milliseconds: 1200),
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 24, 16, 24),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    image: const DecorationImage(
+                                      image: AssetImage(
+                                          'assets/images/hero-bg.png'),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  height: 390,
+                                  width: double.infinity,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Colors.black12,
+                                          Colors.black54,
+                                          Colors.black,
+                                        ],
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.all(25),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const SizedBox(height: 140),
+                                        const Text(
+                                          'Temukan Barang Berkualitas dengan Mudah',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        const Text(
+                                          'Daftar sekarang sebagai pembeli dan jelajahi ribuan produk preloved yang telah dikurasi. Hemat lebih banyak, temukan lebih cepat.',
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 14,
+                                          ),
+                                          textAlign: TextAlign.justify,
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Center(
+                                          child: ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: oliveGreen,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 12,
+                                                      horizontal: 24),
+                                            ),
+                                            onPressed: () {},
+                                            child: const Text(
+                                              'Lanjutkan Pembelian di Website Kami',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ],
-                          ),
-                        ],
+                            ),
+                            const SizedBox(height: 24),
+                            SlideInUp(
+                              duration: const Duration(milliseconds: 1000),
+                              child: Container(
+                                width: double.infinity,
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 24, 16, 24),
+                                color: const Color(0xFF7A7C52),
+                                constraints: BoxConstraints(
+                                  minHeight:
+                                      MediaQuery.of(context).size.height * 0.3,
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'ReUseMart',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                      textAlign: TextAlign.right,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      'ReuseMart adalah platform jual beli barang bekas terpercaya di Yogyakarta, mendukung transaksi mudah dan ramah lingkungan. Gabunglah dengan kami untuk menemukan barang berkualitas dengan harga terjangkau.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          fontSize: 12, color: Colors.white70),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      '© 2025 ReuseMart. All Rights Reserved.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          fontSize: 12, color: Colors.white70),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          'Privacy Policy',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.white70,
+                                            decoration:
+                                                TextDecoration.underline,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Text(
+                                          'Terms of Service',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.white70,
+                                            decoration:
+                                                TextDecoration.underline,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -843,7 +902,7 @@ class ProductSection extends StatelessWidget {
   Widget _buildProductLoadingShimmer() {
     return ListView.builder(
       scrollDirection: Axis.horizontal,
-      itemCount: 3, // Menampilkan 3 placeholder shimmer
+      itemCount: 3,
       itemBuilder: (context, index) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6.0),
         child: Shimmer.fromColors(
@@ -871,7 +930,8 @@ class ProductSection extends StatelessWidget {
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     color: Colors.grey,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(12)),
                   ),
                 ),
                 Padding(
@@ -920,7 +980,6 @@ class ProductSection extends StatelessWidget {
           SizedBox(
             height: 180,
             child: isLoading
-                // ? const Center(child: CircularProgressIndicator())
                 ? _buildProductLoadingShimmer()
                 : errorMessage != null
                     ? Center(
@@ -952,24 +1011,35 @@ class ProductSection extends StatelessWidget {
                             itemCount: (products.length / 2).ceil(),
                             itemBuilder: (context, index) {
                               final int firstProductIndex = index * 2;
-                              final int secondProductIndex = firstProductIndex + 1;
+                              final int secondProductIndex =
+                                  firstProductIndex + 1;
                               return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 6.0),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     ProductCard(
                                       id: products[firstProductIndex]['id'],
-                                      title: products[firstProductIndex]['name'],
-                                      price: products[firstProductIndex]['price'].toString(),
-                                      imageUrl: products[firstProductIndex]['image'],
+                                      title: products[firstProductIndex]
+                                          ['name'],
+                                      price: products[firstProductIndex]
+                                              ['price']
+                                          .toString(),
+                                      imageUrl: products[firstProductIndex]
+                                          ['image'],
                                     ),
                                     if (secondProductIndex < products.length)
                                       ProductCard(
                                         id: products[secondProductIndex]['id'],
-                                        title: products[secondProductIndex]['name'],
-                                        price: products[secondProductIndex]['price'].toString(),
-                                        imageUrl: products[secondProductIndex]['image'],
+                                        title: products[secondProductIndex]
+                                            ['name'],
+                                        price: products[secondProductIndex]
+                                                ['price']
+                                            .toString(),
+                                        imageUrl: products[secondProductIndex]
+                                            ['image'],
                                       ),
                                   ],
                                 ),
@@ -1014,6 +1084,7 @@ class ProductCard extends StatelessWidget {
       final number = int.tryParse(price.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
       return 'Rp ${NumberFormat("#,##0", "id_ID").format(number)}';
     }
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -1041,12 +1112,19 @@ class ProductCard extends StatelessWidget {
                   borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                 ),
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(12)),
                   child: imageUrl != '/api/placeholder/60/60'
                       ? CachedNetworkImage(
                           imageUrl: imageUrl,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                          placeholder: (context, url) => Shimmer.fromColors(
+                            baseColor: Colors.grey[300]!,
+                            highlightColor: Colors.grey[100]!,
+                            child: Container(
+                              color: Colors.grey,
+                            ),
+                          ),
                           errorWidget: (context, url, error) {
                             print('Image load error: $error, URL: $url');
                             return Image.asset(
@@ -1077,7 +1155,7 @@ class ProductCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      formatRupiah(price), // <-- pakai fungsi formatRupiah
+                      formatRupiah(price),
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -1130,7 +1208,7 @@ class CategorySection extends StatelessWidget {
   Widget _buildCategoryLoadingShimmer() {
     return ListView.builder(
       scrollDirection: Axis.horizontal,
-      itemCount: 3, // Menampilkan 3 kolom placeholder shimmer
+      itemCount: 3,
       itemBuilder: (context, index) {
         return Padding(
           padding: const EdgeInsets.only(right: 16.0),
@@ -1178,8 +1256,7 @@ class CategorySection extends StatelessWidget {
           SizedBox(
             height: 120,
             child: isLoading
-                // ? const Center(child: CircularProgressIndicator())
-                ? _buildCategoryLoadingShimmer() 
+                ? _buildCategoryLoadingShimmer()
                 : errorMessage != null
                     ? Center(
                         child: Column(
@@ -1205,7 +1282,8 @@ class CategorySection extends StatelessWidget {
                         ),
                       )
                     : groupedCategories.isEmpty
-                        ? const Center(child: Text('Tidak ada kategori tersedia'))
+                        ? const Center(
+                            child: Text('Tidak ada kategori tersedia'))
                         : ListView.builder(
                             scrollDirection: Axis.horizontal,
                             itemCount: groupedCategories.length,
@@ -1214,7 +1292,8 @@ class CategorySection extends StatelessWidget {
                               return Padding(
                                 padding: const EdgeInsets.only(right: 16.0),
                                 child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: pair.map((category) {
                                     return SizedBox(
                                       width: cardWidth,
@@ -1222,7 +1301,8 @@ class CategorySection extends StatelessWidget {
                                       child: Card(
                                         color: Colors.white,
                                         shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8)),
+                                            borderRadius:
+                                                BorderRadius.circular(8)),
                                         child: Padding(
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 12, vertical: 8),

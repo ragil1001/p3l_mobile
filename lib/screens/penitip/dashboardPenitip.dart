@@ -69,7 +69,7 @@ class _PenitipDashboardState extends State<PenitipDashboard>
     {'name': 'Elektronik', 'value': 35, 'color': Colors.blue},
     {'name': 'Pakaian', 'value': 28, 'color': Colors.green},
     {'name': 'Aksesoris', 'value': 20, 'color': Colors.amber},
-    {'name': 'Peralatan', 'value': 17, 'color': Colors.orange},
+    {'name': 'Peralan', 'value': 17, 'color': Colors.orange},
   ];
 
   // Data Performa Bulanan
@@ -142,67 +142,102 @@ class _PenitipDashboardState extends State<PenitipDashboard>
     }
   }
 
+  String _getDisplayText(double availableWidth) {
+    return availableWidth < 280 ? 'Dashboard\nPenitip' : 'Dashboard Penitip';
+  }
+
+  double _getFontSize(double availableWidth) {
+    return availableWidth < 280 ? 18 : 20;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final Size size = MediaQuery.of(context).size;
+
     return Scaffold(
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFF7A7C52),
-              const Color(0xFF6A6D42),
-              const Color(0xFF5A5D32),
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 20,
-              offset: const Offset(0, -8),
-              spreadRadius: 0,
-            ),
-            BoxShadow(
-              color: const Color(0xFF7A7C52).withOpacity(0.3),
-              blurRadius: 40,
-              offset: const Offset(0, -15),
-              spreadRadius: -5,
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(25),
-            topRight: Radius.circular(25),
-          ),
-          child: Container(
-            height: 80,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  const Color(0xFF7A7C52).withOpacity(0.95),
-                  const Color(0xFF7A7C52),
+      body: Stack(
+        children: [
+          // Main content
+          _pages[_selectedIndex],
+
+          // Bottom Navigation Bar
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 80,
+              margin: const EdgeInsets.symmetric(horizontal: 0),
+              child: Stack(
+                children: [
+                  // Actual Bottom Bar with curved corners
+                  PhysicalModel(
+                    color: Colors.transparent,
+                    elevation: 10,
+                    shadowColor: Colors.black.withOpacity(0.4),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(25),
+                      topRight: Radius.circular(25),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(25),
+                        topRight: Radius.circular(25),
+                      ),
+                      child: Container(
+                        height: 80,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              const Color(0xFF7A7C52),
+                              const Color(0xFF6A6D42),
+                              const Color(0xFF5A5D32),
+                            ],
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: List.generate(_navItems.length, (index) {
+                            return Expanded(
+                              child: _buildNavItem(index),
+                            );
+                          }),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Animated indicator
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOutQuint,
+                    left: (_selectedIndex * (size.width / 3)) +
+                        (size.width / 6) -
+                        25,
+                    top: 5,
+                    child: Container(
+                      width: 50,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.5),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(25),
-                topRight: Radius.circular(25),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(_navItems.length, (index) {
-                return Expanded(
-                  child: _buildNavItem(index),
-                );
-              }),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -218,6 +253,7 @@ class _PenitipDashboardState extends State<PenitipDashboard>
         child: Stack(
           alignment: Alignment.center,
           children: [
+            // Background highlight for selected item
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
@@ -228,29 +264,8 @@ class _PenitipDashboardState extends State<PenitipDashboard>
                 borderRadius: BorderRadius.circular(30),
               ),
             ),
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.elasticOut,
-              top: isSelected ? 5 : 20,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: isSelected ? 50 : 0,
-                height: isSelected ? 4 : 0,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(2),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.5),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ]
-                      : [],
-                ),
-              ),
-            ),
+
+            // Icon and label
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -281,20 +296,24 @@ class _PenitipDashboardState extends State<PenitipDashboard>
                     );
                   },
                 ),
-                if (isSelected) ...[
-                  const SizedBox(height: 2),
-                  AnimatedDefaultTextStyle(
+                const SizedBox(height: 2),
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 300),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: isSelected ? 12 : 10,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                  child: AnimatedOpacity(
                     duration: const Duration(milliseconds: 300),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    opacity: isSelected ? 1.0 : 0.7,
                     child: Text(navItem.label),
                   ),
-                ],
+                ),
               ],
             ),
+
+            // Radial highlight effect
             if (isSelected)
               Positioned.fill(
                 child: AnimatedContainer(
@@ -320,40 +339,177 @@ class _PenitipDashboardState extends State<PenitipDashboard>
   }
 
   Widget _buildDashboardContent() {
+    final oliveGreen = const Color(0xFF7A7C52);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard Penitip'),
-        backgroundColor: const Color(0xFF7A7C52),
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            FadeInDown(
-              duration: const Duration(milliseconds: 800),
-              child: _buildWelcomeSection(),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.grey[50]!,
+              Colors.white,
+              Colors.grey[50]!,
+            ],
+          ),
+        ),
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              pinned: true,
+              floating: false,
+              elevation: 8,
+              backgroundColor: Colors.transparent,
+              leading: Padding(
+                padding: const EdgeInsets.all(8.0),
+              ),
+              flexibleSpace: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      oliveGreen,
+                      oliveGreen.withOpacity(0.9),
+                      const Color(0xFF5A5D3A),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(25),
+                    bottomRight: Radius.circular(25),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                    BoxShadow(
+                      color: oliveGreen.withOpacity(0.2),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                height: 140,
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: -50,
+                      right: -50,
+                      child: Container(
+                        width: 150,
+                        height: 150,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.05),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: -30,
+                      left: -30,
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.03),
+                        ),
+                      ),
+                    ),
+                    SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 0.0, vertical: 12.0),
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 30),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      double availableWidth =
+                                          constraints.maxWidth;
+                                      String displayText =
+                                          _getDisplayText(availableWidth);
+                                      double fontSize =
+                                          _getFontSize(availableWidth);
+
+                                      return Text(
+                                        displayText,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: fontSize,
+                                          fontWeight: FontWeight.bold,
+                                          height: 1.2,
+                                        ),
+                                        maxLines: availableWidth < 280 ? 2 : 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        softWrap: true,
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Flexible(
+                                    child: Text(
+                                      '${stats[0]['value']} Barang Titipan',
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 14,
+                                        height: 1.3,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 24),
-            FadeInUp(
-              duration: const Duration(milliseconds: 1000),
-              child: _buildStatsGrid(),
-            ),
-            const SizedBox(height: 24),
-            FadeInLeft(
-              duration: const Duration(milliseconds: 1200),
-              child: _buildSalesTrendChart(),
-            ),
-            const SizedBox(height: 24),
-            FadeInRight(
-              duration: const Duration(milliseconds: 1400),
-              child: _buildCategoryPieChart(),
-            ),
-            const SizedBox(height: 24),
-            FadeInUp(
-              duration: const Duration(milliseconds: 1600),
-              child: _buildMonthlyBarChart(),
+            SliverToBoxAdapter(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FadeInDown(
+                      duration: const Duration(milliseconds: 800),
+                      child: _buildWelcomeSection(),
+                    ),
+                    FadeInUp(
+                      duration: const Duration(milliseconds: 1000),
+                      child: _buildStatsGrid(),
+                    ),
+                    const SizedBox(height: 24),
+                    FadeInLeft(
+                      duration: const Duration(milliseconds: 1200),
+                      child: _buildSalesTrendChart(),
+                    ),
+                    const SizedBox(height: 24),
+                    FadeInRight(
+                      duration: const Duration(milliseconds: 1400),
+                      child: _buildCategoryPieChart(),
+                    ),
+                    const SizedBox(height: 24),
+                    FadeInUp(
+                      duration: const Duration(milliseconds: 1600),
+                      child: _buildMonthlyBarChart(),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -553,8 +709,7 @@ class _PenitipDashboardState extends State<PenitipDashboard>
 
   Widget _buildSalesTrendChart() {
     return FutureBuilder(
-      future: Future.delayed(const Duration(
-          seconds: 2)), // Sesuaikan dengan delay _buildStatsGrid()
+      future: Future.delayed(const Duration(seconds: 2)),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Shimmer.fromColors(
