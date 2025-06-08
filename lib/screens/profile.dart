@@ -637,8 +637,38 @@ class _ProfileScreenState extends State<ProfileScreen>
               SnackBar(content: Text(result['message'])),
             );
           }
+        },'onTap': () async {
+          final shouldLogout = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Konfirmasi Logout'),
+              content: const Text('Apakah Anda yakin ingin keluar dari akun?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Batal'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Logout'),
+                ),
+              ],
+            ),
+          );
+          if (shouldLogout == true) {
+            final result = await _authService.logout();
+            if (result['success']) {
+              Navigator.pushReplacementNamed(context, '/login');
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(result['message'])),
+              );
+            }
+          }
         },
       },
+        
+      
     ];
 
     return Container(
