@@ -112,11 +112,13 @@ class _ProfileScreenState extends State<ProfileScreen>
             final List<dynamic> transactions = transactionsData['data'] ?? [];
 
             // Calculate active and total transactions
-            final transaksiAktif = transactions
-                .where((t) =>
-                    t['status'] != 'Sudah Diterima' &&
-                    t['status'] != 'Sudah Diambil')
-                .length;
+            final activeStatuses = [
+              'Menunggu Pembayaran',
+              'Menunggu Verifikasi',
+              'Sedang Dikemas',
+              'Sedang Dikirim',
+              'Siap Diambil'
+            ];
             final totalTransaksi = transactions.length;
 
             if (mounted) {
@@ -127,7 +129,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                   'telepon':
                       profileData['user']['telepon'] ?? '+62 812-3456-7890',
                   'email': profileData['user']['email'],
-                  'transaksi_aktif': transaksiAktif,
+                  'transaksi_aktif': transactions
+                    .where((t) => activeStatuses.contains(t['status']))
+                    .length,
                   'total_transaksi': totalTransaksi,
                   'member_since': 'Januari 2024', // Static, as not in backend
                   'badge': 'Silver Member', // Static, as not in backend

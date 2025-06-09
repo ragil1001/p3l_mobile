@@ -22,6 +22,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
   String? _errorMessage;
   late AnimationController _fadeController;
   late AnimationController _slideController;
+  ScrollController _scrollController = ScrollController();
+  bool _isScrolled = false;
   List<Transaction> _transactions = [];
 
   @override
@@ -38,6 +40,12 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
 
     _fadeController.forward();
     _slideController.forward();
+
+    _scrollController.addListener(() {
+      setState(() {
+        _isScrolled = _scrollController.offset > 50;
+      });
+    });
 
     _fetchTransactions();
   }
@@ -180,15 +188,24 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
   void dispose() {
     _fadeController.dispose();
     _slideController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  String _getDisplayText(double availableWidth) {
-    return availableWidth < 300 ? 'Riwayat\nPesanan' : 'Riwayat Pesanan';
+  String _getDisplayText(double availableWidth, bool isScrolled) {
+    if (isScrolled) {
+      return availableWidth < 250 ? 'Riwayat Pesanan' : 'Riwayat Pesanan';
+    } else {
+      return availableWidth < 300 ? 'Riwayat\nPesanan' : 'Riwayat Pesanan';
+    }
   }
 
-  double _getFontSize(double availableWidth) {
-    return availableWidth < 300 ? 16 : 18;
+  double _getFontSize(bool isScrolled, double availableWidth) {
+    if (isScrolled) {
+      return availableWidth < 250 ? 14 : 16;
+    } else {
+      return availableWidth < 300 ? 16 : 18;
+    }
   }
 
   Widget _buildTransactionList() {
@@ -378,13 +395,15 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
           ),
         ),
         child: CustomScrollView(
+          controller: _scrollController,
           slivers: [
             SliverAppBar(
               pinned: true,
               floating: false,
               elevation: 8,
               backgroundColor: Colors.transparent,
-              expandedHeight: MediaQuery.of(context).size.height * 0.18,
+              
+              expandedHeight: _isScrolled ? 90 : MediaQuery.of(context).size.height * 0.1,
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
                   decoration: BoxDecoration(
@@ -454,39 +473,45 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    LayoutBuilder(
-                                      builder: (context, constraints) {
-                                        double availableWidth = constraints.maxWidth;
-                                        String displayText = _getDisplayText(availableWidth);
-                                        double fontSize = _getFontSize(availableWidth);
+                                    FadeInDown(
+                                      duration: const Duration(milliseconds: 800),
+                                      child: LayoutBuilder(
+                                        builder: (context, constraints) {
+                                          double availableWidth = constraints.maxWidth;
+                                          String displayText = _getDisplayText(availableWidth, _isScrolled);
+                                          double fontSize = _getFontSize(_isScrolled, availableWidth);
 
-                                        return Text(
-                                          displayText,
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: fontSize,
-                                            fontWeight: FontWeight.bold,
-                                            height: 1.2,
-                                          ),
-                                          maxLines: availableWidth < 300 ? 2 : 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          softWrap: true,
-                                        );
-                                      },
-                                    ),
-                                    SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-                                    Flexible(
-                                      child: Text(
-                                        '${_transactions.length} Transaksi',
-                                        style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: MediaQuery.of(context).size.width * 0.035,
-                                          height: 1.3,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                                          return Text(
+                                            displayText,
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: fontSize,
+                                              fontWeight: FontWeight.bold,
+                                              height: 1.2,
+                                            ),
+                                            maxLines: _isScrolled ? 1 : 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            softWrap: true,
+                                          );
+                                        },
                                       ),
                                     ),
+                                    if (!_isScrolled) ...[
+                                      SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+                                      FadeInDown(
+                                        duration: const Duration(milliseconds: 900),
+                                        child: Text(
+                                          '${_transactions.length} Transaksi',
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: MediaQuery.of(context).size.width * 0.035,
+                                            height: 1.3,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),

@@ -70,7 +70,7 @@ class TransactionDetailScreen extends StatelessWidget {
               floating: false,
               elevation: 8,
               backgroundColor: Colors.transparent,
-              expandedHeight: MediaQuery.of(context).size.height * 0.15,
+              expandedHeight: MediaQuery.of(context).size.height * 0.05,
               leading: Padding(
                 padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
                 child: Container(

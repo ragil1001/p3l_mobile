@@ -39,10 +39,10 @@ class _PembeliScreenState extends State<PembeliScreen>
   ];
 
   final List<NavItem> _navItems = [
-    NavItem(icon: Icons.home_rounded, label: 'Beranda'),
-    NavItem(icon: Icons.search_rounded, label: 'Katalog'),
-    NavItem(icon: Icons.receipt_long_rounded, label: 'Riwayat Pesanan'),
-    NavItem(icon: Icons.person_rounded, label: 'Profil'),
+    NavItem(icon: Icons.home_rounded, label: 'Home'),
+    NavItem(icon: Icons.search_rounded, label: 'Catalogue'),
+    NavItem(icon: Icons.receipt_long_rounded, label: 'Orders'),
+    NavItem(icon: Icons.person_rounded, label: 'Profile'),
   ];
 
   @override
