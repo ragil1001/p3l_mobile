@@ -177,15 +177,16 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
     super.dispose();
   }
 
-  String _getDisplayText(double availableWidth) {
-    return availableWidth < 280 ? 'Riwayat\nPengiriman' : 'Riwayat Pengiriman';
+  String _getDisplayText(double availableWidth, double screenWidth) {
+    return availableWidth < screenWidth * 0.5 ? 'Riwayat\nPengiriman' : 'Riwayat Pengiriman';
   }
 
-  double _getFontSize(double availableWidth) {
-    return availableWidth < 280 ? 18 : 20;
+  double _getFontSize(double availableWidth, double screenWidth) {
+    return availableWidth < screenWidth * 0.5 ? screenWidth * 0.045 : screenWidth * 0.05;
   }
 
   Widget _buildDeliveryList() {
+    final size = MediaQuery.of(context).size;
     return FadeTransition(
       opacity: _fadeController,
       child: SlideTransition(
@@ -199,7 +200,7 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
         child: ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: size.width * 0.04, vertical: size.height * 0.01),
           itemCount: _deliveries.length,
           itemBuilder: (context, index) {
             return FadeInUp(
@@ -220,25 +221,26 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
   }
 
   Widget _buildLoadingShimmer() {
+    final size = MediaQuery.of(context).size;
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: size.width * 0.04, vertical: size.height * 0.01),
       itemCount: 3,
       itemBuilder: (context, index) {
         return Shimmer.fromColors(
           baseColor: Colors.grey[300]!,
           highlightColor: Colors.grey[100]!,
           child: Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            height: 200,
+            margin: EdgeInsets.only(bottom: size.height * 0.02),
+            height: size.height * 0.25,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(size.width * 0.05),
               boxShadow: [
                 BoxShadow(
                   color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 10,
+                  blurRadius: size.width * 0.025,
                   offset: const Offset(0, 5),
                 ),
               ],
@@ -250,6 +252,7 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
   }
 
   Widget _buildEmptyState() {
+    final size = MediaQuery.of(context).size;
     if (_errorMessage != null) {
       return Center(
         child: Column(
@@ -257,41 +260,45 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
           children: [
             BounceInDown(
               child: Container(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(size.width * 0.05),
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.error_outline,
-                  size: 80,
+                  size: size.width * 0.2,
                   color: Colors.red[400],
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: size.height * 0.03),
             FadeInUp(
               delay: const Duration(milliseconds: 300),
               child: Text(
                 'Gagal Memuat Pengiriman',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: size.width * 0.05,
                   color: Colors.grey[700],
                   fontWeight: FontWeight.w600,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: size.height * 0.01),
             FadeInUp(
               delay: const Duration(milliseconds: 500),
               child: Text(
                 _errorMessage!,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: size.width * 0.04,
                   color: Colors.grey[500],
                   fontWeight: FontWeight.w400,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -304,40 +311,44 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
         children: [
           BounceInDown(
             child: Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(size.width * 0.05),
               decoration: BoxDecoration(
                 color: Colors.grey[100],
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.local_shipping_outlined,
-                size: 80,
+                size: size.width * 0.2,
                 color: Colors.grey[400],
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: size.height * 0.03),
           FadeInUp(
             delay: const Duration(milliseconds: 300),
             child: Text(
               'Belum ada riwayat pengiriman',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: size.width * 0.05,
                 color: Colors.grey[700],
                 fontWeight: FontWeight.w600,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: size.height * 0.01),
           FadeInUp(
             delay: const Duration(milliseconds: 500),
             child: Text(
               'Mulai pengiriman untuk mencatat riwayat!',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: size.width * 0.04,
                 color: Colors.grey[500],
                 fontWeight: FontWeight.w400,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -347,6 +358,7 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     final oliveGreen = const Color(0xFF7A7C52);
 
     return Scaffold(
@@ -380,27 +392,27 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(25),
-                    bottomRight: Radius.circular(25),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(size.width * 0.06),
+                    bottomRight: Radius.circular(size.width * 0.06),
                   ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.3),
-                      blurRadius: 15,
+                      blurRadius: size.width * 0.04,
                       offset: const Offset(0, 5),
                     ),
                   ],
                 ),
-                height: 140,
+                height: size.height * 0.18,
                 child: Stack(
                   children: [
                     Positioned(
-                      top: -50,
-                      right: -50,
+                      top: -size.height * 0.06,
+                      right: -size.width * 0.12,
                       child: Container(
-                        width: 150,
-                        height: 150,
+                        width: size.width * 0.35,
+                        height: size.width * 0.35,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.white.withOpacity(0.05),
@@ -408,11 +420,11 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
                       ),
                     ),
                     Positioned(
-                      bottom: -30,
-                      left: -30,
+                      bottom: -size.height * 0.04,
+                      left: -size.width * 0.08,
                       child: Container(
-                        width: 100,
-                        height: 100,
+                        width: size.width * 0.25,
+                        height: size.width * 0.25,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.white.withOpacity(0.03),
@@ -421,11 +433,13 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
                     ),
                     SafeArea(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0, vertical: 12.0),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: size.width * 0.02,
+                          vertical: size.height * 0.00,
+                        ),
                         child: Row(
                           children: [
-                            const SizedBox(width: 48),
+                            SizedBox(width: size.width * 0.12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -433,12 +447,9 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
                                 children: [
                                   LayoutBuilder(
                                     builder: (context, constraints) {
-                                      double availableWidth =
-                                          constraints.maxWidth;
-                                      String displayText =
-                                          _getDisplayText(availableWidth);
-                                      double fontSize =
-                                          _getFontSize(availableWidth);
+                                      double availableWidth = constraints.maxWidth;
+                                      String displayText = _getDisplayText(availableWidth, size.width);
+                                      double fontSize = _getFontSize(availableWidth, size.width);
 
                                       return Text(
                                         displayText,
@@ -448,19 +459,19 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
                                           fontWeight: FontWeight.bold,
                                           height: 1.2,
                                         ),
-                                        maxLines: availableWidth < 280 ? 2 : 1,
+                                        maxLines: availableWidth < size.width * 0.5 ? 2 : 1,
                                         overflow: TextOverflow.ellipsis,
                                         softWrap: true,
                                       );
                                     },
                                   ),
-                                  const SizedBox(height: 8),
+                                  SizedBox(height: size.height * 0.01),
                                   Flexible(
                                     child: Text(
                                       '${_deliveries.length} Pengiriman',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: Colors.white70,
-                                        fontSize: 14,
+                                        fontSize: size.width * 0.035,
                                         height: 1.3,
                                       ),
                                       maxLines: 1,
@@ -486,7 +497,7 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
                       : Column(
                           children: [
                             _buildDeliveryList(),
-                            const SizedBox(height: 80),
+                            SizedBox(height: size.height * 0.1),
                           ],
                         ),
             ),
@@ -564,135 +575,18 @@ class _DeliveryCardState extends State<DeliveryCard>
     }
   }
 
-  Future<void> _updateStatus() async {
-    String? newStatus;
-    String confirmationMessage;
-    String actionText;
-
-    if (widget.delivery['status'] == 'Siap Dikirim') {
-      newStatus = 'Sedang Dikirim';
-      confirmationMessage = 'Konfirmasi bahwa pengiriman telah dimulai?';
-      actionText = 'Konfirmasi Pengiriman';
-    } else if (widget.delivery['status'] == 'Sedang Dikirim') {
-      newStatus = 'Sudah Diterima';
-      confirmationMessage = 'Konfirmasi bahwa pengiriman telah diterima?';
-      actionText = 'Konfirmasi Diterima';
-    } else {
-      return; // No action for 'Sudah Diterima' or other statuses
-    }
-
-    final bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Text(
-          'Konfirmasi Status',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF7A7C52),
-          ),
-        ),
-        content: Text(
-          confirmationMessage,
-          style: TextStyle(color: Colors.black87),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'Batal',
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              actionText,
-              style: TextStyle(color: Color(0xFF7A7C52)),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true && mounted) {
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final token = prefs.getString('token');
-        if (token == null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-            );
-          });
-          return;
-        }
-
-        final response = await http.put(
-          Uri.parse(
-              'http://10.0.2.2:8000/api/kurir/transaksi-penjualan/${widget.delivery['id_penjualan']}'),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({
-            'STATUS': newStatus,
-          }),
-        );
-
-        if (response.statusCode == 200) {
-          setState(() {
-            widget.delivery['status'] = newStatus;
-          });
-          widget.onStatusUpdated();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Status diubah menjadi $newStatus'),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
-          );
-        } else {
-          final responseBody = jsonDecode(response.body);
-          final errorMessage = responseBody['message'] ??
-              'Gagal memperbarui status: ${response.statusCode}';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessage),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
-          );
-        }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error memperbarui status: $e'),
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: size.height * 0.02),
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(size.width * 0.03),
       ),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(size.width * 0.03),
           gradient: LinearGradient(
             colors: [
               Colors.white,
@@ -708,7 +602,7 @@ class _DeliveryCardState extends State<DeliveryCard>
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
-              blurRadius: 15,
+              blurRadius: size.width * 0.04,
               offset: const Offset(0, 8),
             ),
           ],
@@ -729,11 +623,11 @@ class _DeliveryCardState extends State<DeliveryCard>
               },
               child: Column(
                 children: [
-                  const Divider(
+                  Divider(
                     height: 1,
-                    color: Color(0xFF7A7C52),
-                    indent: 16,
-                    endIndent: 16,
+                    color: const Color(0xFF7A7C52),
+                    indent: size.width * 0.04,
+                    endIndent: size.width * 0.04,
                   ),
                   _buildExpandedContent(),
                 ],
@@ -746,6 +640,7 @@ class _DeliveryCardState extends State<DeliveryCard>
   }
 
   Widget _buildCardHeader() {
+    final size = MediaQuery.of(context).size;
     return InkWell(
       onTap: () {
         setState(() {
@@ -757,9 +652,9 @@ class _DeliveryCardState extends State<DeliveryCard>
           }
         });
       },
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(size.width * 0.03),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(size.width * 0.04),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -773,25 +668,27 @@ class _DeliveryCardState extends State<DeliveryCard>
                     children: [
                       Text(
                         'No Nota. ${widget.delivery['order_id']}',
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: TextStyle(
+                          fontSize: size.width * 0.045,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A3C34),
+                          color: const Color(0xFF1A3C34),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: size.height * 0.01),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: size.width * 0.03,
+                              vertical: size.height * 0.007,
                             ),
                             decoration: BoxDecoration(
                               color: _getStatusColor().withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(size.width * 0.05),
                               border: Border.all(
                                 color: _getStatusColor().withOpacity(0.3),
                                 width: 1,
@@ -802,16 +699,18 @@ class _DeliveryCardState extends State<DeliveryCard>
                                 Icon(
                                   _getStatusIcon(),
                                   color: _getStatusColor(),
-                                  size: 15,
+                                  size: size.width * 0.035,
                                 ),
-                                const SizedBox(width: 4),
+                                SizedBox(width: size.width * 0.01),
                                 Text(
                                   widget.delivery['status'],
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: size.width * 0.03,
                                     fontWeight: FontWeight.w600,
                                     color: _getStatusColor(),
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
@@ -822,7 +721,7 @@ class _DeliveryCardState extends State<DeliveryCard>
                             child: Icon(
                               Icons.expand_circle_down_outlined,
                               color: const Color(0xFF7A7C52),
-                              size: 25,
+                              size: size.width * 0.06,
                             ),
                           ),
                         ],
@@ -832,7 +731,7 @@ class _DeliveryCardState extends State<DeliveryCard>
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: size.height * 0.015),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -843,19 +742,23 @@ class _DeliveryCardState extends State<DeliveryCard>
                       Text(
                         'Tanggal',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: size.width * 0.03,
                           color: Colors.grey[600],
                           fontWeight: FontWeight.w500,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: size.height * 0.005),
                       Text(
                         _formatDate(widget.delivery['date']),
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: size.width * 0.035,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1A3C34),
+                          color: const Color(0xFF1A3C34),
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -866,109 +769,49 @@ class _DeliveryCardState extends State<DeliveryCard>
                     Text(
                       'Pembeli',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: size.width * 0.03,
                         color: Colors.grey[600],
                         fontWeight: FontWeight.w500,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: size.height * 0.005),
                     Text(
                       widget.delivery['customer_name'],
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: size.width * 0.035,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF7A7C52),
+                        color: const Color(0xFF7A7C52),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: size.height * 0.015),
             Text(
               'Alamat',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: size.width * 0.03,
                 color: Colors.grey[600],
                 fontWeight: FontWeight.w500,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: size.height * 0.005),
             Text(
               widget.delivery['address'],
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: size.width * 0.035,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1A3C34),
+                color: const Color(0xFF1A3C34),
               ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CourierDeliveryDetailScreen(
-                          delivery: widget.delivery,
-                          onStatusUpdated: widget.onStatusUpdated,
-                        ),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Color(0xFF7A7C52),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(color: Color(0xFF7A7C52)),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    elevation: 2,
-                  ),
-                  child: const Text(
-                    'Lihat Detail',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: widget.delivery['status'] == 'Sudah Diterima'
-                      ? null
-                      : _updateStatus,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF7A7C52),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    elevation: 2,
-                  ),
-                  child: Text(
-                    widget.delivery['status'] == 'Siap Dikirim'
-                        ? 'Konfirmasi Pengiriman'
-                        : widget.delivery['status'] == 'Sedang Dikirim'
-                            ? 'Konfirmasi Diterima'
-                            : 'Selesai',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -977,20 +820,21 @@ class _DeliveryCardState extends State<DeliveryCard>
   }
 
   Widget _buildExpandedContent() {
+    final size = MediaQuery.of(context).size;
     final items = widget.delivery['items'] as List<dynamic>? ?? [];
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: EdgeInsets.fromLTRB(size.width * 0.04, size.height * 0.01, size.width * 0.04, size.height * 0.02),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           FadeInRight(
             duration: const Duration(milliseconds: 300),
             child: Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(16),
+              margin: EdgeInsets.only(bottom: size.height * 0.02),
+              padding: EdgeInsets.all(size.width * 0.04),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(size.width * 0.04),
                 border: Border.all(
                   color: const Color(0xFF7A7C52).withOpacity(0.1),
                   width: 1,
@@ -998,7 +842,7 @@ class _DeliveryCardState extends State<DeliveryCard>
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.03),
-                    blurRadius: 8,
+                    blurRadius: size.width * 0.02,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -1009,31 +853,33 @@ class _DeliveryCardState extends State<DeliveryCard>
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: EdgeInsets.all(size.width * 0.02),
                         decoration: BoxDecoration(
                           color: const Color(0xFF7A7C52).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(size.width * 0.015),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.local_shipping,
-                          size: 16,
-                          color: Color(0xFF7A7C52),
+                          size: size.width * 0.04,
+                          color: const Color(0xFF7A7C52),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: size.width * 0.03),
                       Expanded(
                         child: Text(
                           'Items in Delivery',
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: TextStyle(
+                            fontSize: size.width * 0.04,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A3C34),
+                            color: const Color(0xFF1A3C34),
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: size.height * 0.02),
                   ...items.asMap().entries.map((entry) {
                     final itemIndex = entry.key;
                     final item = entry.value;
@@ -1077,12 +923,13 @@ class DeliveryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: size.height * 0.015),
+      padding: EdgeInsets.all(size.width * 0.03),
       decoration: BoxDecoration(
         color: Colors.grey[50]!,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(size.width * 0.03),
         border: Border.all(
           color: Colors.grey[200]!,
           width: 1,
@@ -1091,11 +938,11 @@ class DeliveryItem extends StatelessWidget {
       child: Row(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(size.width * 0.03),
             child: CachedNetworkImage(
               imageUrl: item.image,
-              height: 60,
-              width: 60,
+              height: size.width * 0.15,
+              width: size.width * 0.15,
               fit: BoxFit.cover,
               placeholder: (context, url) => Shimmer.fromColors(
                 baseColor: Colors.grey[300]!,
@@ -1105,52 +952,54 @@ class DeliveryItem extends StatelessWidget {
                 ),
               ),
               errorWidget: (context, url, error) => Container(
-                height: 60,
-                width: 60,
+                height: size.width * 0.15,
+                width: size.width * 0.15,
                 decoration: BoxDecoration(
                   color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(size.width * 0.03),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.image_not_supported_outlined,
                   color: Colors.grey,
-                  size: 32,
+                  size: size.width * 0.08,
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: size.width * 0.04),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   item.name,
-                  style: const TextStyle(
-                    fontSize: 15,
+                  style: TextStyle(
+                    fontSize: size.width * 0.037,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A3C34),
+                    color: const Color(0xFF1A3C34),
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: size.height * 0.01),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: size.width * 0.025,
+                    vertical: size.height * 0.005,
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF7A7C52).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(size.width * 0.01),
                   ),
                   child: Text(
                     item.price,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: size.width * 0.035,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF7A7C52),
+                      color: const Color(0xFF7A7C52),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],

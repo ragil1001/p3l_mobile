@@ -1,3 +1,4 @@
+// homepage.dart
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:p3l_mobile/services/auth_service.dart';
@@ -38,10 +39,10 @@ class _PembeliScreenState extends State<PembeliScreen>
   ];
 
   final List<NavItem> _navItems = [
-    NavItem(icon: Icons.home_rounded, label: 'Beranda'),
-    NavItem(icon: Icons.search_rounded, label: 'Katalog'),
-    NavItem(icon: Icons.receipt_long_rounded, label: 'Riwayat Pesanan'),
-    NavItem(icon: Icons.person_rounded, label: 'Profil'),
+    NavItem(icon: Icons.home_rounded, label: 'Home'),
+    NavItem(icon: Icons.search_rounded, label: 'Catalogue'),
+    NavItem(icon: Icons.receipt_long_rounded, label: 'Orders'),
+    NavItem(icon: Icons.person_rounded, label: 'Profile'),
   ];
 
   @override
@@ -133,6 +134,8 @@ class _PembeliScreenState extends State<PembeliScreen>
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
+    // Responsive bottom nav height
+    final double navHeight = size.height * 0.1 > 80 ? 80 : size.height * 0.1;
 
     return Scaffold(
       body: Stack(
@@ -143,8 +146,8 @@ class _PembeliScreenState extends State<PembeliScreen>
             left: 0,
             right: 0,
             child: Container(
-              height: 80,
-              margin: const EdgeInsets.symmetric(horizontal: 0),
+              height: navHeight, // Responsive height
+              margin: EdgeInsets.symmetric(horizontal: size.width * 0.03),
               child: Stack(
                 children: [
                   PhysicalModel(
@@ -161,7 +164,7 @@ class _PembeliScreenState extends State<PembeliScreen>
                         topRight: Radius.circular(25),
                       ),
                       child: Container(
-                        height: 80,
+                        height: navHeight,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
@@ -189,10 +192,10 @@ class _PembeliScreenState extends State<PembeliScreen>
                     curve: Curves.easeOutQuint,
                     left: (_selectedIndex * (size.width / 4)) +
                         (size.width / 8) -
-                        25,
-                    top: 5,
+                        (size.width * 0.065), // Responsive indicator width
+                    top: size.height * 0.005,
                     child: Container(
-                      width: 50,
+                      width: size.width * 0.13, // Responsive indicator width
                       height: 4,
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -219,19 +222,20 @@ class _PembeliScreenState extends State<PembeliScreen>
   Widget _buildNavItem(int index) {
     final isSelected = _selectedIndex == index;
     final navItem = _navItems[index];
+    final size = MediaQuery.of(context).size;
 
     return GestureDetector(
       onTap: () => _onItemTapped(index),
       child: Container(
-        height: 80,
+        height: size.height * 0.1 > 80 ? 80 : size.height * 0.1, // Responsive height
         child: Stack(
           alignment: Alignment.center,
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
-              width: isSelected ? 60 : 0,
-              height: isSelected ? 60 : 0,
+              width: isSelected ? size.width * 0.15 : 0, // Responsive width
+              height: isSelected ? size.width * 0.15 : 0,
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(isSelected ? 0.15 : 0),
                 borderRadius: BorderRadius.circular(30),
@@ -261,18 +265,18 @@ class _PembeliScreenState extends State<PembeliScreen>
                         child: Icon(
                           navItem.icon,
                           color: Colors.white,
-                          size: isSelected ? 26 : 24,
+                          size: isSelected ? size.width * 0.07 : size.width * 0.06, // Responsive icon size
                         ),
                       ),
                     );
                   },
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: size.height * 0.002),
                 AnimatedDefaultTextStyle(
                   duration: const Duration(milliseconds: 300),
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: isSelected ? 12 : 10,
+                    fontSize: isSelected ? size.width * 0.032 : size.width * 0.028, // Responsive font
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
                   child: AnimatedOpacity(
@@ -510,6 +514,7 @@ class _HomeTabState extends State<HomeTab> {
   Widget build(BuildContext context) {
     final oliveGreen = const Color(0xFF7A7C52);
     final backgroundColor = Colors.white;
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       body: Stack(
@@ -530,7 +535,7 @@ class _HomeTabState extends State<HomeTab> {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(size.width * 0.04), // Responsive padding
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -540,30 +545,30 @@ class _HomeTabState extends State<HomeTab> {
                           children: [
                             Expanded(
                               child: Container(
-                                height: 40,
+                                height: size.height * 0.05 > 40 ? 40 : size.height * 0.05, // Responsive height
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.9),
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(size.width * 0.05),
                                 ),
-                                child: const TextField(
+                                child: TextField(
                                   decoration: InputDecoration(
                                     hintText: 'Cari Produk....',
                                     prefixIcon:
                                         Icon(Icons.search, color: Colors.grey),
                                     border: InputBorder.none,
                                     contentPadding:
-                                        EdgeInsets.symmetric(vertical: 10),
+                                        EdgeInsets.symmetric(vertical: size.height * 0.012),
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: size.width * 0.03),
                             _isLoggedIn
                                 ? Container(
-                                    height: 40,
+                                    height: size.height * 0.05 > 40 ? 40 : size.height * 0.05,
                                     decoration: BoxDecoration(
                                       color: Colors.white.withOpacity(0.4),
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(size.width * 0.025),
                                     ),
                                     child: IconButton(
                                       icon: const Icon(Icons.notifications,
@@ -572,10 +577,10 @@ class _HomeTabState extends State<HomeTab> {
                                     ),
                                   )
                                 : Container(
-                                    height: 40,
+                                    height: size.height * 0.05 > 40 ? 40 : size.height * 0.05,
                                     decoration: BoxDecoration(
                                       color: Colors.white.withOpacity(0.4),
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(size.width * 0.025),
                                     ),
                                     child: IconButton(
                                       icon: const Icon(Icons.login,
@@ -594,14 +599,14 @@ class _HomeTabState extends State<HomeTab> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 30),
+                      SizedBox(height: size.height * 0.03),
                       FadeInLeft(
                         duration: const Duration(milliseconds: 1000),
-                        child: const Text(
+                        child: Text(
                           'Temukan\nKesempatan Baru\ndalam Barang Lama',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 20,
+                            fontSize: size.width * 0.05, // Responsive font
                             fontWeight: FontWeight.w600,
                             height: 1.3,
                           ),
@@ -610,9 +615,9 @@ class _HomeTabState extends State<HomeTab> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: size.height * 0.02),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: size.width * 0.04),
                   child: FadeInUp(
                     duration: const Duration(milliseconds: 1200),
                     child: Row(
@@ -634,7 +639,7 @@ class _HomeTabState extends State<HomeTab> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: size.height * 0.02),
                 Expanded(
                   child: Stack(
                     children: [
@@ -674,14 +679,14 @@ class _HomeTabState extends State<HomeTab> {
                               errorMessage: _errorMessage,
                               onRetry: _fetchCategories,
                             ),
-                            const SizedBox(height: 24),
+                            SizedBox(height: size.height * 0.03),
                             FadeInUp(
                               duration: const Duration(milliseconds: 1000),
                               child: Container(
                                 color: oliveGreen.withOpacity(0.3),
                                 width: double.infinity,
-                                padding:
-                                    const EdgeInsets.fromLTRB(16, 24, 16, 24),
+                                padding: EdgeInsets.fromLTRB(
+                                    size.width * 0.04, size.height * 0.03, size.width * 0.04, size.height * 0.03),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
@@ -689,11 +694,11 @@ class _HomeTabState extends State<HomeTab> {
                                       'Mengapa Memilih ReuseMart',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 18,
+                                        fontSize: size.width * 0.045, // Responsive font
                                         color: oliveGreen,
                                       ),
                                     ),
-                                    const SizedBox(height: 25),
+                                    SizedBox(height: size.height * 0.03),
                                     Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
@@ -702,14 +707,14 @@ class _HomeTabState extends State<HomeTab> {
                                           icon: Icons.eco,
                                           label: 'Ramah Lingkungan',
                                         ),
-                                        const SizedBox(width: 12),
+                                        SizedBox(width: size.width * 0.03),
                                         _InfoCard(
                                           icon: Icons.verified,
                                           label: 'Terpercaya',
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 12),
+                                    SizedBox(height: size.height * 0.015),
                                     _InfoCard(
                                       icon: Icons.savings,
                                       label: 'Hemat Budget',
@@ -718,26 +723,26 @@ class _HomeTabState extends State<HomeTab> {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 24),
+                            SizedBox(height: size.height * 0.03),
                             FadeInUp(
                               duration: const Duration(milliseconds: 1200),
                               child: Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(16, 24, 16, 24),
+                                padding: EdgeInsets.fromLTRB(
+                                    size.width * 0.04, size.height * 0.03, size.width * 0.04, size.height * 0.03),
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(size.width * 0.04),
                                     image: const DecorationImage(
                                       image: AssetImage(
                                           'assets/images/hero-bg.png'),
                                       fit: BoxFit.cover,
                                     ),
                                   ),
-                                  height: 390,
+                                  height: size.height * 0.45 > 390 ? 390 : size.height * 0.45, // Responsive height
                                   width: double.infinity,
                                   child: Container(
                                     decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius: BorderRadius.circular(size.width * 0.04),
                                       gradient: const LinearGradient(
                                         colors: [
                                           Colors.black12,
@@ -748,49 +753,49 @@ class _HomeTabState extends State<HomeTab> {
                                         end: Alignment.bottomCenter,
                                       ),
                                     ),
-                                    padding: const EdgeInsets.all(25),
+                                    padding: EdgeInsets.all(size.width * 0.06),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        const SizedBox(height: 140),
-                                        const Text(
+                                        SizedBox(height: size.height * 0.15),
+                                        Text(
                                           'Temukan Barang Berkualitas dengan Mudah',
                                           style: TextStyle(
                                             color: Colors.white,
-                                            fontSize: 18,
+                                            fontSize: size.width * 0.045, // Responsive font
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        const SizedBox(height: 8),
-                                        const Text(
+                                        SizedBox(height: size.height * 0.01),
+                                        Text(
                                           'Daftar sekarang sebagai pembeli dan jelajahi ribuan produk preloved yang telah dikurasi. Hemat lebih banyak, temukan lebih cepat.',
                                           style: TextStyle(
                                             color: Colors.white70,
-                                            fontSize: 14,
+                                            fontSize: size.width * 0.035, // Responsive font
                                           ),
                                           textAlign: TextAlign.justify,
                                         ),
-                                        const SizedBox(height: 12),
+                                        SizedBox(height: size.height * 0.015),
                                         Center(
                                           child: ElevatedButton(
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: oliveGreen,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius:
-                                                    BorderRadius.circular(12),
+                                                    BorderRadius.circular(size.width * 0.03),
                                               ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      vertical: 12,
-                                                      horizontal: 24),
+                                              padding: EdgeInsets.symmetric(
+                                                  vertical: size.height * 0.015,
+                                                  horizontal: size.width * 0.06),
                                             ),
                                             onPressed: () {},
-                                            child: const Text(
+                                            child: Text(
                                               'Lanjutkan Pembelian di Website Kami',
                                               style: TextStyle(
                                                 color: Colors.white,
                                                 fontWeight: FontWeight.bold,
+                                                fontSize: size.width * 0.034, // Responsive font
                                               ),
                                             ),
                                           ),
@@ -801,46 +806,47 @@ class _HomeTabState extends State<HomeTab> {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 24),
+                            SizedBox(height: size.height * 0.03),
                             SlideInUp(
                               duration: const Duration(milliseconds: 1000),
                               child: Container(
                                 width: double.infinity,
-                                padding:
-                                    const EdgeInsets.fromLTRB(16, 24, 16, 24),
+                                padding: EdgeInsets.fromLTRB(
+                                    size.width * 0.04, size.height * 0.03, size.width * 0.04, size.height * 0.03),
                                 color: const Color(0xFF7A7C52),
                                 constraints: BoxConstraints(
-                                  minHeight:
-                                      MediaQuery.of(context).size.height * 0.3,
+                                  minHeight: size.height * 0.3,
                                 ),
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'ReUseMart',
                                       style: TextStyle(
-                                        fontSize: 18,
+                                        fontSize: size.width * 0.045, // Responsive font
                                         fontWeight: FontWeight.w700,
                                         color: Colors.white,
                                       ),
                                       textAlign: TextAlign.right,
                                     ),
-                                    const SizedBox(height: 8),
-                                    const Text(
+                                    SizedBox(height: size.height * 0.01),
+                                    Text(
                                       'ReuseMart adalah platform jual beli barang bekas terpercaya di Yogyakarta, mendukung transaksi mudah dan ramah lingkungan. Gabunglah dengan kami untuk menemukan barang berkualitas dengan harga terjangkau.',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
-                                          fontSize: 12, color: Colors.white70),
+                                          fontSize: size.width * 0.03, // Responsive font
+                                          color: Colors.white70),
                                     ),
-                                    const SizedBox(height: 8),
-                                    const Text(
+                                    SizedBox(height: size.height * 0.01),
+                                    Text(
                                       '© 2025 ReuseMart. All Rights Reserved.',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
-                                          fontSize: 12, color: Colors.white70),
+                                          fontSize: size.width * 0.03, // Responsive font
+                                          color: Colors.white70),
                                     ),
-                                    const SizedBox(height: 8),
+                                    SizedBox(height: size.height * 0.01),
                                     Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
@@ -848,17 +854,17 @@ class _HomeTabState extends State<HomeTab> {
                                         Text(
                                           'Privacy Policy',
                                           style: TextStyle(
-                                            fontSize: 12,
+                                            fontSize: size.width * 0.03, // Responsive font
                                             color: Colors.white70,
                                             decoration:
                                                 TextDecoration.underline,
                                           ),
                                         ),
-                                        const SizedBox(width: 16),
+                                        SizedBox(width: size.width * 0.04),
                                         Text(
                                           'Terms of Service',
                                           style: TextStyle(
-                                            fontSize: 12,
+                                            fontSize: size.width * 0.03, // Responsive font
                                             color: Colors.white70,
                                             decoration:
                                                 TextDecoration.underline,
@@ -899,21 +905,22 @@ class ProductSection extends StatelessWidget {
     required this.onRetry,
   });
 
-  Widget _buildProductLoadingShimmer() {
+  Widget _buildProductLoadingShimmer(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return ListView.builder(
       scrollDirection: Axis.horizontal,
       itemCount: 3,
       itemBuilder: (context, index) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6.0),
+        padding: EdgeInsets.symmetric(horizontal: size.width * 0.015),
         child: Shimmer.fromColors(
           baseColor: Colors.grey[300]!,
           highlightColor: Colors.grey[100]!,
           child: Container(
-            width: 160,
-            height: 160,
+            width: size.width * 0.4, // Responsive width
+            height: size.width * 0.4,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(size.width * 0.03),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
@@ -926,28 +933,28 @@ class ProductSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  height: 100,
+                  height: size.width * 0.25,
                   width: double.infinity,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: Colors.grey,
                     borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(12)),
+                        BorderRadius.vertical(top: Radius.circular(size.width * 0.03)),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: EdgeInsets.all(size.width * 0.02),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        height: 16,
-                        width: 100,
+                        height: size.width * 0.04,
+                        width: size.width * 0.25,
                         color: Colors.grey,
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: size.width * 0.01),
                       Container(
-                        height: 12,
-                        width: 80,
+                        height: size.width * 0.03,
+                        width: size.width * 0.2,
                         color: Colors.grey,
                       ),
                     ],
@@ -963,24 +970,25 @@ class ProductSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.all(size.width * 0.04),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Temukan Barang Berkualitas dan Mudah',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: size.width * 0.05, // Responsive font
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1A3C34),
+              color: const Color(0xFF1A3C34),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: size.height * 0.015),
           SizedBox(
-            height: 180,
+            height: size.width * 0.45 > 180 ? 180 : size.width * 0.45, // Responsive height
             child: isLoading
-                ? _buildProductLoadingShimmer()
+                ? _buildProductLoadingShimmer(context)
                 : errorMessage != null
                     ? Center(
                         child: Column(
@@ -991,15 +999,17 @@ class ProductSection extends StatelessWidget {
                               style: const TextStyle(color: Colors.red),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: size.height * 0.01),
                             ElevatedButton(
                               onPressed: onRetry,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF7A7C52),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Coba Lagi',
-                                style: TextStyle(color: Colors.white),
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: size.width * 0.035), // Responsive font
                               ),
                             ),
                           ],
@@ -1015,16 +1025,14 @@ class ProductSection extends StatelessWidget {
                                   firstProductIndex + 1;
                               return Padding(
                                 padding:
-                                    const EdgeInsets.symmetric(horizontal: 6.0),
+                                    EdgeInsets.symmetric(horizontal: size.width * 0.015),
                                 child: Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     ProductCard(
                                       id: products[firstProductIndex]['id'],
-                                      title: products[firstProductIndex]
-                                          ['name'],
-                                      price: products[firstProductIndex]
+                                      title: products[firstProductIndex]['name'],                                      price: products[firstProductIndex]
                                               ['price']
                                           .toString(),
                                       imageUrl: products[firstProductIndex]
@@ -1047,13 +1055,13 @@ class ProductSection extends StatelessWidget {
                             },
                           ),
           ),
-          const SizedBox(height: 12),
-          const Center(
+          SizedBox(height: size.height * 0.015),
+          Center(
             child: Text(
               'Lanjutkan Pembelian di Website Kami',
               style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF1A3C34),
+                fontSize: size.width * 0.035, // Responsive font
+                color: const Color(0xFF1A3C34),
                 decoration: TextDecoration.underline,
               ),
             ),
@@ -1080,6 +1088,7 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     String formatRupiah(String price) {
       final number = int.tryParse(price.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
       return 'Rp ${NumberFormat("#,##0", "id_ID").format(number)}';
@@ -1096,24 +1105,24 @@ class ProductCard extends StatelessWidget {
       },
       child: Card(
         elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(size.width * 0.03)),
         child: Container(
-          width: 160,
-          height: 160,
+          width: size.width * 0.4, // Responsive width
+          height: size.width * 0.4, // Responsive height
           color: Colors.white,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                height: 100,
+                height: size.width * 0.25,
                 width: double.infinity,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(size.width * 0.03)),
                 ),
                 child: ClipRRect(
                   borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(12)),
+                      BorderRadius.vertical(top: Radius.circular(size.width * 0.03)),
                   child: imageUrl != '/api/placeholder/60/60'
                       ? CachedNetworkImage(
                           imageUrl: imageUrl,
@@ -1140,26 +1149,26 @@ class ProductCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: EdgeInsets.all(size.width * 0.02),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: size.width * 0.035, // Responsive font
                         fontWeight: FontWeight.w600,
                         color: Colors.black,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: size.width * 0.01),
                     Text(
                       formatRupiah(price),
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: TextStyle(
+                        fontSize: size.width * 0.03, // Responsive font
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A3C34),
+                        color: const Color(0xFF1A3C34),
                       ),
                     ),
                   ],
@@ -1205,13 +1214,14 @@ class CategorySection extends StatelessWidget {
     return grouped;
   }
 
-  Widget _buildCategoryLoadingShimmer() {
+  Widget _buildCategoryLoadingShimmer(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return ListView.builder(
       scrollDirection: Axis.horizontal,
       itemCount: 3,
       itemBuilder: (context, index) {
         return Padding(
-          padding: const EdgeInsets.only(right: 16.0),
+          padding: EdgeInsets.only(right: size.width * 0.04),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(2, (i) {
@@ -1219,11 +1229,11 @@ class CategorySection extends StatelessWidget {
                 baseColor: Colors.grey[300]!,
                 highlightColor: Colors.grey[100]!,
                 child: Container(
-                  width: 180,
-                  height: 60,
+                  width: size.width * 0.45, // Responsive width
+                  height: size.width * 0.15, // Responsive height
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(size.width * 0.02),
                   ),
                 ),
               );
@@ -1237,26 +1247,27 @@ class CategorySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final groupedCategories = _groupCategories();
-    const double cardWidth = 180.0;
+    final size = MediaQuery.of(context).size;
+    final double cardWidth = size.width * 0.45; // Responsive card width
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: EdgeInsets.symmetric(horizontal: size.width * 0.04, vertical: size.height * 0.01),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Kategori Barang Bekas ReuseMart',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: size.width * 0.04, // Responsive font
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1A3C34),
+              color: const Color(0xFF1A3C34),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: size.height * 0.01),
           SizedBox(
-            height: 120,
+            height: size.width * 0.3 > 120 ? 120 : size.width * 0.3, // Responsive height
             child: isLoading
-                ? _buildCategoryLoadingShimmer()
+                ? _buildCategoryLoadingShimmer(context)
                 : errorMessage != null
                     ? Center(
                         child: Column(
@@ -1267,15 +1278,17 @@ class CategorySection extends StatelessWidget {
                               style: const TextStyle(color: Colors.red),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: size.height * 0.01),
                             ElevatedButton(
                               onPressed: onRetry,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF7A7C52),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Coba Lagi',
-                                style: TextStyle(color: Colors.white),
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: size.width * 0.035), // Responsive font
                               ),
                             ),
                           ],
@@ -1290,41 +1303,57 @@ class CategorySection extends StatelessWidget {
                             itemBuilder: (context, index) {
                               final pair = groupedCategories[index];
                               return Padding(
-                                padding: const EdgeInsets.only(right: 16.0),
+                                padding: EdgeInsets.only(right: size.width * 0.04),
                                 child: Column(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: pair.map((category) {
-                                    return SizedBox(
-                                      width: cardWidth,
-                                      height: 60,
-                                      child: Card(
-                                        color: Colors.white,
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8)),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 12, vertical: 8),
-                                          child: Row(
-                                            children: [
-                                              Icon(
-                                                category['icon'],
-                                                size: 24,
-                                                color: const Color(0xFF1A3C34),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Expanded(
-                                                child: Text(
+                                    return GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                CatalogueScreen(
+                                              selectedCategory:
                                                   category['name'],
-                                                  style: const TextStyle(
-                                                    fontSize: 12,
-                                                    color: Colors.black,
-                                                  ),
-                                                  textAlign: TextAlign.left,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: SizedBox(
+                                        width: cardWidth,
+                                        height: size.width * 0.145, // Responsive height
+                                        child: Card(
+                                          color: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(size.width * 0.02)),
+                                          child: Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: size.width * 0.03,
+                                                vertical: size.height * 0.01),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  category['icon'],
+                                                  size: size.width * 0.06, // Responsive icon size
+                                                  color:
+                                                      const Color(0xFF1A3C34),
                                                 ),
-                                              ),
-                                            ],
+                                                SizedBox(width: size.width * 0.02),
+                                                Expanded(
+                                                  child: Text(
+                                                    category['name'],
+                                                    style: TextStyle(
+                                                      fontSize: size.width * 0.03, // Responsive font
+                                                      color: Colors.black,
+                                                    ),
+                                                    textAlign: TextAlign.left,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -1352,20 +1381,21 @@ class _StatItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Column(
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 16,
+            fontSize: size.width * 0.04, // Responsive font
             color: Colors.white,
           ),
         ),
         Text(
           description,
-          style: const TextStyle(
-            fontSize: 12,
+          style: TextStyle(
+            fontSize: size.width * 0.03, // Responsive font
             color: Colors.white70,
           ),
         ),
@@ -1386,11 +1416,12 @@ class _InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Container(
-      width: (MediaQuery.of(context).size.width - 56) / 2,
-      height: 120,
+      width: (size.width - 56) / 2, // Keep original logic but ensure it scales
+      height: size.width * 0.3 > 120 ? 120 : size.width * 0.3, // Responsive height
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(size.width * 0.03),
         gradient: const LinearGradient(
           colors: [
             oliveGreen,
@@ -1404,14 +1435,14 @@ class _InfoCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.white, size: 28),
-            const SizedBox(height: 8),
+            Icon(icon, color: Colors.white, size: size.width * 0.07), // Responsive icon size
+            SizedBox(height: size.height * 0.01),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontSize: size.width * 0.035, // Responsive font
               ),
               textAlign: TextAlign.center,
             ),

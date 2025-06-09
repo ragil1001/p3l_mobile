@@ -112,11 +112,13 @@ class _ProfileScreenState extends State<ProfileScreen>
             final List<dynamic> transactions = transactionsData['data'] ?? [];
 
             // Calculate active and total transactions
-            final transaksiAktif = transactions
-                .where((t) =>
-                    t['status'] != 'Sudah Diterima' &&
-                    t['status'] != 'Sudah Diambil')
-                .length;
+            final activeStatuses = [
+              'Menunggu Pembayaran',
+              'Menunggu Verifikasi',
+              'Sedang Dikemas',
+              'Sedang Dikirim',
+              'Siap Diambil'
+            ];
             final totalTransaksi = transactions.length;
 
             if (mounted) {
@@ -127,7 +129,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                   'telepon':
                       profileData['user']['telepon'] ?? '+62 812-3456-7890',
                   'email': profileData['user']['email'],
-                  'transaksi_aktif': transaksiAktif,
+                  'transaksi_aktif': transactions
+                    .where((t) => activeStatuses.contains(t['status']))
+                    .length,
                   'total_transaksi': totalTransaksi,
                   'member_since': 'Januari 2024', // Static, as not in backend
                   'badge': 'Silver Member', // Static, as not in backend
@@ -247,7 +251,17 @@ class _ProfileScreenState extends State<ProfileScreen>
               stops: const [0.0, 0.4, 0.7],
             ),
           ),
-          child: Center(child: Text(_errorMessage!)),
+          child: Center(
+            child: Text(
+              _errorMessage!,
+              style: TextStyle(
+                fontSize: size.width * 0.04,
+                color: Colors.red,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
         ),
       );
     }
@@ -285,22 +299,22 @@ class _ProfileScreenState extends State<ProfileScreen>
                 _bounceAnimation != null
                     ? ScaleTransition(
                         scale: _bounceAnimation!,
-                        child: _buildStatsSection(),
+                        child: _buildStatsSection(size),
                       )
-                    : _buildStatsSection(),
+                    : _buildStatsSection(size),
                 _fadeAnimation != null
                     ? FadeTransition(
                         opacity: _fadeAnimation!,
-                        child: _buildQuickActionsSection(),
+                        child: _buildQuickActionsSection(size),
                       )
-                    : _buildQuickActionsSection(),
+                    : _buildQuickActionsSection(size),
                 _fadeAnimation != null
                     ? FadeTransition(
                         opacity: _fadeAnimation!,
                         child: _buildMenuSection(oliveGreen),
                       )
                     : _buildMenuSection(oliveGreen),
-                const SizedBox(height: 70),
+                SizedBox(height: size.height * 0.1),
               ],
             ),
           ),
@@ -330,11 +344,11 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ),
           Positioned(
-            top: -50,
-            right: -50,
+            top: -size.height * 0.06,
+            right: -size.width * 0.12,
             child: Container(
-              width: 150,
-              height: 150,
+              width: size.width * 0.4,
+              height: size.width * 0.4,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white.withOpacity(0.1),
@@ -342,11 +356,11 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ),
           Positioned(
-            top: 50,
-            left: -30,
+            top: size.height * 0.06,
+            left: -size.width * 0.08,
             child: Container(
-              width: 100,
-              height: 100,
+              width: size.width * 0.25,
+              height: size.width * 0.25,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white.withOpacity(0.05),
@@ -354,70 +368,76 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(size.width * 0.05),
             child: Column(
               children: [
-                const SizedBox(height: 20),
+                SizedBox(height: size.height * 0.025),
                 Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
                         color: Colors.white.withOpacity(0.6),
-                        blurRadius: 5,
+                        blurRadius: size.width * 0.015,
                       ),
                     ],
                   ),
                   child: CircleAvatar(
-                    radius: 45,
+                    radius: size.width * 0.12,
                     backgroundColor: Colors.white,
                     child: CircleAvatar(
-                      radius: 42,
+                      radius: size.width * 0.11,
                       backgroundColor: Colors.grey[300],
                       backgroundImage: userProfile?['foto_pembeli'] != null
                           ? NetworkImage(userProfile!['foto_pembeli'])
                           : null,
                       child: userProfile?['foto_pembeli'] == null
-                          ? const Icon(
+                          ? Icon(
                               Icons.person,
-                              size: 50,
+                              size: size.width * 0.15,
                               color: Colors.white,
                             )
                           : null,
                     ),
                   ),
                 ),
-                const SizedBox(height: 15),
+                SizedBox(height: size.height * 0.02),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      userProfile?['nama'] ?? 'Unknown User',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                    Flexible(
+                      child: Text(
+                        userProfile?['nama'] ?? 'Unknown User',
+                        style: TextStyle(
+                          fontSize: size.width * 0.06,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 5),
+                SizedBox(height: size.height * 0.01),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.stars,
                       color: Colors.amber,
-                      size: 20,
+                      size: size.width * 0.05,
                     ),
-                    const SizedBox(width: 5),
+                    SizedBox(width: size.width * 0.015),
                     Text(
                       '${userProfile?['poin'] ?? 0} Poin',
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: size.width * 0.04,
                         color: Colors.white70,
                         fontWeight: FontWeight.w500,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -429,47 +449,17 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildStatsSection() {
-    return Transform.translate(
-      offset: const Offset(0, -30),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20),
-        child: Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                'Transaksi Aktif',
-                '${userProfile?['transaksi_aktif'] ?? 0}',
-                Icons.shopping_cart,
-                Colors.blue,
-              ),
-            ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: _buildStatCard(
-                'Total Transaksi',
-                '${userProfile?['total_transaksi'] ?? 0}',
-                Icons.receipt_long,
-                Colors.green,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildStatCard(
-      String title, String value, IconData icon, Color color) {
+      String title, String value, IconData icon, Color color, Size size) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(size.width * 0.04),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(size.width * 0.04),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
+            blurRadius: size.width * 0.025,
             offset: const Offset(0, 5),
           ),
         ],
@@ -477,48 +467,84 @@ class _ProfileScreenState extends State<ProfileScreen>
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(size.width * 0.02),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: Icon(icon, color: color, size: size.width * 0.05),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: size.height * 0.01),
           Text(
             value,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: size.width * 0.045,
               fontWeight: FontWeight.bold,
               color: color,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: size.height * 0.005),
           Text(
             title,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: size.width * 0.03,
               color: Colors.grey[600],
               fontWeight: FontWeight.w500,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildQuickActionsSection() {
+  Widget _buildStatsSection(Size size) {
+  return Transform.translate(
+    offset: Offset(0, -size.height * 0.04),
+    child: Container(
+      margin: EdgeInsets.symmetric(horizontal: size.width * 0.05),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildStatCard(
+              'Transaksi Aktif',
+              '${userProfile?['transaksi_aktif'] ?? 0}',
+              Icons.shopping_cart,
+              Colors.blue,
+              size,
+            ),
+          ),
+          SizedBox(width: size.width * 0.05),
+          Expanded(
+            child: _buildStatCard(
+              'Total Transaksi',
+              '${userProfile?['total_transaksi'] ?? 0}',
+              Icons.receipt_long,
+              Colors.green,
+              size,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+  Widget _buildQuickActionsSection(Size size) {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.all(size.width * 0.05),
+      padding: EdgeInsets.all(size.width * 0.05),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(size.width * 0.05),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            blurRadius: size.width * 0.025,
             offset: const Offset(0, 5),
           ),
         ],
@@ -526,27 +552,29 @@ class _ProfileScreenState extends State<ProfileScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Informasi Kontak',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: size.width * 0.04,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF77784A),
+              color: const Color(0xFF77784A),
             ),
           ),
-          const SizedBox(height: 15),
+          SizedBox(height: size.height * 0.02),
           _buildContactInfo(
             Icons.phone,
             'Nomor Telepon',
             userProfile?['telepon'] ?? 'Tidak tersedia',
-            () => _copyToClipboard(userProfile?['telepon'] ?? ''),
+            () => _copyToClipboard(userProfile?['telepon'] ?? '', size),
+            size,
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: size.height * 0.015),
           _buildContactInfo(
             Icons.email,
             'Email',
             userProfile?['email'] ?? 'Tidak tersedia',
-            () => _copyToClipboard(userProfile?['email'] ?? ''),
+            () => _copyToClipboard(userProfile?['email'] ?? '', size),
+            size,
           ),
         ],
       ),
@@ -554,27 +582,27 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildContactInfo(
-      IconData icon, String label, String value, VoidCallback onTap) {
+      IconData icon, String label, String value, VoidCallback onTap, Size size) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(size.width * 0.03),
         decoration: BoxDecoration(
           color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(size.width * 0.03),
           border: Border.all(color: Colors.grey[200]!),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(size.width * 0.02),
               decoration: BoxDecoration(
                 color: const Color(0xFF77784A).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: const Color(0xFF77784A), size: 16),
+              child: Icon(icon, color: const Color(0xFF77784A), size: size.width * 0.04),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: size.width * 0.03),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -582,23 +610,27 @@ class _ProfileScreenState extends State<ProfileScreen>
                   Text(
                     label,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: size.width * 0.03,
                       color: Colors.grey[600],
                       fontWeight: FontWeight.w500,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   Text(
                     value,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: size.width * 0.035,
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            Icon(Icons.copy, color: Colors.grey[400], size: 16),
+            Icon(Icons.copy, color: Colors.grey[400], size: size.width * 0.04),
           ],
         ),
       ),
@@ -606,6 +638,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildMenuSection(Color oliveGreen) {
+    final Size size = MediaQuery.of(context).size;
     final menuItems = [
       {
         'icon': Icons.store,
@@ -629,38 +662,51 @@ class _ProfileScreenState extends State<ProfileScreen>
         'onTap': () async {
           final bool? confirm = await showDialog<bool>(
             context: context,
-            builder: (context) => AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: const Text(
-                'Konfirmasi Logout',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF77784A),
+            builder: (context) {
+              final Size size = MediaQuery.of(context).size;
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(size.width * 0.04),
                 ),
-              ),
-              content: const Text(
-                'Apakah Anda yakin ingin keluar dari akun?',
-                style: TextStyle(color: Colors.black87),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text(
-                    'Batal',
-                    style: TextStyle(color: Colors.grey),
+                title: Text(
+                  'Konfirmasi Logout',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF77784A),
+                    fontSize: size.width * 0.045,
                   ),
                 ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text(
-                    'Keluar',
-                    style: TextStyle(color: Color(0xFF77784A)),
+                content: Text(
+                  'Apakah Anda yakin ingin keluar dari akun?',
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: size.width * 0.035,
                   ),
                 ),
-              ],
-            ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(
+                      'Batal',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: size.width * 0.035,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: Text(
+                      'Keluar',
+                      style: TextStyle(
+                        color: const Color(0xFF77784A),
+                        fontSize: size.width * 0.035,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           );
 
           if (confirm == true && mounted) {
@@ -676,7 +722,16 @@ class _ProfileScreenState extends State<ProfileScreen>
             } else {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(result['message'])),
+                  SnackBar(
+                    content: Text(
+                      result['message'],
+                      style: TextStyle(fontSize: size.width * 0.035),
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(size.width * 0.025),
+                    ),
+                  ),
                 );
               }
             }
@@ -686,31 +741,31 @@ class _ProfileScreenState extends State<ProfileScreen>
     ];
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
+      margin: EdgeInsets.symmetric(horizontal: size.width * 0.05),
       child: Column(
         children:
-            menuItems.map((item) => _buildEnhancedMenuItem(item)).toList(),
+            menuItems.map((item) => _buildEnhancedMenuItem(item, size)).toList(),
       ),
     );
   }
 
-  Widget _buildEnhancedMenuItem(Map<String, dynamic> item) {
+  Widget _buildEnhancedMenuItem(Map<String, dynamic> item, Size size) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: size.height * 0.015),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: item['onTap'],
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(size.width * 0.04),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(size.width * 0.04),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(size.width * 0.04),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
+                  blurRadius: size.width * 0.025,
                   offset: const Offset(0, 2),
                 ),
               ],
@@ -718,50 +773,54 @@ class _ProfileScreenState extends State<ProfileScreen>
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(size.width * 0.03),
                   decoration: BoxDecoration(
                     color: (item['color'] as Color).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(size.width * 0.03),
                   ),
                   child: Icon(
                     item['icon'],
                     color: item['color'],
-                    size: 24,
+                    size: size.width * 0.06,
                   ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: size.width * 0.04),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         item['title'],
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontSize: size.width * 0.04,
                           fontWeight: FontWeight.w600,
                           color: Colors.black87,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: size.height * 0.005),
                       Text(
                         item['subtitle'],
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: size.width * 0.03,
                           color: Colors.grey[600],
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(size.width * 0.02),
                   decoration: BoxDecoration(
                     color: Colors.grey[100],
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.arrow_forward_ios,
-                    size: 12,
+                    size: size.width * 0.03,
                     color: Colors.grey,
                   ),
                 ),
@@ -773,16 +832,21 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  void _copyToClipboard(String text) {
+  void _copyToClipboard(String text, Size? size) {
     if (text.isNotEmpty) {
       Clipboard.setData(ClipboardData(text: text));
       if (mounted) {
+        final screenSize = size ?? MediaQuery.of(context).size;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$text disalin ke clipboard'),
+            content: Text(
+              '$text disalin ke clipboard',
+              style: TextStyle(fontSize: screenSize.width * 0.035),
+            ),
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(screenSize.width * 0.025),
+            ),
           ),
         );
       }

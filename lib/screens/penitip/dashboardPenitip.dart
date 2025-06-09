@@ -69,7 +69,7 @@ class _PenitipDashboardState extends State<PenitipDashboard>
     {'name': 'Elektronik', 'value': 35, 'color': Colors.blue},
     {'name': 'Pakaian', 'value': 28, 'color': Colors.green},
     {'name': 'Aksesoris', 'value': 20, 'color': Colors.amber},
-    {'name': 'Peralan', 'value': 17, 'color': Colors.orange},
+    {'name': 'Peralatan', 'value': 17, 'color': Colors.orange},
   ];
 
   // Data Performa Bulanan
@@ -155,101 +155,106 @@ class _PenitipDashboardState extends State<PenitipDashboard>
     final Size size = MediaQuery.of(context).size;
 
     return Scaffold(
-      body: Stack(
-        children: [
-          // Main content
-          _pages[_selectedIndex],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Stack(
+            children: [
+              // Main content
+              _pages[_selectedIndex],
 
-          // Bottom Navigation Bar
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 80,
-              margin: const EdgeInsets.symmetric(horizontal: 0),
-              child: Stack(
-                children: [
-                  // Actual Bottom Bar with curved corners
-                  PhysicalModel(
-                    color: Colors.transparent,
-                    elevation: 10,
-                    shadowColor: Colors.black.withOpacity(0.4),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(25),
-                      topRight: Radius.circular(25),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(25),
-                        topRight: Radius.circular(25),
+              // Bottom Navigation Bar
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: constraints.maxHeight * 0.1, // Responsive height
+                  margin: const EdgeInsets.symmetric(horizontal: 0),
+                  child: Stack(
+                    children: [
+                      // Actual Bottom Bar with curved corners
+                      PhysicalModel(
+                        color: Colors.transparent,
+                        elevation: 10,
+                        shadowColor: Colors.black.withOpacity(0.4),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(25),
+                          topRight: Radius.circular(25),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(25),
+                            topRight: Radius.circular(25),
+                          ),
+                          child: Container(
+                            height: constraints.maxHeight * 0.1,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  const Color(0xFF7A7C52),
+                                  const Color(0xFF6A6D42),
+                                  const Color(0xFF5A5D32),
+                                ],
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: List.generate(_navItems.length, (index) {
+                                return Expanded(
+                                  child: _buildNavItem(index, constraints),
+                                );
+                              }),
+                            ),
+                          ),
+                        ),
                       ),
-                      child: Container(
-                        height: 80,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              const Color(0xFF7A7C52),
-                              const Color(0xFF6A6D42),
-                              const Color(0xFF5A5D32),
+
+                      // Animated indicator
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutQuint,
+                        left: (_selectedIndex * (size.width / 3)) +
+                            (size.width / 6) -
+                            25,
+                        top: 5,
+                        child: Container(
+                          width: 50,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.white.withOpacity(0.5),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
                             ],
                           ),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: List.generate(_navItems.length, (index) {
-                            return Expanded(
-                              child: _buildNavItem(index),
-                            );
-                          }),
-                        ),
                       ),
-                    ),
+                    ],
                   ),
-
-                  // Animated indicator
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOutQuint,
-                    left: (_selectedIndex * (size.width / 3)) +
-                        (size.width / 6) -
-                        25,
-                    top: 5,
-                    child: Container(
-                      width: 50,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.5),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildNavItem(int index) {
+  Widget _buildNavItem(int index, BoxConstraints constraints) {
     final isSelected = _selectedIndex == index;
     final navItem = _navItems[index];
+    final fontSize = constraints.maxWidth < 360 ? 10.0 : 12.0;
 
     return GestureDetector(
       onTap: () => _onItemTapped(index),
       child: Container(
-        height: 80,
+        height: constraints.maxHeight * 0.1,
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -301,13 +306,13 @@ class _PenitipDashboardState extends State<PenitipDashboard>
                   duration: const Duration(milliseconds: 300),
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: isSelected ? 12 : 10,
+                    fontSize: isSelected ? fontSize : fontSize - 2,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
                   child: AnimatedOpacity(
                     duration: const Duration(milliseconds: 300),
                     opacity: isSelected ? 1.0 : 0.7,
-                    child: Text(navItem.label),
+                    child: Text(navItem.label, textAlign: TextAlign.center),
                   ),
                 ),
               ],
@@ -342,184 +347,193 @@ class _PenitipDashboardState extends State<PenitipDashboard>
     final oliveGreen = const Color(0xFF7A7C52);
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.grey[50]!,
-              Colors.white,
-              Colors.grey[50]!,
-            ],
-          ),
-        ),
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              floating: false,
-              elevation: 8,
-              backgroundColor: Colors.transparent,
-              leading: Padding(
-                padding: const EdgeInsets.all(8.0),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.grey[50]!,
+                  Colors.white,
+                  Colors.grey[50]!,
+                ],
               ),
-              flexibleSpace: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      oliveGreen,
-                      oliveGreen.withOpacity(0.9),
-                      const Color(0xFF5A5D3A),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+            ),
+            child: CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  pinned: true,
+                  floating: false,
+                  elevation: 8,
+                  backgroundColor: Colors.transparent,
+                  leading: Padding(
+                    padding: const EdgeInsets.all(8.0),
                   ),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(25),
-                    bottomRight: Radius.circular(25),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                    BoxShadow(
-                      color: oliveGreen.withOpacity(0.2),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                height: 140,
-                child: Stack(
-                  children: [
-                    Positioned(
-                      top: -50,
-                      right: -50,
-                      child: Container(
-                        width: 150,
-                        height: 150,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.05),
-                        ),
+                  flexibleSpace: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          oliveGreen,
+                          oliveGreen.withOpacity(0.9),
+                          const Color(0xFF5A5D3A),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    ),
-                    Positioned(
-                      bottom: -30,
-                      left: -30,
-                      child: Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.03),
-                        ),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(25),
+                        bottomRight: Radius.circular(25),
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                        BoxShadow(
+                          color: oliveGreen.withOpacity(0.2),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
-                    SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 0.0, vertical: 12.0),
-                        child: Row(
-                          children: [
-                            const SizedBox(width: 30),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      double availableWidth =
-                                          constraints.maxWidth;
-                                      String displayText =
-                                          _getDisplayText(availableWidth);
-                                      double fontSize =
-                                          _getFontSize(availableWidth);
-
-                                      return Text(
-                                        displayText,
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: fontSize,
-                                          fontWeight: FontWeight.bold,
-                                          height: 1.2,
-                                        ),
-                                        maxLines: availableWidth < 280 ? 2 : 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        softWrap: true,
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Flexible(
-                                    child: Text(
-                                      '${stats[0]['value']} Barang Titipan',
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 14,
-                                        height: 1.3,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                    height: constraints.maxHeight * 0.2,
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          top: -50,
+                          right: -50,
+                          child: Container(
+                            width: 150,
+                            height: 150,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.05),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                        Positioned(
+                          bottom: -30,
+                          left: -30,
+                          child: Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.03),
+                            ),
+                          ),
+                        ),
+                        SafeArea(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: constraints.maxWidth * 0.05,
+                              vertical: 12.0,
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(width: constraints.maxWidth * 0.05),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      LayoutBuilder(
+                                        builder: (context, constraints) {
+                                          double availableWidth =
+                                              constraints.maxWidth;
+                                          String displayText =
+                                              _getDisplayText(availableWidth);
+                                          double fontSize =
+                                              _getFontSize(availableWidth);
+
+                                          return Text(
+                                            displayText,
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: fontSize,
+                                              fontWeight: FontWeight.bold,
+                                              height: 1.2,
+                                            ),
+                                            maxLines:
+                                                availableWidth < 280 ? 2 : 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            softWrap: true,
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Flexible(
+                                        child: Text(
+                                          '${stats[0]['value']} Barang Titipan',
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 14,
+                                            height: 1.3,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    FadeInDown(
-                      duration: const Duration(milliseconds: 800),
-                      child: _buildWelcomeSection(),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(constraints.maxWidth * 0.04),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FadeInDown(
+                          duration: const Duration(milliseconds: 800),
+                          child: _buildWelcomeSection(constraints),
+                        ),
+                        FadeInUp(
+                          duration: const Duration(milliseconds: 1000),
+                          child: _buildStatsGrid(constraints),
+                        ),
+                        SizedBox(height: constraints.maxHeight * 0.03),
+                        FadeInLeft(
+                          duration: const Duration(milliseconds: 1200),
+                          child: _buildSalesTrendChart(constraints),
+                        ),
+                        SizedBox(height: constraints.maxHeight * 0.03),
+                        FadeInRight(
+                          duration: const Duration(milliseconds: 1400),
+                          child: _buildCategoryPieChart(constraints),
+                        ),
+                        SizedBox(height: constraints.maxHeight * 0.03),
+                        FadeInUp(
+                          duration: const Duration(milliseconds: 1600),
+                          child: _buildMonthlyBarChart(constraints),
+                        ),
+                        SizedBox(height: constraints.maxHeight * 0.1),
+                      ],
                     ),
-                    FadeInUp(
-                      duration: const Duration(milliseconds: 1000),
-                      child: _buildStatsGrid(),
-                    ),
-                    const SizedBox(height: 24),
-                    FadeInLeft(
-                      duration: const Duration(milliseconds: 1200),
-                      child: _buildSalesTrendChart(),
-                    ),
-                    const SizedBox(height: 24),
-                    FadeInRight(
-                      duration: const Duration(milliseconds: 1400),
-                      child: _buildCategoryPieChart(),
-                    ),
-                    const SizedBox(height: 24),
-                    FadeInUp(
-                      duration: const Duration(milliseconds: 1600),
-                      child: _buildMonthlyBarChart(),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildWelcomeSection() {
+  Widget _buildWelcomeSection(BoxConstraints constraints) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(constraints.maxWidth * 0.04),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF7A7C52), Color(0xFF5A5D3A)],
@@ -538,28 +552,32 @@ class _PenitipDashboardState extends State<PenitipDashboard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Selamat Datang di Dashboard Penitip!',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 20,
+              fontSize: constraints.maxWidth < 360 ? 18 : 20,
               fontWeight: FontWeight.bold,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 8),
           Text(
             'Kelola barang titipan Anda dan pantau penjualan dengan mudah',
             style: TextStyle(
               color: Colors.white.withOpacity(0.9),
-              fontSize: 14,
+              fontSize: constraints.maxWidth < 360 ? 12 : 14,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatsGrid() {
+  Widget _buildStatsGrid(BoxConstraints constraints) {
     return FutureBuilder(
       future: Future.delayed(const Duration(seconds: 2)),
       builder: (context, snapshot) {
@@ -567,11 +585,11 @@ class _PenitipDashboardState extends State<PenitipDashboard>
           return GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 1.2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: constraints.maxWidth < 600 ? 2 : 4,
+              childAspectRatio: constraints.maxWidth < 360 ? 1.1 : 1.2,
+              crossAxisSpacing: constraints.maxWidth * 0.04,
+              mainAxisSpacing: constraints.maxWidth * 0.04,
             ),
             itemCount: 4,
             itemBuilder: (context, index) => _buildStatCardLoading(),
@@ -580,14 +598,14 @@ class _PenitipDashboardState extends State<PenitipDashboard>
           return GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 1.2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: constraints.maxWidth < 600 ? 2 : 4,
+              childAspectRatio: constraints.maxWidth < 360 ? 1.1 : 1.2,
+              crossAxisSpacing: constraints.maxWidth * 0.04,
+              mainAxisSpacing: constraints.maxWidth * 0.04,
             ),
             itemCount: stats.length,
-            itemBuilder: (context, index) => _buildStatCard(stats[index]),
+            itemBuilder: (context, index) => _buildStatCard(stats[index], constraints),
           );
         }
       },
@@ -643,7 +661,7 @@ class _PenitipDashboardState extends State<PenitipDashboard>
     );
   }
 
-  Widget _buildStatCard(Map<String, dynamic> stat) {
+  Widget _buildStatCard(Map<String, dynamic> stat, BoxConstraints constraints) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
@@ -659,22 +677,23 @@ class _PenitipDashboardState extends State<PenitipDashboard>
           borderRadius: BorderRadius.circular(12),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(constraints.maxWidth * 0.04),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(stat['icon'], color: stat['color'], size: 28),
+                  Icon(stat['icon'], color: stat['color'], size: constraints.maxWidth < 360 ? 24 : 28),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
                       stat['title'],
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: constraints.maxWidth < 360 ? 12 : 14,
                         fontWeight: FontWeight.bold,
                       ),
                       softWrap: true,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -686,10 +705,11 @@ class _PenitipDashboardState extends State<PenitipDashboard>
                   stat['isMonetary'] == true
                       ? 'Rp ${stat['value'].toStringAsFixed(0)}'
                       : stat['value'].toString(),
-                  style: const TextStyle(
-                    fontSize: 20,
+                  style: TextStyle(
+                    fontSize: constraints.maxWidth < 360 ? 18 : 20,
                     fontWeight: FontWeight.bold,
                   ),
+                  maxLines: 1,
                 ),
               ),
               const SizedBox(height: 4),
@@ -697,8 +717,10 @@ class _PenitipDashboardState extends State<PenitipDashboard>
                 '${stat['change'] > 0 ? '+' : ''}${stat['change']}% dari bulan lalu',
                 style: TextStyle(
                   color: stat['change'] > 0 ? Colors.green : Colors.red,
-                  fontSize: 12,
+                  fontSize: constraints.maxWidth < 360 ? 10 : 12,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -707,7 +729,7 @@ class _PenitipDashboardState extends State<PenitipDashboard>
     );
   }
 
-  Widget _buildSalesTrendChart() {
+  Widget _buildSalesTrendChart(BoxConstraints constraints) {
     return FutureBuilder(
       future: Future.delayed(const Duration(seconds: 2)),
       builder: (context, snapshot) {
@@ -717,10 +739,9 @@ class _PenitipDashboardState extends State<PenitipDashboard>
             highlightColor: Colors.grey[100]!,
             child: Card(
               elevation: 4,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(constraints.maxWidth * 0.04),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -731,7 +752,7 @@ class _PenitipDashboardState extends State<PenitipDashboard>
                     ),
                     const SizedBox(height: 16),
                     Container(
-                      height: 200,
+                      height: constraints.maxHeight * 0.25,
                       color: Colors.white,
                     ),
                   ],
@@ -742,43 +763,62 @@ class _PenitipDashboardState extends State<PenitipDashboard>
         } else {
           return Card(
             elevation: 4,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(constraints.maxWidth * 0.04),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Trend Penjualan 7 Hari Terakhir',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: constraints.maxWidth < 360 ? 14 : 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
-                    height: 200,
+                    height: constraints.maxHeight * 0.25,
+                    width: double.infinity,
                     child: LineChart(
                       LineChartData(
                         gridData: FlGridData(show: true),
                         titlesData: FlTitlesData(
                           leftTitles: AxisTitles(
-                            sideTitles:
-                                SideTitles(showTitles: true, reservedSize: 40),
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: constraints.maxWidth < 360 ? 30 : 40,
+                              getTitlesWidget: (value, meta) {
+                                return Text(
+                                  value.toInt().toString(),
+                                  style: TextStyle(fontSize: constraints.maxWidth < 360 ? 10 : 12),
+                                );
+                              },
+                            ),
                           ),
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
+                              reservedSize: 30,
                               getTitlesWidget: (value, meta) {
                                 final index = value.toInt();
                                 if (index >= 0 && index < salesData.length) {
-                                  return Text(
-                                    salesData[index]['date'].substring(5),
-                                    style: const TextStyle(fontSize: 12),
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8.0),
+                                    child: Text(
+                                      salesData[index]['date'].substring(5),
+                                      style: TextStyle(fontSize: constraints.maxWidth < 360 ? 10 : 12),
+                                    ),
                                   );
                                 }
                                 return const Text('');
                               },
                             ),
                           ),
+                          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         ),
                         borderData: FlBorderData(show: true),
                         lineBarsData: [
@@ -786,8 +826,7 @@ class _PenitipDashboardState extends State<PenitipDashboard>
                             spots: salesData
                                 .asMap()
                                 .entries
-                                .map((e) => FlSpot(e.key.toDouble(),
-                                    e.value['penjualan'].toDouble()))
+                                .map((e) => FlSpot(e.key.toDouble(), e.value['penjualan'].toDouble()))
                                 .toList(),
                             isCurved: true,
                             color: Colors.blue,
@@ -797,8 +836,7 @@ class _PenitipDashboardState extends State<PenitipDashboard>
                             spots: salesData
                                 .asMap()
                                 .entries
-                                .map((e) => FlSpot(e.key.toDouble(),
-                                    e.value['pendapatan'].toDouble() / 100000))
+                                .map((e) => FlSpot(e.key.toDouble(), e.value['pendapatan'].toDouble() / 100000))
                                 .toList(),
                             isCurved: true,
                             color: Colors.green,
@@ -817,7 +855,7 @@ class _PenitipDashboardState extends State<PenitipDashboard>
     );
   }
 
-  Widget _buildCategoryPieChart() {
+  Widget _buildCategoryPieChart(BoxConstraints constraints) {
     return FutureBuilder(
       future: Future.delayed(const Duration(seconds: 2)),
       builder: (context, snapshot) {
@@ -827,10 +865,9 @@ class _PenitipDashboardState extends State<PenitipDashboard>
             highlightColor: Colors.grey[100]!,
             child: Card(
               elevation: 4,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(constraints.maxWidth * 0.04),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -841,7 +878,7 @@ class _PenitipDashboardState extends State<PenitipDashboard>
                     ),
                     const SizedBox(height: 16),
                     Container(
-                      height: 200,
+                      height: constraints.maxHeight * 0.25,
                       color: Colors.white,
                     ),
                   ],
@@ -852,20 +889,25 @@ class _PenitipDashboardState extends State<PenitipDashboard>
         } else {
           return Card(
             elevation: 4,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(constraints.maxWidth * 0.04),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Distribusi Kategori Barang',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: constraints.maxWidth < 360 ? 14 : 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
-                    height: 200,
+                    height: constraints.maxHeight * 0.25,
+                    width: double.infinity,
                     child: PieChart(
                       PieChartData(
                         sections: categoryData
@@ -873,14 +915,16 @@ class _PenitipDashboardState extends State<PenitipDashboard>
                                   color: e['color'],
                                   value: e['value'].toDouble(),
                                   title: '${e['name']}\n${e['value']}%',
-                                  radius: 50,
-                                  titleStyle: const TextStyle(
-                                    fontSize: 12,
+                                  radius: constraints.maxWidth < 360 ? 40 : 50,
+                                  titleStyle: TextStyle(
+                                    fontSize: constraints.maxWidth < 360 ? 10 : 12,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                   ),
                                 ))
                             .toList(),
+                        sectionsSpace: 2,
+                        centerSpaceRadius: constraints.maxWidth < 360 ? 30 : 40,
                       ),
                     ),
                   ),
@@ -893,7 +937,7 @@ class _PenitipDashboardState extends State<PenitipDashboard>
     );
   }
 
-  Widget _buildMonthlyBarChart() {
+  Widget _buildMonthlyBarChart(BoxConstraints constraints) {
     return FutureBuilder(
       future: Future.delayed(const Duration(seconds: 2)),
       builder: (context, snapshot) {
@@ -903,10 +947,9 @@ class _PenitipDashboardState extends State<PenitipDashboard>
             highlightColor: Colors.grey[100]!,
             child: Card(
               elevation: 4,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(constraints.maxWidth * 0.04),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -917,7 +960,7 @@ class _PenitipDashboardState extends State<PenitipDashboard>
                     ),
                     const SizedBox(height: 16),
                     Container(
-                      height: 200,
+                      height: constraints.maxHeight * 0.25,
                       color: Colors.white,
                     ),
                   ],
@@ -928,59 +971,85 @@ class _PenitipDashboardState extends State<PenitipDashboard>
         } else {
           return Card(
             elevation: 4,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(constraints.maxWidth * 0.04),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Performa Bulanan',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: constraints.maxWidth < 360 ? 14 : 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
-                    height: 200,
+                    height: constraints.maxHeight * 0.25,
+                    width: double.infinity,
                     child: BarChart(
                       BarChartData(
                         alignment: BarChartAlignment.spaceAround,
                         barGroups: monthlyData
+                            .asMap()
+                            .entries
                             .map((e) => BarChartGroupData(
-                                  x: monthlyData.indexOf(e),
+                                  x: e.key,
                                   barRods: [
                                     BarChartRodData(
-                                      toY: e['barang'].toDouble(),
+                                      toY: e.value['barang'].toDouble(),
                                       color: Colors.blue,
+                                      width: constraints.maxWidth < 360 ? 8 : 10,
                                     ),
                                     BarChartRodData(
-                                      toY: e['terjual'].toDouble(),
+                                      toY: e.value['terjual'].toDouble(),
                                       color: Colors.green,
+                                      width: constraints.maxWidth < 360 ? 8 : 10,
                                     ),
                                   ],
+                                  barsSpace: constraints.maxWidth < 360 ? 2 : 4,
                                 ))
                             .toList(),
                         titlesData: FlTitlesData(
                           leftTitles: AxisTitles(
-                            sideTitles:
-                                SideTitles(showTitles: true, reservedSize: 40),
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: constraints.maxWidth < 360 ? 30 : 40,
+                              getTitlesWidget: (value, meta) {
+                                return Text(
+                                  value.toInt().toString(),
+                                  style: TextStyle(fontSize: constraints.maxWidth < 360 ? 10 : 12),
+                                );
+                              },
+                            ),
                           ),
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
+                              reservedSize: 30,
                               getTitlesWidget: (value, meta) {
                                 final index = value.toInt();
                                 if (index >= 0 && index < monthlyData.length) {
-                                  return Text(
-                                    monthlyData[index]['month'],
-                                    style: const TextStyle(fontSize: 12),
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8.0),
+                                    child: Text(
+                                      monthlyData[index]['month'],
+                                      style: TextStyle(fontSize: constraints.maxWidth < 360 ? 10 : 12),
+                                    ),
                                   );
                                 }
                                 return const Text('');
                               },
                             ),
                           ),
+                          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         ),
+                        borderData: FlBorderData(show: true),
+                        barTouchData: BarTouchData(enabled: true),
                       ),
                     ),
                   ),

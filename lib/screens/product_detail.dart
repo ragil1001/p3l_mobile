@@ -57,8 +57,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       setState(() {
         _isLoggedIn = false;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Tidak ada koneksi internet'),
+          SnackBar(
+            content: Text(
+              'Tidak ada koneksi internet',
+              style: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.035),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -97,8 +100,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         _isLoading = false;
         _errorMessage = 'Tidak ada koneksi internet';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Tidak ada koneksi internet'),
+          SnackBar(
+            content: Text(
+              'Tidak ada koneksi internet',
+              style: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.035),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -157,7 +163,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal memuat detail produk: $e'),
+          content: Text(
+            'Gagal memuat detail produk: $e',
+            style: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.035),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -170,8 +181,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         _isLoadingDiscussions = false;
         _errorMessage = 'Tidak ada koneksi internet';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Tidak ada koneksi internet'),
+          SnackBar(
+            content: Text(
+              'Tidak ada koneksi internet',
+              style: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.035),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -231,7 +245,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal memuat diskusi: $e'),
+          content: Text(
+            'Gagal memuat diskusi: $e',
+            style: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.035),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -283,6 +302,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Scaffold(
       backgroundColor: Colors.white,
       body: _isLoading ? _buildShimmer() : _buildContent(),
@@ -295,25 +315,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   BoxShadow(
                     color: Colors.grey.withOpacity(0.1),
                     spreadRadius: 1,
-                    blurRadius: 10,
+                    blurRadius: size.width * 0.025,
                     offset: const Offset(0, -2),
                   ),
                 ],
               ),
               child: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: EdgeInsets.all(size.width * 0.04),
                   child: ZoomIn(
                     duration: const Duration(milliseconds: 800),
                     child: ElevatedButton(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: const Text('Mengarahkan ke pembelian web'),
+                            content: Text(
+                              'Mengarahkan ke pembelian web',
+                              style: TextStyle(fontSize: size.width * 0.035),
+                            ),
                             backgroundColor: const Color(0xFF7A7C52),
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(size.width * 0.025),
                             ),
                           ),
                         );
@@ -322,17 +345,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         backgroundColor: const Color(0xFF7A7C52),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(size.width * 0.03),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        padding: EdgeInsets.symmetric(vertical: size.height * 0.015),
                         elevation: 4,
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.shopping_bag),
-                          SizedBox(width: 8),
-                          Text('Lanjutkan Pembelian melalui Website'),
+                          Icon(Icons.shopping_bag, size: size.width * 0.05),
+                          SizedBox(width: size.width * 0.02),
+                          Text(
+                            'Lanjutkan Pembelian melalui Website',
+                            style: TextStyle(fontSize: size.width * 0.035),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
                       ),
                     ),
@@ -344,10 +372,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildShimmer() {
+    final size = MediaQuery.of(context).size;
     return CustomScrollView(
       slivers: [
         SliverAppBar(
-          expandedHeight: 350,
+          expandedHeight: size.height * 0.45,
           backgroundColor: Colors.white,
           elevation: 0,
           flexibleSpace: FlexibleSpaceBar(
@@ -364,7 +393,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           child: Container(
             color: Colors.white,
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: EdgeInsets.all(size.width * 0.05),
               child: Shimmer.fromColors(
                 baseColor: Colors.grey[300]!,
                 highlightColor: Colors.grey[100]!,
@@ -372,53 +401,53 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 120,
-                      height: 28,
+                      width: size.width * 0.3,
+                      height: size.height * 0.035,
                       decoration: BoxDecoration(
                         color: Colors.grey,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(size.width * 0.02),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: size.height * 0.01),
                     Container(
-                      width: 200,
-                      height: 24,
+                      width: size.width * 0.5,
+                      height: size.height * 0.03,
                       decoration: BoxDecoration(
                         color: Colors.grey,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(size.width * 0.02),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: size.height * 0.03),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: List.generate(
                         3,
                         (_) => Container(
-                          width: 100,
-                          height: 60,
+                          width: size.width * 0.25,
+                          height: size.height * 0.075,
                           decoration: BoxDecoration(
                             color: Colors.grey,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(size.width * 0.03),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: size.height * 0.03),
                     Container(
-                      width: 120,
-                      height: 20,
+                      width: size.width * 0.3,
+                      height: size.height * 0.025,
                       decoration: BoxDecoration(
                         color: Colors.grey,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(size.width * 0.02),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: size.height * 0.015),
                     Container(
                       width: double.infinity,
-                      height: 80,
+                      height: size.height * 0.1,
                       decoration: BoxDecoration(
                         color: Colors.grey,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(size.width * 0.03),
                       ),
                     ),
                   ],
@@ -432,14 +461,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildContent() {
+    final size = MediaQuery.of(context).size;
     if (_errorMessage != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Error: $_errorMessage',
-                style: const TextStyle(color: Colors.red)),
-            const SizedBox(height: 16),
+            Text(
+              'Error: $_errorMessage',
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: size.width * 0.04,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: size.height * 0.02),
             ElevatedButton(
               onPressed: () {
                 setState(() {
@@ -451,7 +489,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 _fetchDiscussions();
                 _fetchOtherProducts();
               },
-              child: const Text('Coba Lagi'),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(
+                  horizontal: size.width * 0.04,
+                  vertical: size.height * 0.015,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(size.width * 0.03),
+                ),
+              ),
+              child: Text(
+                'Coba Lagi',
+                style: TextStyle(fontSize: size.width * 0.035),
+              ),
             ),
           ],
         ),
@@ -472,7 +522,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return CustomScrollView(
       slivers: [
         SliverAppBar(
-          expandedHeight: 350,
+          expandedHeight: size.height * 0.45,
           pinned: true,
           backgroundColor: Colors.white,
           elevation: 0,
@@ -548,20 +598,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   },
                 ),
                 Positioned(
-                  bottom: 20,
+                  bottom: size.height * 0.025,
                   left: 0,
                   right: 0,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                    padding: EdgeInsets.symmetric(
+                      vertical: size.height * 0.005,
+                      horizontal: size.width * 0.02,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(
                         images.length,
                         (index) => Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: 8,
-                          height: 8,
+                          margin: EdgeInsets.symmetric(horizontal: size.width * 0.01),
+                          width: size.width * 0.02,
+                          height: size.width * 0.02,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: _currentPage == index
@@ -570,7 +622,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.2),
-                                blurRadius: 2,
+                                blurRadius: size.width * 0.005,
                                 offset: const Offset(0, 1),
                               ),
                             ],
@@ -584,15 +636,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
           ),
           leading: Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: EdgeInsets.all(size.width * 0.02),
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(size.width * 0.025),
                 color: const Color(0xFF7A7C52).withOpacity(0.7),
               ),
               child: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white),
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.white,
+                  size: size.width * 0.05,
+                ),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -602,7 +657,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           child: Container(
             color: Colors.white,
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: EdgeInsets.all(size.width * 0.05),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -610,34 +665,38 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     duration: const Duration(milliseconds: 600),
                     child: Text(
                       _formatRupiah(_product!['price'] ?? 0),
-                      style: const TextStyle(
-                        fontSize: 28,
+                      style: TextStyle(
+                        fontSize: size.width * 0.07,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF7A7C52),
+                        color: const Color(0xFF7A7C52),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: size.height * 0.01),
                   FadeInDown(
                     duration: const Duration(milliseconds: 700),
                     child: Text(
                       _product!['name'].toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 22,
+                      style: TextStyle(
+                        fontSize: size.width * 0.055,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                         letterSpacing: 0.5,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: size.height * 0.03),
                   FadeInLeft(
                     duration: const Duration(milliseconds: 800),
                     child: Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(size.width * 0.04),
                       decoration: BoxDecoration(
                         color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(size.width * 0.04),
                         border: Border.all(
                           color: Colors.grey.withOpacity(0.2),
                         ),
@@ -648,34 +707,54 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           Text(
                             'Spesifikasi Produk',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: size.width * 0.04,
                               fontWeight: FontWeight.bold,
                               color: Colors.grey[800],
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _ModernDetailChip(
-                                  icon: Icons.verified,
-                                  label: 'Kondisi',
-                                  value: _product!['condition'],
-                                  color: Colors.green,
+                          SizedBox(height: size.height * 0.015),
+                          MediaQuery.of(context).size.width < 600
+                              ? Column(
+                                  children: [
+                                    _ModernDetailChip(
+                                      icon: Icons.verified,
+                                      label: 'Kondisi',
+                                      value: _product!['condition'],
+                                      color: Colors.green,
+                                      fullWidth: true,
+                                    ),
+                                    SizedBox(height: size.height * 0.01),
+                                    _ModernDetailChip(
+                                      icon: Icons.scale,
+                                      label: 'Berat',
+                                      value: '${_product!['weight']} kg',
+                                      color: Colors.blue,
+                                      fullWidth: true,
+                                    ),
+                                  ],
+                                )
+                              : Row(
+                                  children: [
+                                    Expanded(
+                                      child: _ModernDetailChip(
+                                        icon: Icons.verified,
+                                        label: 'Kondisi',
+                                        value: _product!['condition'],
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                    SizedBox(width: size.width * 0.02),
+                                    Expanded(
+                                      child: _ModernDetailChip(
+                                        icon: Icons.scale,
+                                        label: 'Berat',
+                                        value: '${_product!['weight']} kg',
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _ModernDetailChip(
-                                  icon: Icons.scale,
-                                  label: 'Berat',
-                                  value: '${_product!['weight']} kg',
-                                  color: Colors.blue,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: size.height * 0.01),
                           _ModernDetailChip(
                             icon: Icons.security,
                             label: 'Garansi',
@@ -687,19 +766,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: size.height * 0.03),
                   FadeInUp(
                     duration: const Duration(milliseconds: 900),
                     child: Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(size.width * 0.04),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(size.width * 0.04),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.grey.withOpacity(0.1),
                             spreadRadius: 1,
-                            blurRadius: 10,
+                            blurRadius: size.width * 0.025,
                             offset: const Offset(0, 2),
                           ),
                         ],
@@ -709,41 +788,47 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.store,
-                                color: Color(0xFF7A7C52),
-                                size: 20,
+                                color: const Color(0xFF7A7C52),
+                                size: size.width * 0.05,
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: size.width * 0.02),
                               Text(
                                 'Informasi Penitip',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: size.width * 0.045,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.grey[800],
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: size.height * 0.015),
                           Row(
                             children: [
                               Expanded(
                                 child: Row(
                                   children: [
-                                    Text(
-                                      penitipName,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.black87,
+                                    Flexible(
+                                      child: Text(
+                                        penitipName,
+                                        style: TextStyle(
+                                          fontSize: size.width * 0.04,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                     if (penitipBadge == 1) ...[
-                                      const SizedBox(width: 8),
+                                      SizedBox(width: size.width * 0.02),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 4),
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: size.width * 0.02,
+                                          vertical: size.height * 0.005,
+                                        ),
                                         decoration: BoxDecoration(
                                           gradient: const LinearGradient(
                                             colors: [
@@ -754,21 +839,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                             end: Alignment.bottomRight,
                                           ),
                                           borderRadius:
-                                              BorderRadius.circular(12),
+                                              BorderRadius.circular(size.width * 0.03),
                                           boxShadow: [
                                             BoxShadow(
                                               color:
                                                   Colors.black.withOpacity(0.2),
-                                              blurRadius: 4,
+                                              blurRadius: size.width * 0.01,
                                               offset: const Offset(0, 2),
                                             ),
                                           ],
                                         ),
-                                        child: const Text(
+                                        child: Text(
                                           'Top Seller',
                                           style: TextStyle(
                                             color: Colors.white,
-                                            fontSize: 12,
+                                            fontSize: size.width * 0.03,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
@@ -779,43 +864,47 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: size.height * 0.01),
                           Row(
                             children: [
                               Icon(
                                 Icons.shopping_bag,
                                 color: Colors.grey[700],
-                                size: 20,
+                                size: size.width * 0.05,
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: size.width * 0.01),
                               Text(
                                 '$penitipSalesCount Barang Terjual',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: size.width * 0.035,
                                   color: Colors.grey[700],
                                   fontWeight: FontWeight.w500,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: size.height * 0.01),
                           Row(
                             children: [
                               Icon(
                                 Icons.star,
                                 color: Colors.yellow[700],
-                                size: 20,
+                                size: size.width * 0.05,
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: size.width * 0.01),
                               Text(
                                 penitipRating > 0
                                     ? penitipRating.toStringAsFixed(1)
                                     : 'Belum ada rating',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: size.width * 0.035,
                                   color: Colors.grey[700],
                                   fontWeight: FontWeight.w500,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
@@ -823,19 +912,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: size.height * 0.03),
                   FadeInUp(
                     duration: const Duration(milliseconds: 900),
                     child: Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(size.width * 0.04),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(size.width * 0.04),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.grey.withOpacity(0.1),
                             spreadRadius: 1,
-                            blurRadius: 10,
+                            blurRadius: size.width * 0.025,
                             offset: const Offset(0, 2),
                           ),
                         ],
@@ -845,48 +934,50 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.description,
-                                color: Color(0xFF7A7C52),
-                                size: 20,
+                                color: const Color(0xFF7A7C52),
+                                size: size.width * 0.05,
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: size.width * 0.02),
                               Text(
                                 'Deskripsi Produk',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: size.width * 0.045,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.grey[800],
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: size.height * 0.015),
                           Text(
                             _product!['description'],
                             style: TextStyle(
                               color: Colors.grey[700],
-                              fontSize: 15,
+                              fontSize: size.width * 0.0375,
                               height: 1.5,
                             ),
+                            maxLines: 10,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: size.height * 0.03),
                   FadeInUp(
                     duration: const Duration(milliseconds: 1000),
                     child: Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(size.width * 0.04),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(size.width * 0.04),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.grey.withOpacity(0.1),
                             spreadRadius: 1,
-                            blurRadius: 10,
+                            blurRadius: size.width * 0.025,
                             offset: const Offset(0, 2),
                           ),
                         ],
@@ -896,50 +987,55 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.forum,
-                                color: Color(0xFF7A7C52),
-                                size: 20,
+                                color: const Color(0xFF7A7C52),
+                                size: size.width * 0.05,
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: size.width * 0.02),
                               Text(
                                 'Diskusi Produk',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: size.width * 0.045,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.grey[800],
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: size.height * 0.015),
                           _isLoadingDiscussions
                               ? const Center(child: CircularProgressIndicator())
                               : _discussions.isEmpty
-                                  ? const Text(
-                                      'Belum ada diskusi untuk produk ini.')
+                                  ? Text(
+                                      'Belum ada diskusi untuk produk ini.',
+                                      style: TextStyle(fontSize: size.width * 0.035),
+                                    )
                                   : Column(
                                       children: _discussions.map((discussion) {
                                         return Padding(
-                                          padding: const EdgeInsets.only(
-                                              bottom: 16.0),
+                                          padding: EdgeInsets.only(bottom: size.height * 0.02),
                                           child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Row(
                                                 children: [
-                                                  Text(
-                                                    discussion[
-                                                            'NAMA_PELANGGAN'] ??
-                                                        'Pengguna Tidak Dikenal',
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 14,
+                                                  Flexible(
+                                                    child: Text(
+                                                      discussion[
+                                                              'NAMA_PELANGGAN'] ??
+                                                          'Pengguna Tidak Dikenal',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: size.width * 0.035,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
                                                   ),
-                                                  const SizedBox(width: 8),
+                                                  SizedBox(width: size.width * 0.02),
                                                   Text(
                                                     discussion['TANGGAL_DISKUSI'] !=
                                                             null
@@ -949,29 +1045,35 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                         : 'Tanggal Tidak Tersedia',
                                                     style: TextStyle(
                                                       color: Colors.grey[600],
-                                                      fontSize: 12,
+                                                      fontSize: size.width * 0.03,
                                                     ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
                                                   ),
                                                 ],
                                               ),
-                                              const SizedBox(height: 4),
+                                              SizedBox(height: size.height * 0.005),
                                               Text(
-                                                  discussion['PESAN_DISKUSI'] ??
-                                                      'Pesan tidak tersedia'),
+                                                discussion['PESAN_DISKUSI'] ??
+                                                    'Pesan tidak tersedia',
+                                                style: TextStyle(
+                                                  fontSize: size.width * 0.035,
+                                                ),
+                                                maxLines: 5,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
                                               if (discussion[
                                                           'STATUS_BALASAN'] ==
                                                       'Sudah Dibalas' &&
                                                   discussion['BALASAN'] !=
                                                       null) ...[
-                                                const SizedBox(height: 8),
+                                                SizedBox(height: size.height * 0.01),
                                                 Container(
-                                                  padding:
-                                                      const EdgeInsets.all(8),
+                                                  padding: EdgeInsets.all(size.width * 0.02),
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey[100],
                                                     borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
+                                                        BorderRadius.circular(size.width * 0.02),
                                                   ),
                                                   child: Column(
                                                     crossAxisAlignment:
@@ -980,20 +1082,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                     children: [
                                                       Row(
                                                         children: [
-                                                          Text(
-                                                            discussion[
-                                                                    'NAMA_CS'] ??
-                                                                'CS Tidak Dikenal',
-                                                            style:
-                                                                const TextStyle(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                              fontSize: 14,
+                                                          Flexible(
+                                                            child: Text(
+                                                              discussion[
+                                                                      'NAMA_CS'] ??
+                                                                  'CS Tidak Dikenal',
+                                                              style: TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize:
+                                                                    size.width * 0.035,
+                                                              ),
+                                                              maxLines: 1,
+                                                              overflow:
+                                                                  TextOverflow.ellipsis,
                                                             ),
                                                           ),
-                                                          const SizedBox(
-                                                              width: 8),
+                                                          SizedBox(
+                                                              width: size.width * 0.02),
                                                           Text(
                                                             discussion['TANGGAL_BALASAN'] !=
                                                                     null
@@ -1005,15 +1112,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                             style: TextStyle(
                                                               color: Colors
                                                                   .grey[600],
-                                                              fontSize: 12,
+                                                              fontSize:
+                                                                  size.width * 0.03,
                                                             ),
+                                                            maxLines: 1,
+                                                            overflow:
+                                                                TextOverflow.ellipsis,
                                                           ),
                                                         ],
                                                       ),
-                                                      const SizedBox(height: 4),
-                                                      Text(discussion[
-                                                              'BALASAN'] ??
-                                                          'Balasan tidak tersedia'),
+                                                      SizedBox(
+                                                          height: size.height * 0.005),
+                                                      Text(
+                                                        discussion['BALASAN'] ??
+                                                            'Balasan tidak tersedia',
+                                                        style: TextStyle(
+                                                          fontSize:
+                                                              size.width * 0.035,
+                                                        ),
+                                                        maxLines: 5,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
                                                     ],
                                                   ),
                                                 ),
@@ -1028,21 +1147,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: size.height * 0.04),
                   FadeInUp(
                     duration: const Duration(milliseconds: 1100),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.shopping_bag_outlined,
-                          color: Color(0xFF7A7C52),
-                          size: 20,
+                          color: const Color(0xFF7A7C52),
+                          size: size.width * 0.05,
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: size.width * 0.02),
                         Text(
                           'Produk Lainnya',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: size.width * 0.045,
                             fontWeight: FontWeight.bold,
                             color: Colors.grey[800],
                           ),
@@ -1050,12 +1169,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: size.height * 0.02),
                   SizedBox(
-                    height: 200,
+                    height: size.height * 0.25,
                     child: _otherProducts.isEmpty
-                        ? const Center(
-                            child: Text('Tidak ada produk lain tersedia'))
+                        ? Center(
+                            child: Text(
+                              'Tidak ada produk lain tersedia',
+                              style: TextStyle(fontSize: size.width * 0.035),
+                            ),
+                          )
                         : ListView.builder(
                             scrollDirection: Axis.horizontal,
                             itemCount: _otherProducts.length,
@@ -1068,7 +1191,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             },
                           ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: size.height * 0.02),
                 ],
               ),
             ),
@@ -1096,47 +1219,54 @@ class _ModernDetailChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Container(
       width: fullWidth ? double.infinity : null,
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(size.width * 0.03),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(size.width * 0.03),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: fullWidth ? MainAxisSize.max : MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            padding: EdgeInsets.all(size.width * 0.015),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(size.width * 0.02),
             ),
-            child: Icon(icon, color: color, size: 16),
+            child: Icon(icon, color: color, size: size.width * 0.04),
           ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
+          SizedBox(width: size.width * 0.02),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: size.width * 0.03,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: size.width * 0.035,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -1155,6 +1285,7 @@ class _ModernProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     final imageUrl = product['image'] ?? '/api/placeholder/60/60';
     return GestureDetector(
       onTap: () {
@@ -1177,16 +1308,16 @@ class _ModernProductCard extends StatelessWidget {
         );
       },
       child: Container(
-        width: 160,
-        margin: const EdgeInsets.only(right: 16),
+        width: size.width * 0.4,
+        margin: EdgeInsets.only(right: size.width * 0.04),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(size.width * 0.04),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.1),
               spreadRadius: 1,
-              blurRadius: 8,
+              blurRadius: size.width * 0.02,
               offset: const Offset(0, 2),
             ),
           ],
@@ -1196,11 +1327,11 @@ class _ModernProductCard extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
+                  BorderRadius.vertical(top: Radius.circular(size.width * 0.04)),
               child: CachedNetworkImage(
                 imageUrl: imageUrl,
-                height: 110,
-                width: 160,
+                height: size.height * 0.15,
+                width: size.width * 0.4,
                 fit: BoxFit.cover,
                 placeholder: (context, url) =>
                     const Center(child: CircularProgressIndicator()),
@@ -1214,28 +1345,30 @@ class _ModernProductCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(size.width * 0.02),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     product['name'] ?? 'Produk Tanpa Nama',
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: size.width * 0.035,
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: size.height * 0.005),
                   Text(
                     _formatRupiah(product['price'] ?? 0),
-                    style: const TextStyle(
-                      fontSize: 13,
+                    style: TextStyle(
+                      fontSize: size.width * 0.0325,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF7A7C52),
+                      color: const Color(0xFF7A7C52),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

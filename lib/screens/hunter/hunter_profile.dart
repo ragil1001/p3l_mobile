@@ -416,7 +416,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             const SizedBox(width: 16),
             Expanded(
               child: _buildStatCard(
-                'Haunted Items',
+                'Hunted Items',
                 userProfile?['total_items_hunted'].toString() ?? '0',
                 Icons.inventory_2,
                 Colors.blue,
