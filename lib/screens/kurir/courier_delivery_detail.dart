@@ -52,36 +52,55 @@ class _CourierDeliveryDetailScreenState
       return; // No action for 'Sudah Diterima' or other statuses
     }
 
+    final size = MediaQuery.of(context).size;
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(size.width * 0.04),
         ),
         title: Text(
           'Konfirmasi Status',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Color(0xFF7A7C52),
+            color: const Color(0xFF7A7C52),
+            fontSize: size.width * 0.045,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         content: Text(
           confirmationMessage,
-          style: TextStyle(color: Colors.black87),
+          style: TextStyle(
+            color: Colors.black87,
+            fontSize: size.width * 0.04,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               'Batal',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: size.width * 0.035,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               actionText,
-              style: TextStyle(color: Color(0xFF7A7C52)),
+              style: TextStyle(
+                color: const Color(0xFF7A7C52),
+                fontSize: size.width * 0.035,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -124,10 +143,16 @@ class _CourierDeliveryDetailScreenState
           widget.onStatusUpdated();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Status diubah menjadi $newStatus'),
+              content: Text(
+                'Status diubah menjadi $newStatus',
+                style: TextStyle(fontSize: size.width * 0.035),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(size.width * 0.025),
+              ),
             ),
           );
         } else {
@@ -138,10 +163,16 @@ class _CourierDeliveryDetailScreenState
               'API Error: ${response.statusCode}, Response: ${response.body}'); // Debug log
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(errorMessage),
+              content: Text(
+                errorMessage,
+                style: TextStyle(fontSize: size.width * 0.035),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(size.width * 0.025),
+              ),
             ),
           );
         }
@@ -149,10 +180,16 @@ class _CourierDeliveryDetailScreenState
         print('Exception during status update: $e'); // Debug log
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error memperbarui status: $e'),
+            content: Text(
+              'Error memperbarui status: $e',
+              style: TextStyle(fontSize: size.width * 0.035),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(size.width * 0.025),
+            ),
           ),
         );
       }
@@ -187,7 +224,8 @@ class _CourierDeliveryDetailScreenState
 
   @override
   Widget build(BuildContext context) {
-    final oliveGreen = const Color(0xFF7A7C52);
+    final size = MediaQuery.of(context).size;
+    const oliveGreen = Color(0xFF7A7C52);
 
     return Scaffold(
       body: Container(
@@ -210,15 +248,18 @@ class _CourierDeliveryDetailScreenState
               elevation: 8,
               backgroundColor: Colors.transparent,
               leading: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: EdgeInsets.all(size.width * 0.02),
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(size.width * 0.025),
                     color: oliveGreen.withOpacity(0.7),
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white),
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: size.width * 0.05,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
@@ -235,32 +276,32 @@ class _CourierDeliveryDetailScreenState
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(25),
-                      bottomRight: Radius.circular(25),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(size.width * 0.06),
+                      bottomRight: Radius.circular(size.width * 0.06),
                     ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.3),
-                        blurRadius: 15,
+                        blurRadius: size.width * 0.04,
                         offset: const Offset(0, 5),
                       ),
                     ],
                   ),
                   child: SafeArea(
                     child: Padding(
-                      padding: const EdgeInsets.all(15.0),
+                      padding: EdgeInsets.all(size.width * 0.04),
                       child: Row(
                         children: [
-                          const SizedBox(width: 40),
+                          SizedBox(width: size.width * 0.1),
                           Expanded(
                             child: FadeInDown(
                               duration: const Duration(milliseconds: 800),
-                              child: const Text(
+                              child: Text(
                                 'Detail Pengiriman',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 20,
+                                  fontSize: size.width * 0.05,
                                   fontWeight: FontWeight.bold,
                                   height: 1.2,
                                 ),
@@ -275,11 +316,11 @@ class _CourierDeliveryDetailScreenState
                   ),
                 ),
               ),
-              expandedHeight: 100,
+              expandedHeight: size.height * 0.14,
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(size.width * 0.04),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -288,11 +329,11 @@ class _CourierDeliveryDetailScreenState
                       child: Card(
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(size.width * 0.03),
                         ),
                         child: Container(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(size.width * 0.03),
                             gradient: LinearGradient(
                               colors: [
                                 Colors.white,
@@ -308,44 +349,48 @@ class _CourierDeliveryDetailScreenState
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.05),
-                                blurRadius: 10,
+                                blurRadius: size.width * 0.025,
                                 offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.all(size.width * 0.04),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                    MainAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'Order ${widget.delivery['order_id']}',
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF1A3C34),
+                                  Expanded(
+                                    child: Text(
+                                      '${widget.delivery['order_id']}',
+                                      style: TextStyle(
+                                        fontSize: size.width * 0.045,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF1A3C34),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: size.width * 0.03,
+                                      vertical: size.height * 0.01,
                                     ),
-                                    decoration: BoxDecoration(
-                                      color: _getStatusColor(
-                                              widget.delivery['status'])
-                                          .withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
+                                      decoration: BoxDecoration(
                                         color: _getStatusColor(
                                                 widget.delivery['status'])
-                                            .withOpacity(0.3),
-                                        width: 1,
+                                            .withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(size.width * 0.03),
+                                        border: Border.all(
+                                          color: _getStatusColor(
+                                                  widget.delivery['status'])
+                                              .withOpacity(0.3),
+                                          width: 1,
+                                        ),
                                       ),
-                                    ),
                                     child: Row(
                                       children: [
                                         Icon(
@@ -353,28 +398,29 @@ class _CourierDeliveryDetailScreenState
                                               widget.delivery['status']),
                                           color: _getStatusColor(
                                               widget.delivery['status']),
-                                          size: 16,
+                                          size: size.width * 0.032,
                                         ),
-                                        const SizedBox(width: 6),
+                                        SizedBox(width: size.width * 0.01),
                                         Text(
                                           widget.delivery['status'],
                                           style: TextStyle(
-                                            fontSize: 12,
+                                            fontSize: size.width * 0.025,
                                             fontWeight: FontWeight.w600,
                                             color: _getStatusColor(
-                                                widget.delivery['status']),
+                                              widget.delivery['status']),
                                           ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ],
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 16),
+                              SizedBox(height: size.height * 0.02),
                               _buildDetailRow('Pelanggan',
                                   widget.delivery['customer_name']),
-                              _buildAddressRow(
-                                  'Alamat', widget.delivery['address']),
+                              _buildAddressRow('Alamat', widget.delivery['address']),
                               _buildDetailRow('Tanggal',
                                   _formatDate(widget.delivery['date'])),
                               _buildDetailRow(
@@ -384,17 +430,17 @@ class _CourierDeliveryDetailScreenState
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: size.height * 0.02),
                     FadeInUp(
                       duration: const Duration(milliseconds: 800),
                       child: Card(
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(size.width * 0.03),
                         ),
                         child: Container(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(size.width * 0.03),
                             gradient: LinearGradient(
                               colors: [
                                 Colors.white,
@@ -410,39 +456,41 @@ class _CourierDeliveryDetailScreenState
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.05),
-                                blurRadius: 10,
+                                blurRadius: size.width * 0.025,
                                 offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.all(size.width * 0.04),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Items in Delivery',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: size.width * 0.04,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1A3C34),
+                                  color: const Color(0xFF1A3C34),
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 16),
+                              SizedBox(height: size.height * 0.02),
                               ...(widget.delivery['items'] as List<dynamic>? ??
                                       [])
                                   .map((item) => Padding(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 12),
+                                        padding: EdgeInsets.only(
+                                            bottom: size.height * 0.015),
                                         child: Row(
                                           children: [
                                             ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
+                                              borderRadius: BorderRadius.circular(
+                                                  size.width * 0.03),
                                               child: CachedNetworkImage(
                                                 imageUrl:
                                                     item['image'] as String,
-                                                height: 60,
-                                                width: 60,
+                                                height: size.width * 0.15,
+                                                width: size.width * 0.15,
                                                 fit: BoxFit.cover,
                                                 placeholder: (context, url) =>
                                                     Shimmer.fromColors(
@@ -456,24 +504,24 @@ class _CourierDeliveryDetailScreenState
                                                 errorWidget:
                                                     (context, url, error) =>
                                                         Container(
-                                                  height: 60,
-                                                  width: 60,
+                                                  height: size.width * 0.15,
+                                                  width: size.width * 0.15,
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey[200],
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                            12),
+                                                            size.width * 0.03),
                                                   ),
-                                                  child: const Icon(
+                                                  child: Icon(
                                                     Icons
                                                         .image_not_supported_outlined,
                                                     color: Colors.grey,
-                                                    size: 32,
+                                                    size: size.width * 0.08,
                                                   ),
                                                 ),
                                               ),
                                             ),
-                                            const SizedBox(width: 16),
+                                            SizedBox(width: size.width * 0.04),
                                             Expanded(
                                               child: Column(
                                                 crossAxisAlignment:
@@ -481,25 +529,32 @@ class _CourierDeliveryDetailScreenState
                                                 children: [
                                                   Text(
                                                     item['name'] as String,
-                                                    style: const TextStyle(
-                                                      fontSize: 15,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: Color(0xFF1A3C34),
+                                                    style: TextStyle(
+                                                      fontSize:
+                                                          size.width * 0.037,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: const Color(
+                                                          0xFF1A3C34),
                                                     ),
                                                     maxLines: 2,
                                                     overflow:
                                                         TextOverflow.ellipsis,
                                                   ),
-                                                  const SizedBox(height: 8),
+                                                  SizedBox(
+                                                      height:
+                                                          size.height * 0.01),
                                                   Text(
                                                     item['price'] as String,
-                                                    style: const TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Color(0xFF7A7C52),
+                                                    style: TextStyle(
+                                                      fontSize:
+                                                          size.width * 0.035,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: const Color(
+                                                          0xFF7A7C52),
                                                     ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                                 ],
                                               ),
@@ -513,7 +568,7 @@ class _CourierDeliveryDetailScreenState
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: size.height * 0.02),
                     FadeInUp(
                       duration: const Duration(milliseconds: 1000),
                       child: Align(
@@ -524,14 +579,15 @@ class _CourierDeliveryDetailScreenState
                                   ? null
                                   : _updateStatus,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF7A7C52),
+                            backgroundColor: const Color(0xFF7A7C52),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius:
+                                  BorderRadius.circular(size.width * 0.02),
                             ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: size.width * 0.04,
+                              vertical: size.height * 0.01,
                             ),
                             elevation: 2,
                           ),
@@ -541,15 +597,17 @@ class _CourierDeliveryDetailScreenState
                                 : widget.delivery['status'] == 'Sedang Dikirim'
                                     ? 'Konfirmasi Diterima'
                                     : 'Selesai',
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: size.width * 0.035,
                               fontWeight: FontWeight.w600,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: size.height * 0.04),
                   ],
                 ),
               ),
@@ -562,27 +620,34 @@ class _CourierDeliveryDetailScreenState
 
   Widget _buildDetailRow(String label, String value,
       {bool isBold = false, Color? valueColor}) {
+    final size = MediaQuery.of(context).size;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: size.height * 0.01),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: size.width * 0.035,
               color: Colors.grey[600],
               fontWeight: FontWeight.w500,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-              color: valueColor ?? const Color(0xFF1A3C34),
+          Flexible(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: size.width * 0.035,
+                fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+                color: valueColor ?? const Color(0xFF1A3C34),
+              ),
+              textAlign: TextAlign.right,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            textAlign: TextAlign.right,
           ),
         ],
       ),
@@ -590,8 +655,9 @@ class _CourierDeliveryDetailScreenState
   }
 
   Widget _buildAddressRow(String label, String value) {
+    final size = MediaQuery.of(context).size;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: size.height * 0.01),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -599,19 +665,21 @@ class _CourierDeliveryDetailScreenState
           Text(
             label,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: size.width * 0.035,
               color: Colors.grey[600],
               fontWeight: FontWeight.w500,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: size.width * 0.04),
           Flexible(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: size.width * 0.035,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1A3C34),
+                color: const Color(0xFF1A3C34),
               ),
               textAlign: TextAlign.right,
               maxLines: 3,

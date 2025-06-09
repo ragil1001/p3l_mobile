@@ -39,8 +39,7 @@ class ConsignedItemDetailScreen extends StatefulWidget {
   });
 
   @override
-  _ConsignedItemDetailScreenState createState() =>
-      _ConsignedItemDetailScreenState();
+  _ConsignedItemDetailScreenState createState() => _ConsignedItemDetailScreenState();
 }
 
 class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
@@ -131,8 +130,7 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
                 return photo;
               }).toList();
               setState(() {
-                _imageLoaded =
-                    List<bool>.filled(itemData['photos'].length, false);
+                _imageLoaded = List<bool>.filled(itemData['photos'].length, false);
               });
             } else {
               itemData['photos'] = [
@@ -258,8 +256,7 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: const Text(
-                                'Hubungi admin untuk info lebih lanjut'),
+                            content: const Text('Hubungi admin untuk info lebih lanjut'),
                             backgroundColor: const Color(0xFF7A7C52),
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
@@ -297,14 +294,17 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
     return CustomScrollView(
       slivers: [
         SliverAppBar(
-          expandedHeight: 350,
+          expandedHeight: MediaQuery.of(context).size.height * 0.4,
           backgroundColor: Colors.white,
           elevation: 0,
           flexibleSpace: FlexibleSpaceBar(
             background: Shimmer.fromColors(
               baseColor: Colors.grey[300]!,
               highlightColor: Colors.grey[100]!,
-              child: Container(color: Colors.grey),
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.4,
+                color: Colors.grey,
+              ),
             ),
           ),
         ),
@@ -312,7 +312,7 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
           child: Container(
             color: Colors.white,
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
               child: Shimmer.fromColors(
                 baseColor: Colors.grey[300]!,
                 highlightColor: Colors.grey[100]!,
@@ -320,8 +320,8 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 120,
-                      height: 28,
+                      width: MediaQuery.of(context).size.width * 0.4,
+                      height: MediaQuery.of(context).size.height * 0.06,
                       decoration: BoxDecoration(
                         color: Colors.grey,
                         borderRadius: BorderRadius.circular(8),
@@ -329,8 +329,8 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
                     ),
                     const SizedBox(height: 8),
                     Container(
-                      width: 200,
-                      height: 24,
+                      width: MediaQuery.of(context).size.width * 0.6,
+                      height: MediaQuery.of(context).size.height * 0.05,
                       decoration: BoxDecoration(
                         color: Colors.grey,
                         borderRadius: BorderRadius.circular(8),
@@ -342,8 +342,8 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
                       children: List.generate(
                         3,
                         (_) => Container(
-                          width: 100,
-                          height: 60,
+                          width: MediaQuery.of(context).size.width * 0.25,
+                          height: MediaQuery.of(context).size.height * 0.12,
                           decoration: BoxDecoration(
                             color: Colors.grey,
                             borderRadius: BorderRadius.circular(12),
@@ -353,8 +353,8 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
                     ),
                     const SizedBox(height: 24),
                     Container(
-                      width: 120,
-                      height: 20,
+                      width: MediaQuery.of(context).size.width * 0.4,
+                      height: MediaQuery.of(context).size.height * 0.04,
                       decoration: BoxDecoration(
                         color: Colors.grey,
                         borderRadius: BorderRadius.circular(8),
@@ -363,7 +363,7 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
                     const SizedBox(height: 12),
                     Container(
                       width: double.infinity,
-                      height: 80,
+                      height: MediaQuery.of(context).size.height * 0.15,
                       decoration: BoxDecoration(
                         color: Colors.grey,
                         borderRadius: BorderRadius.circular(12),
@@ -385,8 +385,7 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Error: $_errorMessage',
-                style: const TextStyle(color: Colors.red)),
+            Text('Error: $_errorMessage', style: const TextStyle(color: Colors.red)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
@@ -404,122 +403,124 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
       );
     }
 
-    final images =
-        _item!['photos']?.map((photo) => photo['url'] as String).toList() ??
-            ['/api/placeholder/60/60'];
-    final warranty = _item!['warranty_date'] != null
-        ? _formatDate(_item!['warranty_date'])
-        : 'Tidak Ada';
-    final rating =
-        _item!['rating'] != null ? _item!['rating'].toString() : 'N/A';
+    final images = _item!['photos']?.map((photo) => photo['url'] as String).toList() ?? ['/api/placeholder/60/60'];
+    final warranty = _item!['warranty_date'] != null ? _formatDate(_item!['warranty_date']) : 'Tidak Ada';
+    final rating = _item!['rating'] != null ? _item!['rating'].toString() : 'N/A';
 
     return CustomScrollView(
       slivers: [
         SliverAppBar(
-          expandedHeight: 350,
+          expandedHeight: MediaQuery.of(context).size.height * 0.4,
           pinned: true,
           backgroundColor: Colors.white,
           elevation: 0,
           flexibleSpace: FlexibleSpaceBar(
-            background: Stack(
-              fit: StackFit.expand,
-              children: [
-                PageView.builder(
-                  controller: _pageController,
-                  itemCount: images.length,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentPage = index;
-                    });
-                  },
-                  itemBuilder: (context, index) {
-                    if (images[index] == '/api/placeholder/60/60') {
-                      return Hero(
-                        tag: 'consignedItemImage${_item!['id']}_$index',
-                        child: Image.asset(
-                          'assets/images/placeholder.png',
-                          fit: BoxFit.cover,
-                        ),
-                      );
-                    }
-                    return Hero(
-                      tag: 'consignedItemImage${_item!['id']}_$index',
-                      child: CachedNetworkImage(
-                        imageUrl: images[index],
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Shimmer.fromColors(
-                          baseColor: Colors.grey[300]!,
-                          highlightColor: Colors.grey[100]!,
-                          child: Container(color: Colors.grey),
-                        ),
-                        imageBuilder: (context, imageProvider) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (!_imageLoaded[index]) {
-                              setState(() {
-                                _imageLoaded[index] = true;
-                                print('Image loaded: ${images[index]}');
-                              });
-                            }
-                          });
-                          return Container(
-                            decoration: BoxDecoration(
-                              image: DecorationImage(
-                                  image: imageProvider, fit: BoxFit.cover),
-                            ),
-                          );
-                        },
-                        errorWidget: (context, url, error) {
-                          print('Image load error: $error, URL: $url');
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (!_imageLoaded[index]) {
-                              setState(() {
-                                _imageLoaded[index] = true;
-                              });
-                            }
-                          });
-                          return Image.asset(
+            background: Container(
+              height: MediaQuery.of(context).size.height * 0.4,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  PageView.builder(
+                    controller: _pageController,
+                    itemCount: images.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPage = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      if (images[index] == '/api/placeholder/60/60') {
+                        return Hero(
+                          tag: 'consignedItemImage${_item!['id']}_$index',
+                          child: Image.asset(
                             'assets/images/placeholder.png',
                             fit: BoxFit.cover,
-                          );
-                        },
-                      ),
-                    );
-                  },
-                ),
-                Positioned(
-                  bottom: 20,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        images.length,
-                        (index) => Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _currentPage == index
-                                ? Colors.white
-                                : Colors.white.withOpacity(0.5),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 2,
-                                offset: const Offset(0, 1),
+                            height: MediaQuery.of(context).size.height * 0.4,
+                            width: double.infinity,
+                          ),
+                        );
+                      }
+                      return Hero(
+                        tag: 'consignedItemImage${_item!['id']}_$index',
+                        child: CachedNetworkImage(
+                          imageUrl: images[index],
+                          fit: BoxFit.cover,
+                          height: MediaQuery.of(context).size.height * 0.4,
+                          width: double.infinity,
+                          placeholder: (context, url) => Shimmer.fromColors(
+                            baseColor: Colors.grey[300]!,
+                            highlightColor: Colors.grey[100]!,
+                            child: Container(color: Colors.grey),
+                          ),
+                          imageBuilder: (context, imageProvider) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (!_imageLoaded[index]) {
+                                setState(() {
+                                  _imageLoaded[index] = true;
+                                  print('Image loaded: ${images[index]}');
+                                });
+                              }
+                            });
+                            return Container(
+                              height: MediaQuery.of(context).size.height * 0.4,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
                               ),
-                            ],
+                            );
+                          },
+                          errorWidget: (context, url, error) {
+                            print('Image load error: $error, URL: $url');
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (!_imageLoaded[index]) {
+                                setState(() {
+                                  _imageLoaded[index] = true;
+                                });
+                              }
+                            });
+                            return Image.asset(
+                              'assets/images/placeholder.png',
+                              fit: BoxFit.cover,
+                              height: MediaQuery.of(context).size.height * 0.4,
+                              width: double.infinity,
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                  Positioned(
+                    bottom: 20,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          images.length,
+                          (index) => Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _currentPage == index ? Colors.white : Colors.white.withOpacity(0.5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 2,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           leading: Padding(
@@ -530,8 +531,7 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
                 color: const Color(0xFF7A7C52).withOpacity(0.7),
               ),
               child: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -541,7 +541,7 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
           child: Container(
             color: Colors.white,
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -642,8 +642,7 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
                                     child: _ModernDetailChip(
                                       icon: Icons.calendar_today,
                                       label: 'Penitipan',
-                                      value: _formatDate(
-                                          _item!['penitip_tanggal_penitipan']),
+                                      value: _formatDate(_item!['penitip_tanggal_penitipan']),
                                       color: Colors.purple,
                                     ),
                                   ),

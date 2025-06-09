@@ -184,11 +184,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
   }
 
   String _getDisplayText(double availableWidth) {
-    return availableWidth < 280 ? 'Riwayat\nPesanan' : 'Riwayat Pesanan';
+    return availableWidth < 300 ? 'Riwayat\nPesanan' : 'Riwayat Pesanan';
   }
 
   double _getFontSize(double availableWidth) {
-    return availableWidth < 280 ? 18 : 20;
+    return availableWidth < 300 ? 16 : 18;
   }
 
   Widget _buildTransactionList() {
@@ -205,7 +205,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
         child: ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: MediaQuery.of(context).size.width * 0.04,
+            vertical: 8,
+          ),
           itemCount: _transactions.length,
           itemBuilder: (context, index) {
             return FadeInUp(
@@ -228,7 +231,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.of(context).size.width * 0.04,
+        vertical: 8,
+      ),
       itemCount: 3,
       itemBuilder: (context, index) {
         return Shimmer.fromColors(
@@ -236,7 +242,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
           highlightColor: Colors.grey[100]!,
           child: Container(
             margin: const EdgeInsets.only(bottom: 16),
-            height: 200,
+            height: MediaQuery.of(context).size.height * 0.25,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
@@ -269,34 +275,38 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                 ),
                 child: Icon(
                   Icons.error_outline,
-                  size: 80,
+                  size: MediaQuery.of(context).size.width * 0.2,
                   color: Colors.red[400],
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.03),
             FadeInUp(
               delay: const Duration(milliseconds: 300),
               child: Text(
                 'Gagal Memuat Pesanan',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: MediaQuery.of(context).size.width * 0.05,
                   color: Colors.grey[700],
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
             FadeInUp(
               delay: const Duration(milliseconds: 500),
-              child: Text(
-                _errorMessage!,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[500],
-                  fontWeight: FontWeight.w400,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.width * 0.1),
+                child: Text(
+                  _errorMessage!,
+                  style: TextStyle(
+                    fontSize: MediaQuery.of(context).size.width * 0.04,
+                    color: Colors.grey[500],
+                    fontWeight: FontWeight.w400,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
               ),
             ),
           ],
@@ -316,30 +326,30 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
               ),
               child: Icon(
                 Icons.receipt_long_outlined,
-                size: 80,
+                size: MediaQuery.of(context).size.width * 0.2,
                 color: Colors.grey[400],
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.03),
           FadeInUp(
             delay: const Duration(milliseconds: 300),
             child: Text(
               'Belum ada riwayat pesanan',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: MediaQuery.of(context).size.width * 0.05,
                 color: Colors.grey[700],
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.01),
           FadeInUp(
             delay: const Duration(milliseconds: 500),
             child: Text(
               'Ayo mulai belanja di ReuseMart!',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: MediaQuery.of(context).size.width * 0.04,
                 color: Colors.grey[500],
                 fontWeight: FontWeight.w400,
               ),
@@ -374,117 +384,118 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
               floating: false,
               elevation: 8,
               backgroundColor: Colors.transparent,
-              flexibleSpace: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      oliveGreen,
-                      oliveGreen.withOpacity(0.9),
-                      const Color(0xFF5A5D3A),
+              expandedHeight: MediaQuery.of(context).size.height * 0.18,
+              flexibleSpace: FlexibleSpaceBar(
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        oliveGreen,
+                        oliveGreen.withOpacity(0.9),
+                        const Color(0xFF5A5D3A),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(25),
+                      bottomRight: Radius.circular(25),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                      BoxShadow(
+                        color: oliveGreen.withOpacity(0.2),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
                     ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
                   ),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(25),
-                    bottomRight: Radius.circular(25),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                    BoxShadow(
-                      color: oliveGreen.withOpacity(0.2),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                height: 140,
-                child: Stack(
-                  children: [
-                    Positioned(
-                      top: -50,
-                      right: -50,
-                      child: Container(
-                        width: 150,
-                        height: 150,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.05),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: -50,
+                        right: -50,
+                        child: Container(
+                          width: MediaQuery.of(context).size.width * 0.4,
+                          height: MediaQuery.of(context).size.width * 0.4,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.05),
+                          ),
                         ),
                       ),
-                    ),
-                    Positioned(
-                      bottom: -30,
-                      left: -30,
-                      child: Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.03),
+                      Positioned(
+                        bottom: -30,
+                        left: -30,
+                        child: Container(
+                          width: MediaQuery.of(context).size.width * 0.25,
+                          height: MediaQuery.of(context).size.width * 0.25,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.03),
+                          ),
                         ),
                       ),
-                    ),
-                    SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0, vertical: 12.0),
-                        child: Row(
-                          children: [
-                            const SizedBox(width: 48),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      double availableWidth =
-                                          constraints.maxWidth;
-                                      String displayText =
-                                          _getDisplayText(availableWidth);
-                                      double fontSize =
-                                          _getFontSize(availableWidth);
+                      SafeArea(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: MediaQuery.of(context).size.width * 0.04,
+                            vertical: MediaQuery.of(context).size.height * 0.015,
+                          ),
+                          child: Row(
+                            children: [
+                              SizedBox(width: MediaQuery.of(context).size.width * 0.12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        double availableWidth = constraints.maxWidth;
+                                        String displayText = _getDisplayText(availableWidth);
+                                        double fontSize = _getFontSize(availableWidth);
 
-                                      return Text(
-                                        displayText,
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: fontSize,
-                                          fontWeight: FontWeight.bold,
-                                          height: 1.2,
-                                        ),
-                                        maxLines: availableWidth < 280 ? 2 : 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        softWrap: true,
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Flexible(
-                                    child: Text(
-                                      '${_transactions.length} Transaksi',
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 14,
-                                        height: 1.3,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                        return Text(
+                                          displayText,
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: fontSize,
+                                            fontWeight: FontWeight.bold,
+                                            height: 1.2,
+                                          ),
+                                          maxLines: availableWidth < 300 ? 2 : 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          softWrap: true,
+                                        );
+                                      },
                                     ),
-                                  ),
-                                ],
+                                    SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+                                    Flexible(
+                                      child: Text(
+                                        '${_transactions.length} Transaksi',
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: MediaQuery.of(context).size.width * 0.035,
+                                          height: 1.3,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -496,7 +507,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                       : Column(
                           children: [
                             _buildTransactionList(),
-                            const SizedBox(height: 80),
+                            SizedBox(height: MediaQuery.of(context).size.height * 0.1),
                           ],
                         ),
             ),
@@ -657,7 +668,7 @@ class _TransactionCardState extends State<TransactionCard>
         );
       },
       child: Card(
-        margin: const EdgeInsets.only(bottom: 16),
+        margin: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.02),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -732,7 +743,7 @@ class _TransactionCardState extends State<TransactionCard>
       },
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -746,47 +757,54 @@ class _TransactionCardState extends State<TransactionCard>
                     children: [
                       Text(
                         'No. ${widget.transaction.transactionId}',
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: TextStyle(
+                          fontSize: MediaQuery.of(context).size.width * 0.045,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A3C34),
+                          color: const Color(0xFF1A3C34),
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: MediaQuery.of(context).size.height * 0.01),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor().withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: _getStatusColor().withOpacity(0.3),
-                                width: 1,
+                          Flexible(
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: MediaQuery.of(context).size.width * 0.03,
+                                vertical: MediaQuery.of(context).size.height * 0.008,
                               ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _getStatusIcon(),
-                                  color: _getStatusColor(),
-                                  size: 15,
+                              decoration: BoxDecoration(
+                                color: _getStatusColor().withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: _getStatusColor().withOpacity(0.3),
+                                  width: 1,
                                 ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  widget.transaction.status,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _getStatusIcon(),
                                     color: _getStatusColor(),
+                                    size: MediaQuery.of(context).size.width * 0.04,
                                   ),
-                                ),
-                              ],
+                                  SizedBox(width: MediaQuery.of(context).size.width * 0.01),
+                                  Flexible(
+                                    child: Text(
+                                      widget.transaction.status,
+                                      style: TextStyle(
+                                        fontSize: MediaQuery.of(context).size.width * 0.035,
+                                        fontWeight: FontWeight.w600,
+                                        color: _getStatusColor(),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           AnimatedRotation(
@@ -795,7 +813,7 @@ class _TransactionCardState extends State<TransactionCard>
                             child: Icon(
                               Icons.expand_circle_down_outlined,
                               color: const Color(0xFF7A7C52),
-                              size: 25,
+                              size: MediaQuery.of(context).size.width * 0.06,
                             ),
                           ),
                         ],
@@ -805,7 +823,7 @@ class _TransactionCardState extends State<TransactionCard>
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.015),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -816,19 +834,21 @@ class _TransactionCardState extends State<TransactionCard>
                       Text(
                         'Tanggal Pesanan',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: MediaQuery.of(context).size.width * 0.035,
                           color: Colors.grey[600],
                           fontWeight: FontWeight.w500,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: MediaQuery.of(context).size.height * 0.005),
                       Text(
                         widget.transaction.date.split(' ')[0],
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: MediaQuery.of(context).size.width * 0.04,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1A3C34),
+                          color: const Color(0xFF1A3C34),
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -839,25 +859,27 @@ class _TransactionCardState extends State<TransactionCard>
                     Text(
                       'Total Pesanan',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: MediaQuery.of(context).size.width * 0.035,
                         color: Colors.grey[600],
                         fontWeight: FontWeight.w500,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.005),
                     Text(
                       widget.transaction.total,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: MediaQuery.of(context).size.width * 0.045,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF7A7C52),
+                        color: const Color(0xFF7A7C52),
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.015),
             Align(
               alignment: Alignment.centerRight,
               child: ElevatedButton(
@@ -876,16 +898,16 @@ class _TransactionCardState extends State<TransactionCard>
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.width * 0.04,
+                    vertical: MediaQuery.of(context).size.height * 0.01,
                   ),
                   elevation: 2,
                 ),
-                child: const Text(
+                child: Text(
                   'Lihat Detail',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: MediaQuery.of(context).size.width * 0.035,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -899,7 +921,12 @@ class _TransactionCardState extends State<TransactionCard>
 
   Widget _buildExpandedContent() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: EdgeInsets.fromLTRB(
+        MediaQuery.of(context).size.width * 0.04,
+        8,
+        MediaQuery.of(context).size.width * 0.04,
+        16,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -910,8 +937,8 @@ class _TransactionCardState extends State<TransactionCard>
             return FadeInUp(
               duration: Duration(milliseconds: 300 + (penitipIndex * 100)),
               child: Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(16),
+                margin: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.02),
+                padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -933,38 +960,38 @@ class _TransactionCardState extends State<TransactionCard>
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
                           decoration: BoxDecoration(
                             color: const Color(0xFF7A7C52).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.store,
-                            size: 16,
-                            color: Color(0xFF7A7C52),
+                            size: MediaQuery.of(context).size.width * 0.04,
+                            color: const Color(0xFF7A7C52),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: MediaQuery.of(context).size.width * 0.03),
                         Expanded(
                           child: Text(
                             penitip.penitipName,
-                            style: const TextStyle(
-                              fontSize: 16,
+                            style: TextStyle(
+                              fontSize: MediaQuery.of(context).size.width * 0.04,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A3C34),
+                              color: const Color(0xFF1A3C34),
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                     ...penitip.items.asMap().entries.map((itemEntry) {
                       int itemIndex = itemEntry.key;
                       TransactionItem item = itemEntry.value;
 
                       return SlideInLeft(
-                        duration:
-                            Duration(milliseconds: 400 + (itemIndex * 100)),
+                        duration: Duration(milliseconds: 400 + (itemIndex * 100)),
                         child: TransactionItemWidget(item: item),
                       );
                     }).toList(),
@@ -987,8 +1014,8 @@ class TransactionItemWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.015),
+      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.03),
       decoration: BoxDecoration(
         color: Colors.grey[50]!,
         borderRadius: BorderRadius.circular(12),
@@ -998,6 +1025,7 @@ class TransactionItemWidget extends StatelessWidget {
         ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             decoration: BoxDecoration(
@@ -1014,8 +1042,8 @@ class TransactionItemWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               child: CachedNetworkImage(
                 imageUrl: item.imagePath,
-                height: 70,
-                width: 70,
+                height: MediaQuery.of(context).size.width * 0.18,
+                width: MediaQuery.of(context).size.width * 0.18,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Shimmer.fromColors(
                   baseColor: Colors.grey[300]!,
@@ -1025,41 +1053,41 @@ class TransactionItemWidget extends StatelessWidget {
                   ),
                 ),
                 errorWidget: (context, url, error) => Container(
-                  height: 70,
-                  width: 70,
+                  height: MediaQuery.of(context).size.width * 0.18,
+                  width: MediaQuery.of(context).size.width * 0.18,
                   decoration: BoxDecoration(
                     color: Colors.grey[200],
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.image_not_supported_outlined,
                     color: Colors.grey,
-                    size: 32,
+                    size: MediaQuery.of(context).size.width * 0.08,
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: MediaQuery.of(context).size.width * 0.04),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   item.name,
-                  style: const TextStyle(
-                    fontSize: 15,
+                  style: TextStyle(
+                    fontSize: MediaQuery.of(context).size.width * 0.04,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A3C34),
+                    color: const Color(0xFF1A3C34),
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.01),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.width * 0.025,
+                    vertical: MediaQuery.of(context).size.height * 0.005,
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF7A7C52).withOpacity(0.1),
@@ -1067,11 +1095,12 @@ class TransactionItemWidget extends StatelessWidget {
                   ),
                   child: Text(
                     item.price,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: MediaQuery.of(context).size.width * 0.035,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF7A7C52),
+                      color: const Color(0xFF7A7C52),
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],

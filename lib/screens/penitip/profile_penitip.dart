@@ -244,7 +244,7 @@ class _ProfilePenitipScreenState extends State<ProfilePenitipScreen>
                         child: _buildMenuSection(oliveGreen),
                       )
                     : _buildMenuSection(oliveGreen),
-                const SizedBox(height: 70),
+                const SizedBox(height: 90),
               ],
             ),
           ),

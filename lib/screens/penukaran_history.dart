@@ -69,27 +69,30 @@ class _PenukaranHistoryScreenState extends State<PenukaranHistoryScreen> {
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         leading: Container(
-          width: 30, // Tambahkan ini
-          height: 30,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.white.withOpacity(0.9),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: Color(0xFF77784A),
+        width: 36, // atau 40
+        height: 36,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.white.withOpacity(0.9),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            onPressed: () => Navigator.pop(context),
-          ),
+          ],
         ),
+        child: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(0xFF77784A),
+            size: 20, // kecilkan icon
+          ),
+          onPressed: () => Navigator.pop(context),
+          // padding: EdgeInsets.zero, // hilangkan padding default
+          // constraints: const BoxConstraints(), // hilangkan min size default
+        ),
+      ),
         title: const Text(
           'Riwayat Penukaran',
           style: TextStyle(
@@ -154,8 +157,10 @@ class _PenukaranHistoryScreenState extends State<PenukaranHistoryScreen> {
                       ),
                     )
                   : Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: MediaQuery.of(context).size.width * 0.03,
+                        vertical: MediaQuery.of(context).size.height * 0.01,
+                      ),
                       child: ListView.builder(
                         itemCount: penukaran.length,
                         itemBuilder: (context, index) {
@@ -166,14 +171,20 @@ class _PenukaranHistoryScreenState extends State<PenukaranHistoryScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(15),
                             ),
-                            margin: const EdgeInsets.symmetric(vertical: 6),
+                            margin: EdgeInsets.symmetric(
+                              vertical: MediaQuery.of(context).size.height * 0.01,
+                            ),
                             child: Padding(
-                              padding: const EdgeInsets.all(16),
+                              padding: EdgeInsets.all(
+                                MediaQuery.of(context).size.width * 0.04,
+                              ),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.all(8),
+                                    padding: EdgeInsets.all(
+                                      MediaQuery.of(context).size.width * 0.02,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFF77784A)
                                           .withOpacity(0.1),
@@ -231,8 +242,10 @@ class _PenukaranHistoryScreenState extends State<PenukaranHistoryScreen> {
                                     ),
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 6),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: MediaQuery.of(context).size.width * 0.03,
+                                      vertical: MediaQuery.of(context).size.height * 0.01,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFF77784A)
                                           .withOpacity(0.9),

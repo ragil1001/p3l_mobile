@@ -36,7 +36,6 @@ class TransactionDetailScreen extends StatelessWidget {
     }
   }
 
-  // Fungsi untuk memformat tanggal menjadi "tanggal bulan tahun"
   String _formatDate(String date) {
     try {
       final parsedDate = DateTime.parse(date);
@@ -71,16 +70,20 @@ class TransactionDetailScreen extends StatelessWidget {
               floating: false,
               elevation: 8,
               backgroundColor: Colors.transparent,
+              expandedHeight: MediaQuery.of(context).size.height * 0.15,
               leading: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
                     color: Color(0xFF7A7C52).withOpacity(0.7),
                   ),
                   child: IconButton(
-                    icon: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white),
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: MediaQuery.of(context).size.width * 0.05,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
@@ -111,18 +114,18 @@ class TransactionDetailScreen extends StatelessWidget {
                   ),
                   child: SafeArea(
                     child: Padding(
-                      padding: const EdgeInsets.all(15.0),
+                      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
                       child: Row(
                         children: [
-                          const SizedBox(width: 40),
+                          SizedBox(width: MediaQuery.of(context).size.width * 0.1),
                           Expanded(
                             child: FadeInDown(
                               duration: const Duration(milliseconds: 800),
                               child: Text(
                                 'Detail Transaksi',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 20,
+                                  fontSize: MediaQuery.of(context).size.width * 0.05,
                                   fontWeight: FontWeight.bold,
                                   height: 1.2,
                                 ),
@@ -137,11 +140,10 @@ class TransactionDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              expandedHeight: 30,
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -175,82 +177,81 @@ class TransactionDetailScreen extends StatelessWidget {
                               ),
                             ],
                           ),
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'No. ${transaction.transactionId}',
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF1A3C34),
+                                  Expanded(
+                                    child: Text(
+                                      'No. ${transaction.transactionId}',
+                                      style: TextStyle(
+                                        fontSize: MediaQuery.of(context).size.width * 0.045,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF1A3C34),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: MediaQuery.of(context).size.width * 0.03,
+                                      vertical: MediaQuery.of(context).size.height * 0.008,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: _getStatusColor(transaction.status)
-                                          .withOpacity(0.1),
+                                      color: _getStatusColor(transaction.status).withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
-                                        color:
-                                            _getStatusColor(transaction.status)
-                                                .withOpacity(0.3),
+                                        color: _getStatusColor(transaction.status).withOpacity(0.3),
                                         width: 1,
                                       ),
                                     ),
                                     child: Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(
                                           _getStatusIcon(transaction.status),
-                                          color: _getStatusColor(
-                                              transaction.status),
-                                          size: 16,
+                                          color: _getStatusColor(transaction.status),
+                                          size: MediaQuery.of(context).size.width * 0.04,
                                         ),
-                                        const SizedBox(width: 6),
+                                        SizedBox(width: MediaQuery.of(context).size.width * 0.015),
                                         Text(
                                           transaction.status,
                                           style: TextStyle(
-                                            fontSize: 12,
+                                            fontSize: MediaQuery.of(context).size.width * 0.035,
                                             fontWeight: FontWeight.w600,
-                                            color: _getStatusColor(
-                                                transaction.status),
+                                            color: _getStatusColor(transaction.status),
                                           ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ],
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 16),
+                              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                               _buildDetailRow(
-                                  'Nama Pembeli', transaction.buyerName),
-                              _buildDetailRow('Email', transaction.buyerEmail),
-                              _buildAddressRow(
-                                  'Alamat', transaction.buyerAddress),
-                              _buildDetailRow('Metode Delivery',
-                                  transaction.deliveryMethod),
-                              _buildDetailRow(
-                                  'Tanggal', _formatDate(transaction.date)),
+                                context,
+                                'Nama Pembeli',
+                                transaction.buyerName,
+                              ),
+                              _buildDetailRow(context, 'Email', transaction.buyerEmail),
+                              _buildAddressRow(context, 'Alamat', transaction.buyerAddress),
+                              _buildDetailRow(context, 'Metode Delivery', transaction.deliveryMethod),
+                              _buildDetailRow(context, 'Tanggal', _formatDate(transaction.date)),
                             ],
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                     ...transaction.penitipItems.asMap().entries.map((entry) {
                       final penitip = entry.value;
                       return FadeInUp(
-                        duration:
-                            Duration(milliseconds: 800 + (entry.key * 200)),
+                        duration: Duration(milliseconds: 800 + (entry.key * 200)),
                         child: Card(
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -279,106 +280,100 @@ class TransactionDetailScreen extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            padding: const EdgeInsets.all(16),
+                            padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'Penitip: ${penitip.penitipName}',
-                                  style: const TextStyle(
-                                    fontSize: 16,
+                                  style: TextStyle(
+                                    fontSize: MediaQuery.of(context).size.width * 0.04,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1A3C34),
+                                    color: const Color(0xFF1A3C34),
                                   ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 8),
+                                SizedBox(height: MediaQuery.of(context).size.height * 0.01),
                                 Text(
                                   'Pegawai QC: ${penitip.qcStaff}',
                                   style: TextStyle(
-                                    fontSize: 14,
+                                    fontSize: MediaQuery.of(context).size.width * 0.035,
                                     color: Colors.grey[600],
                                   ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 16),
+                                SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                                 ...penitip.items.map((item) {
                                   return Padding(
-                                    padding: const EdgeInsets.only(bottom: 12),
+                                    padding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.015),
                                     child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Container(
                                           decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(12),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: Colors.black
-                                                    .withOpacity(0.1),
+                                                color: Colors.black.withOpacity(0.1),
                                                 blurRadius: 8,
                                                 offset: const Offset(0, 4),
                                               ),
                                             ],
                                           ),
                                           child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(12),
                                             child: CachedNetworkImage(
                                               imageUrl: item.imagePath,
-                                              height: 70,
-                                              width: 70,
+                                              height: MediaQuery.of(context).size.width * 0.18,
+                                              width: MediaQuery.of(context).size.width * 0.18,
                                               fit: BoxFit.cover,
-                                              placeholder: (context, url) =>
-                                                  Shimmer.fromColors(
+                                              placeholder: (context, url) => Shimmer.fromColors(
                                                 baseColor: Colors.grey[300]!,
-                                                highlightColor:
-                                                    Colors.grey[100]!,
+                                                highlightColor: Colors.grey[100]!,
                                                 child: Container(
                                                   color: Colors.grey,
                                                 ),
                                               ),
-                                              errorWidget:
-                                                  (context, url, error) =>
-                                                      Container(
-                                                height: 70,
-                                                width: 70,
+                                              errorWidget: (context, url, error) => Container(
+                                                height: MediaQuery.of(context).size.width * 0.18,
+                                                width: MediaQuery.of(context).size.width * 0.18,
                                                 decoration: BoxDecoration(
                                                   color: Colors.grey[200],
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
+                                                  borderRadius: BorderRadius.circular(12),
                                                 ),
-                                                child: const Icon(
-                                                  Icons
-                                                      .image_not_supported_outlined,
+                                                child: Icon(
+                                                  Icons.image_not_supported_outlined,
                                                   color: Colors.grey,
-                                                  size: 32,
+                                                  size: MediaQuery.of(context).size.width * 0.08,
                                                 ),
                                               ),
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 16),
+                                        SizedBox(width: MediaQuery.of(context).size.width * 0.04),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 item.name,
-                                                style: const TextStyle(
-                                                  fontSize: 15,
+                                                style: TextStyle(
+                                                  fontSize: MediaQuery.of(context).size.width * 0.04,
                                                   fontWeight: FontWeight.w600,
-                                                  color: Color(0xFF1A3C34),
+                                                  color: const Color(0xFF1A3C34),
                                                 ),
                                                 maxLines: 2,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
-                                              const SizedBox(height: 8),
+                                              SizedBox(height: MediaQuery.of(context).size.height * 0.01),
                                               Text(
                                                 item.price,
-                                                style: const TextStyle(
-                                                  fontSize: 14,
+                                                style: TextStyle(
+                                                  fontSize: MediaQuery.of(context).size.width * 0.035,
                                                   fontWeight: FontWeight.bold,
-                                                  color: Color(0xFF7A7C52),
+                                                  color: const Color(0xFF7A7C52),
                                                 ),
+                                                overflow: TextOverflow.ellipsis,
                                               ),
                                             ],
                                           ),
@@ -393,7 +388,7 @@ class TransactionDetailScreen extends StatelessWidget {
                         ),
                       );
                     }).toList(),
-                    const SizedBox(height: 16),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                     FadeInUp(
                       duration: const Duration(milliseconds: 1000),
                       child: Card(
@@ -424,42 +419,59 @@ class TransactionDetailScreen extends StatelessWidget {
                               ),
                             ],
                           ),
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Rincian Pembayaran',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: MediaQuery.of(context).size.width * 0.04,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1A3C34),
+                                  color: const Color(0xFF1A3C34),
                                 ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 16),
-                              _buildDetailRow('Total Harga Barang',
-                                  transaction.paymentBreakdown.totalItemPrice),
-                              _buildDetailRow('Ongkos Kirim',
-                                  transaction.paymentBreakdown.shippingCost),
-                              _buildDetailRow('Poin Digunakan',
-                                  '${transaction.paymentBreakdown.pointsUsed} Poin'),
-                              _buildDetailRow('Potongan Harga',
-                                  transaction.paymentBreakdown.discount),
-                              _buildDetailRow('Poin Diperoleh',
-                                  '${transaction.paymentBreakdown.pointsEarned} Poin'),
-                              const Divider(height: 24),
+                              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                               _buildDetailRow(
+                                context,
+                                'Total Harga Barang',
+                                transaction.paymentBreakdown.totalItemPrice,
+                              ),
+                              _buildDetailRow(
+                                context,
+                                'Ongkos Kirim',
+                                transaction.paymentBreakdown.shippingCost,
+                              ),
+                              _buildDetailRow(
+                                context,
+                                'Poin Digunakan',
+                                '${transaction.paymentBreakdown.pointsUsed} Poin',
+                              ),
+                              _buildDetailRow(
+                                context,
+                                'Potongan Harga',
+                                transaction.paymentBreakdown.discount,
+                              ),
+                              _buildDetailRow(
+                                context,
+                                'Poin Diperoleh',
+                                '${transaction.paymentBreakdown.pointsEarned} Poin',
+                              ),
+                              Divider(height: MediaQuery.of(context).size.height * 0.03),
+                              _buildDetailRow(
+                                context,
                                 'Total Akhir',
                                 transaction.paymentBreakdown.finalTotal,
                                 isBold: true,
-                                valueColor: oliveGreen,
+                                descriptionColor: oliveGreen,
                               ),
                             ],
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.04),
                   ],
                 ),
               ),
@@ -470,58 +482,74 @@ class TransactionDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(String label, String value,
-      {bool isBold = false, Color? valueColor}) {
+  Widget _buildDetailRow(
+      BuildContext context,
+      String label,
+      String description,
+      {bool isBold = false, Color? descriptionColor}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.01),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: MediaQuery.of(context).size.width * 0.035,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-              color: valueColor ?? const Color(0xFF1A3C34),
+          SizedBox(width: MediaQuery.of(context).size.width * 0.04),
+          Expanded(
+            child: Text(
+              description,
+              style: TextStyle(
+                fontSize: MediaQuery.of(context).size.width * 0.035,
+                fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+                color: descriptionColor ?? const Color(0xFF1A3C34),
+              ),
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
             ),
-            textAlign: TextAlign.right,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAddressRow(String label, String value) {
+  Widget _buildAddressRow(
+      BuildContext context,
+      String label,
+      String description) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.01),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: MediaQuery.of(context).size.width * 0.035,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(width: 16),
-          Flexible(
+          SizedBox(width: MediaQuery.of(context).size.width * 0.04),
+          Expanded(
             child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14,
+              description,
+              style: TextStyle(
+                fontSize: MediaQuery.of(context).size.width * 0.035,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1A3C34),
+                color: const Color(0xFF1A3C34),
               ),
               textAlign: TextAlign.right,
               maxLines: 3,

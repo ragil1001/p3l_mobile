@@ -1,3 +1,4 @@
+// catalogue_screen.dart
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:shimmer/shimmer.dart';
@@ -22,8 +23,6 @@ class CatalogueScreen extends StatefulWidget {
 class _CatalogueScreenState extends State<CatalogueScreen>
     with SingleTickerProviderStateMixin {
   bool _isLoading = true;
-  String? _selectedCategory;
-  String? _selectedSubcategory;
   AnimationController? _animationController;
   Animation<double>? _fadeAnimation;
   Animation<Offset>? _slideAnimation;
@@ -31,12 +30,11 @@ class _CatalogueScreenState extends State<CatalogueScreen>
   bool _isScrolled = false;
   List<dynamic> _products = [];
   List<dynamic> _categories = [];
+  Map<String, Set<String>> _selectedSubcategories = {};
 
   @override
   void initState() {
     super.initState();
-    _selectedCategory = widget.selectedCategory;
-
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -68,8 +66,41 @@ class _CatalogueScreenState extends State<CatalogueScreen>
       }
     });
 
-    _fetchCategories();
-    _fetchProducts();
+    _fetchCategories().then((_) {
+      if (widget.selectedCategory != null) {
+        _applySelectedCategory();
+      } else {
+        _fetchProducts();
+      }
+    });
+  }
+
+  Future<void> _applySelectedCategory() async {
+    final selectedCat = widget.selectedCategory;
+    if (selectedCat == null || _categories.isEmpty) return;
+
+    final category = _categories.firstWhere(
+      (cat) => cat['NAMA'] == selectedCat,
+      orElse: () => null,
+    );
+
+    if (category != null && category['subcategories'] != null) {
+      setState(() {
+        _selectedSubcategories[selectedCat] =
+            Set<String>.from(category['subcategories']);
+        _isLoading = true;
+      });
+
+      List<String> filters = category['subcategories']
+          .map((sub) => '$selectedCat:$sub')
+          .toList()
+          .cast<String>();
+      await _fetchProducts(subcategories: filters);
+
+      if (mounted) {
+        _showCategoryFilterDialog(context, autoApply: false);
+      }
+    }
   }
 
   Future<bool> _checkConnectivity() async {
@@ -128,7 +159,7 @@ class _CatalogueScreenState extends State<CatalogueScreen>
             } else {
               category['subcategories'] = [];
             }
-            category['icon'] = Icons.category; // Default icon
+            category['icon'] = Icons.category;
           }
           if (mounted) {
             setState(() {
@@ -151,7 +182,7 @@ class _CatalogueScreenState extends State<CatalogueScreen>
     }
   }
 
-  Future<void> _fetchProducts({String? category, String? subcategory}) async {
+  Future<void> _fetchProducts({List<String>? subcategories}) async {
     const maxRetries = 3;
     const retryDelay = Duration(seconds: 2);
     int attempt = 0;
@@ -173,14 +204,15 @@ class _CatalogueScreenState extends State<CatalogueScreen>
 
     while (attempt < maxRetries) {
       try {
-        var uri = Uri.parse('$baseUrl/products');
-        if (category != null && category.isNotEmpty) {
+        var uri = Uri.parse('$baseUrl/products/mobile');
+        if (subcategories != null && subcategories.isNotEmpty) {
           uri = uri.replace(queryParameters: {
-            'category': category,
-            if (subcategory != null && subcategory.isNotEmpty)
-              'subcategory': subcategory,
+            'subcategories[]': subcategories,
           });
         }
+
+        print('Fetching products with subcategories: $subcategories');
+        print('API URL: $uri');
 
         final response = await http.get(
           uri,
@@ -235,7 +267,7 @@ class _CatalogueScreenState extends State<CatalogueScreen>
   }
 
   List<dynamic> get _filteredProducts {
-    return _products; // Filtering handled by API
+    return _products;
   }
 
   @override
@@ -248,8 +280,8 @@ class _CatalogueScreenState extends State<CatalogueScreen>
   @override
   Widget build(BuildContext context) {
     const oliveGreen = Color(0xFF7A7C52);
-    const double bottomNavBarHeight =
-        56.0; // Standard BottomNavigationBar height
+    final size = MediaQuery.of(context).size;
+    final double bottomPadding = size.height * 0.15 > 100 ? 100 : size.height * 0.15;
 
     return Container(
       color: Colors.white,
@@ -263,209 +295,183 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                 floating: false,
                 elevation: 8,
                 backgroundColor: Colors.transparent,
-                flexibleSpace: AnimatedBuilder(
-                  animation: _animationController!,
-                  builder: (context, child) {
-                    return SlideTransition(
-                      position: _slideAnimation!,
-                      child: FadeTransition(
-                        opacity: _fadeAnimation!,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                oliveGreen,
-                                oliveGreen.withOpacity(0.9),
-                                const Color(0xFF5A5D3A),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(25),
-                              bottomRight: Radius.circular(25),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 15,
-                                offset: const Offset(0, 5),
-                              ),
+                expandedHeight: _isScrolled ? size.height * 0.05 : size.height * 0.22,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: AnimatedBuilder(
+                    animation: _animationController!,
+                    builder: (context, child) {
+                      final double headerHeight = _isScrolled ? size.height * 0.1 : size.height * 0.22;
+                      return Container(
+                        height: headerHeight,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              oliveGreen,
+                              oliveGreen.withOpacity(0.9),
+                              const Color(0xFF5A5D3A),
                             ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          child: Stack(
-                            children: [
-                              Positioned(
-                                top: -50,
-                                right: -50,
-                                child: Container(
-                                  width: 150,
-                                  height: 150,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white.withOpacity(0.05),
-                                  ),
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(25),
+                            bottomRight: Radius.circular(25),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              top: -size.width * 0.15,
+                              right: -size.width * 0.15,
+                              child: Container(
+                                width: size.width * 0.4,
+                                height: size.width * 0.4,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withOpacity(0.05),
                                 ),
                               ),
-                              Positioned(
-                                bottom: -30,
-                                left: -30,
-                                child: Container(
-                                  width: 100,
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white.withOpacity(0.03),
-                                  ),
+                            ),
+                            Positioned(
+                              bottom: -size.width * 0.1,
+                              left: -size.width * 0.1,
+                              child: Container(
+                                width: size.width * 0.3,
+                                height: size.width * 0.3,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withOpacity(0.03),
                                 ),
                               ),
-                              SafeArea(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(18.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                FadeInDown(
-                                                  duration: const Duration(
-                                                      milliseconds: 800),
-                                                  child: LayoutBuilder(
-                                                    builder:
-                                                        (context, constraints) {
-                                                      double availableWidth =
-                                                          constraints.maxWidth;
-                                                      String displayText =
-                                                          _getDisplayText(
-                                                              availableWidth,
-                                                              _isScrolled);
-                                                      double fontSize =
-                                                          _getFontSize(
-                                                              _isScrolled,
-                                                              availableWidth);
+                            ),
+                            SafeArea(
+                              child: Padding(
+                                padding: EdgeInsets.all(_isScrolled ? size.width * 0.03 : size.width * 0.045),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              FadeInDown(
+                                                duration: const Duration(milliseconds: 800),
+                                                child: LayoutBuilder(
+                                                  builder: (context, constraints) {
+                                                    double availableWidth = constraints.maxWidth;
+                                                    String displayText = _getDisplayText(availableWidth, _isScrolled);
+                                                    double fontSize = _getFontSize(_isScrolled, availableWidth, size);
 
-                                                      return Text(
-                                                        displayText,
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: fontSize,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          height: 1.2,
-                                                        ),
-                                                        maxLines:
-                                                            _isScrolled ? 1 : 2,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                        softWrap: true,
-                                                      );
-                                                    },
-                                                  ),
-                                                ),
-                                                if (!_isScrolled) ...[
-                                                  const SizedBox(height: 6),
-                                                  FadeInDown(
-                                                    duration: const Duration(
-                                                        milliseconds: 900),
-                                                    child: const Text(
-                                                      'Temukan produk preloved berkualitas dengan harga terjangkau',
+                                                    return Text(
+                                                      displayText,
                                                       style: TextStyle(
-                                                        color: Colors.white70,
-                                                        fontSize: 13,
-                                                        height: 1.3,
+                                                        color: Colors.white,
+                                                        fontSize: fontSize,
+                                                        fontWeight: FontWeight.bold,
+                                                        height: 1.2,
                                                       ),
-                                                      maxLines: 2,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      if (!_isScrolled) ...[
-                                        const SizedBox(height: 16),
-                                        FadeInUp(
-                                          duration: const Duration(
-                                              milliseconds: 1000),
-                                          child: Container(
-                                            height: 48,
-                                            decoration: BoxDecoration(
-                                              color: Colors.white
-                                                  .withOpacity(0.95),
-                                              borderRadius:
-                                                  BorderRadius.circular(25),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black
-                                                      .withOpacity(0.1),
-                                                  blurRadius: 10,
-                                                  offset: const Offset(0, 3),
+                                                      maxLines: _isScrolled ? 1 : 2,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      softWrap: true,
+                                                    );
+                                                  },
                                                 ),
-                                              ],
-                                              border: Border.all(
-                                                color: Colors.white
-                                                    .withOpacity(0.3),
-                                                width: 1,
                                               ),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                const Padding(
-                                                  padding: EdgeInsets.symmetric(
-                                                      horizontal: 16),
-                                                  child: Icon(
-                                                    Icons.search,
-                                                    color: Colors.grey,
-                                                    size: 22,
-                                                  ),
-                                                ),
-                                                const Expanded(
-                                                  child: TextField(
-                                                    decoration: InputDecoration(
-                                                      hintText:
-                                                          'Cari produk impianmu...',
-                                                      hintStyle: TextStyle(
-                                                        color: Colors.grey,
-                                                        fontSize: 14,
-                                                      ),
-                                                      border: InputBorder.none,
-                                                      contentPadding:
-                                                          EdgeInsets.symmetric(
-                                                              vertical: 14),
+                                              if (!_isScrolled) ...[
+                                                SizedBox(height: size.height * 0.01),
+                                                FadeInDown(
+                                                  duration: const Duration(milliseconds: 900),
+                                                  child: Text(
+                                                    'Temukan produk preloved berkualitas dengan harga terjangkau',
+                                                    style: TextStyle(
+                                                      color: Colors.white70,
+                                                      fontSize: size.width * 0.035,
+                                                      height: 1.3,
                                                     ),
+                                                    maxLines: 2,
+                                                    overflow: TextOverflow.ellipsis,
                                                   ),
                                                 ),
                                               ],
-                                            ),
+                                            ],
                                           ),
                                         ),
                                       ],
+                                    ),
+                                    if (!_isScrolled) ...[
+                                      SizedBox(height: size.height * 0.02),
+                                      FadeInUp(
+                                        duration: const Duration(milliseconds: 1000),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(milliseconds: 300),
+                                          height: _isScrolled ? 0 : (size.height * 0.06 > 48 ? 48 : size.height * 0.06),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withOpacity(0.95),
+                                            borderRadius: BorderRadius.circular(_isScrolled ? 0 : size.width * 0.06),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.1),
+                                                blurRadius: 10,
+                                                offset: const Offset(0, 3),
+                                              ),
+                                            ],
+                                            border: Border.all(
+                                              color: Colors.white.withOpacity(0.3),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Padding(
+                                                padding: EdgeInsets.symmetric(horizontal: size.width * 0.04),
+                                                child: Icon(
+                                                  Icons.search,
+                                                  color: Colors.grey,
+                                                  size: size.width * 0.055,
+                                                ),
+                                              ),
+                                              Expanded(
+                                                child: TextField(
+                                                  decoration: InputDecoration(
+                                                    hintText: 'Cari produk impianmu...',
+                                                    hintStyle: TextStyle(
+                                                      color: Colors.grey,
+                                                      fontSize: size.width * 0.035,
+                                                    ),
+                                                    border: InputBorder.none,
+                                                    contentPadding: EdgeInsets.symmetric(vertical: size.height * 0.017),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
                                     ],
-                                  ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-                expandedHeight: _isScrolled ? 90 : 180,
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16.0, 5.0, 16.0, 0),
+                  padding: EdgeInsets.fromLTRB(size.width * 0.04, size.height * 0.005, size.width * 0.04, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -475,26 +481,26 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                           children: [
                             Container(
                               width: 4,
-                              height: 30,
+                              height: size.height * 0.04,
                               decoration: BoxDecoration(
                                 color: const Color(0xFF1A3C34),
                                 borderRadius: BorderRadius.circular(2),
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            const Text(
+                            SizedBox(width: size.width * 0.03),
+                            Text(
                               'Katalog ReuseMart',
                               style: TextStyle(
-                                fontSize: 20,
+                                fontSize: size.width * 0.05,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A3C34),
+                                color: const Color(0xFF1A3C34),
                               ),
                             ),
                             const Spacer(),
                             Text(
                               '${_filteredProducts.length} produk',
-                              style: const TextStyle(
-                                fontSize: 12,
+                              style: TextStyle(
+                                fontSize: size.width * 0.03,
                                 color: Colors.grey,
                               ),
                             ),
@@ -505,12 +511,11 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                           ? GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                childAspectRatio: 0.7,
-                                crossAxisSpacing: 8,
-                                mainAxisSpacing: 8,
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: size.width > 600 ? 3 : 2,
+                                childAspectRatio: size.width > 600 ? 0.8 : 0.75,
+                                crossAxisSpacing: size.width * 0.02,
+                                mainAxisSpacing: size.width * 0.02,
                               ),
                               itemCount: 6,
                               itemBuilder: (context, index) {
@@ -520,7 +525,7 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                   child: Container(
                                     decoration: BoxDecoration(
                                       color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(size.width * 0.03),
                                       boxShadow: [
                                         BoxShadow(
                                           color: Colors.black.withOpacity(0.1),
@@ -530,59 +535,50 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                       ],
                                     ),
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Container(
-                                          height: 100,
+                                          height: size.width * 0.25,
                                           width: double.infinity,
-                                          decoration: const BoxDecoration(
+                                          decoration: BoxDecoration(
                                             color: Colors.grey,
-                                            borderRadius: BorderRadius.vertical(
-                                                top: Radius.circular(12)),
+                                            borderRadius: BorderRadius.vertical(top: Radius.circular(size.width * 0.03)),
                                           ),
                                         ),
-                                        const Padding(
-                                          padding: EdgeInsets.all(8.0),
+                                        Padding(
+                                          padding: EdgeInsets.all(size.width * 0.02),
                                           child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               SizedBox(
-                                                height: 16,
-                                                width: 100,
+                                                height: size.width * 0.04,
+                                                width: size.width * 0.25,
                                                 child: DecoratedBox(
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey,
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                            Radius.circular(4)),
+                                                    borderRadius: BorderRadius.all(Radius.circular(4)),
                                                   ),
                                                 ),
                                               ),
-                                              SizedBox(height: 4),
+                                              SizedBox(height: size.width * 0.01),
                                               SizedBox(
-                                                height: 12,
-                                                width: 80,
+                                                height: size.width * 0.03,
+                                                width: size.width * 0.2,
                                                 child: DecoratedBox(
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey,
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                            Radius.circular(4)),
+                                                    borderRadius: BorderRadius.all(Radius.circular(4)),
                                                   ),
                                                 ),
                                               ),
-                                              SizedBox(height: 4),
+                                              SizedBox(height: size.width * 0.01),
                                               SizedBox(
-                                                height: 12,
-                                                width: 60,
+                                                height: size.width * 0.03,
+                                                width: size.width * 0.15,
                                                 child: DecoratedBox(
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey,
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                            Radius.circular(4)),
+                                                    borderRadius: BorderRadius.all(Radius.circular(4)),
                                                   ),
                                                 ),
                                               ),
@@ -601,42 +597,32 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                               : GridView.builder(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
-                                  gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    childAspectRatio: 0.75,
-                                    crossAxisSpacing: 16,
-                                    mainAxisSpacing: 16,
+                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: size.width > 600 ? 3 : 2,
+                                    childAspectRatio: size.width > 600 ? 0.8 : 0.75,
+                                    crossAxisSpacing: size.width * 0.04,
+                                    mainAxisSpacing: size.width * 0.04,
                                   ),
                                   itemCount: _filteredProducts.length,
                                   itemBuilder: (context, index) {
                                     final product = _filteredProducts[index];
                                     return FadeInUp(
-                                      duration: Duration(
-                                          milliseconds: 500 + (index * 100)),
+                                      duration: Duration(milliseconds: 500 + (index * 100)),
                                       child: ProductCard(
                                         id: product['id'].toString(),
-                                        title: product['name'] ??
-                                            'Produk Tanpa Nama',
-                                        subcategory:
-                                            product['subcategory'] ?? '',
-                                        price: _formatRupiah(
-                                            product['price'] ?? 0),
-                                        condition:
-                                            product['condition'] ?? 'N/A',
-                                        weight: product['weight']?.toString() ??
-                                            'N/A',
-                                        warranty:
-                                            product['warranty_date'] ?? '-',
-                                        description:
-                                            product['description'] ?? '',
-                                        images: List<String>.from(
-                                            product['images'] ?? ['']),
+                                        title: product['name'] ?? 'Produk Tanpa Nama',
+                                        subcategory: product['subcategory'] ?? '',
+                                        price: _formatRupiah(product['price'] ?? 0),
+                                        condition: product['condition'] ?? 'N/A',
+                                        weight: product['weight']?.toString() ?? 'N/A',
+                                        warranty: product['warranty_date'] ?? '-',
+                                        description: product['description'] ?? '',
+                                        images: List<String>.from(product['images'] ?? ['']),
                                       ),
                                     );
                                   },
                                 ),
-                      const SizedBox(height: 80),
+                      SizedBox(height: bottomPadding),
                     ],
                   ),
                 ),
@@ -644,13 +630,13 @@ class _CatalogueScreenState extends State<CatalogueScreen>
             ],
           ),
           Positioned(
-            bottom: 100, // Above bottom navigation bar with 16px margin
-            right: 16,
+            bottom: size.height * 0.1,
+            right: size.width * 0.04,
             child: ZoomIn(
               duration: const Duration(milliseconds: 800),
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(size.width * 0.075),
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFF1A3C34).withOpacity(0.3),
@@ -663,16 +649,17 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                   onPressed: () {
                     _showFilterSortDialog(context);
                   },
-                  backgroundColor: const Color(0xFF1A3C34),
+                  backgroundColor: const Color(0xFF5A5D3A),
                   elevation: 0,
-                  label: const Text(
+                  label: Text(
                     'Filter',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
+                      fontSize: size.width * 0.035,
                     ),
                   ),
-                  icon: const Icon(Icons.tune, color: Colors.white),
+                  icon: Icon(Icons.tune, color: Colors.white, size: size.width * 0.05),
                 ),
               ),
             ),
@@ -681,7 +668,6 @@ class _CatalogueScreenState extends State<CatalogueScreen>
       ),
     );
   }
-
   String _formatRupiah(num price) {
     return 'Rp ${NumberFormat("#,##0", "id_ID").format(price)}';
   }
@@ -698,43 +684,47 @@ class _CatalogueScreenState extends State<CatalogueScreen>
     }
   }
 
-  double _getFontSize(bool isScrolled, double availableWidth) {
+  double _getFontSize(bool isScrolled, double availableWidth, Size size) {
     if (isScrolled) {
-      return availableWidth < 250 ? 14 : 16;
+      return availableWidth < 250 ? size.width * 0.035 : size.width * 0.04; // Responsive font
     } else {
       if (availableWidth < 280) {
-        return 18;
+        return size.width * 0.05;
       } else {
-        return 20;
+        return size.width * 0.05;
       }
     }
   }
 
   void _showFilterSortDialog(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(size.width * 0.05)),
       ),
       builder: (context) {
         return Container(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(size.width * 0.04),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Filter & Sort',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: size.width * 0.045, // Responsive font
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A3C34),
+                  color: const Color(0xFF1A3C34),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: size.height * 0.02),
               ListTile(
-                leading: const Icon(Icons.sort, color: Color(0xFF1A3C34)),
-                title: const Text('Sort by Price: Low to High'),
+                leading: Icon(Icons.sort, color: const Color(0xFF1A3C34), size: size.width * 0.05), // Responsive icon
+                title: Text(
+                  'Sort by Price: Low to High',
+                  style: TextStyle(fontSize: size.width * 0.035), // Responsive font
+                ),
                 onTap: () {
                   if (mounted) {
                     setState(() {
@@ -746,8 +736,11 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.sort, color: Color(0xFF1A3C34)),
-                title: const Text('Sort by Price: High to Low'),
+                leading: Icon(Icons.sort, color: const Color(0xFF1A3C34), size: size.width * 0.05),
+                title: Text(
+                  'Sort by Price: High to Low',
+                  style: TextStyle(fontSize: size.width * 0.035),
+                ),
                 onTap: () {
                   if (mounted) {
                     setState(() {
@@ -759,8 +752,11 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.filter_alt, color: Color(0xFF1A3C34)),
-                title: const Text('Filter by Category'),
+                leading: Icon(Icons.filter_alt, color: const Color(0xFF1A3C34), size: size.width * 0.05),
+                title: Text(
+                  'Filter by Category',
+                  style: TextStyle(fontSize: size.width * 0.035),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _showCategoryFilterDialog(context);
@@ -773,79 +769,181 @@ class _CatalogueScreenState extends State<CatalogueScreen>
     );
   }
 
-  void _showCategoryFilterDialog(BuildContext context) {
+  void _showCategoryFilterDialog(BuildContext context, {bool autoApply = true}) {
+    final size = MediaQuery.of(context).size;
+    Map<String, Set<String>> localSelected = {};
+    _selectedSubcategories.forEach((cat, subs) {
+      localSelected[cat] = Set.from(subs);
+    });
+
+    // Pre-select category if coming from homepage
+    if (widget.selectedCategory != null) {
+      final selectedCat = widget.selectedCategory!;
+      final category = _categories.firstWhere(
+        (cat) => cat['NAMA'] == selectedCat,
+        orElse: () => null,
+      );
+      if (category != null && category['subcategories'] != null) {
+        localSelected[selectedCat] = Set<String>.from(category['subcategories']);
+      }
+    }
+
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(size.width * 0.05)),
       ),
       builder: (context) {
-        return SingleChildScrollView(
-          child: Container(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Filter by Category',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A3C34),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _categories.length,
-                  itemBuilder: (context, index) {
-                    final category = _categories[index];
-                    return ExpansionTile(
-                      leading: Icon(category['icon'],
-                          color: const Color(0xFF1A3C34)),
-                      title: Text(category['NAMA']),
-                      children: (category['subcategories'] as List<dynamic>)
-                          .map((subcategory) {
-                        return ListTile(
-                          title: Text(subcategory),
-                          onTap: () {
-                            if (mounted) {
-                              setState(() {
-                                _selectedCategory = category['NAMA'];
-                                _selectedSubcategory = subcategory;
-                                _isLoading = true;
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return SingleChildScrollView(
+              child: Container(
+                padding: EdgeInsets.all(size.width * 0.04),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Filter by Category',
+                      style: TextStyle(
+                        fontSize: size.width * 0.045, // Responsive font
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF5A5D3A),
+                      ),
+                    ),
+                    SizedBox(height: size.height * 0.02),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            icon: Icon(
+                                Icons.clear,
+                                color: const Color(0xFF5A5D3A),
+                                size: size.width * 0.05), // Responsive icon
+                            label: Text(
+                              'Clear Filter',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF5A5D3A),
+                                fontSize: size.width * 0.035, // Responsive font
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF5A5D3A),
+                              elevation: 0,
+                              side:
+                                  const BorderSide(color: Color(0xFF5A5D3A)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(size.width * 0.02),
+                              ),
+                            ),
+                            onPressed: () {
+                              setStateDialog(() {
+                                localSelected.clear();
                               });
-                            }
-                            _fetchProducts(
-                                category: category['NAMA'],
-                                subcategory: subcategory);
-                            Navigator.pop(context);
+                              if (mounted) {
+                                setState(() {
+                                  _selectedSubcategories = {};
+                                  _isLoading = true;
+                                });
+                              }
+                              _fetchProducts();
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ),
+                        SizedBox(width: size.width * 0.02),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              List<String> filters = [];
+                              localSelected.forEach((cat, subs) {
+                                for (var sub in subs) {
+                                  filters.add('$cat:$sub');
+                                }
+                              });
+                              if (mounted) {
+                                setState(() {
+                                  _selectedSubcategories = localSelected;
+                                  _isLoading = true;
+                                });
+                              }
+                              _fetchProducts(subcategories: filters);
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF5A5D3A),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(size.width * 0.02),
+                              ),
+                            ),
+                            child: Text(
+                              'Apply Filter',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                                fontSize: size.width * 0.035, // Responsive font
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: size.height * 0.02),
+                    ..._categories.map((category) {
+                      String catName = category['NAMA'];
+                      List<String> subcats =
+                          List<String>.from(category['subcategories']);
+                      bool isAllSelected = subcats.isNotEmpty &&
+                          subcats.every((sub) =>
+                              localSelected[catName]?.contains(sub) ?? false);
+                      return ExpansionTile(
+                        leading: Checkbox(
+                          value: isAllSelected,
+                          onChanged: (bool? value) {
+                            setStateDialog(() {
+                              if (value == true) {
+                                localSelected[catName] = Set.from(subcats);
+                              } else {
+                                localSelected[catName] = {};
+                              }
+                            });
                           },
-                        );
-                      }).toList(),
-                    );
-                  },
+                        ),
+                        title: Text(
+                          catName,
+                          style: TextStyle(fontSize: size.width * 0.035), // Responsive font
+                        ),
+                        children: subcats.map((subcategory) {
+                          return CheckboxListTile(
+                            title: Text(
+                              subcategory,
+                              style: TextStyle(fontSize: size.width * 0.03), // Responsive font
+                            ),
+                            value: localSelected[catName]?.contains(subcategory) ??
+                                false,
+                            onChanged: (bool? value) {
+                              setStateDialog(() {
+                                if (value == true) {
+                                  localSelected[catName] ??= {};
+                                  localSelected[catName]!.add(subcategory);
+                                } else {
+                                  localSelected[catName]?.remove(subcategory);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      );
+                    }).toList(),
+                  ],
                 ),
-                ListTile(
-                  leading: const Icon(Icons.clear, color: Color(0xFF1A3C34)),
-                  title: const Text('Clear Filter'),
-                  onTap: () {
-                    if (mounted) {
-                      setState(() {
-                        _selectedCategory = null;
-                        _selectedSubcategory = null;
-                        _isLoading = true;
-                      });
-                    }
-                    _fetchProducts();
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -909,6 +1007,7 @@ class _ProductCardState extends State<ProductCard> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     final imageUrl = widget.images.isNotEmpty && widget.images[0].isNotEmpty
         ? widget.images[0]
         : '/api/placeholder/60/60';
@@ -922,7 +1021,7 @@ class _ProductCardState extends State<ProductCard> {
         child: Card(
           elevation: 10,
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(size.width * 0.04)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -930,10 +1029,10 @@ class _ProductCardState extends State<ProductCard> {
                 tag: 'productImage${widget.id}_0',
                 child: ClipRRect(
                   borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(16)),
+                      BorderRadius.vertical(top: Radius.circular(size.width * 0.04)),
                   child: CachedNetworkImage(
                     imageUrl: imageUrl,
-                    height: 100,
+                    height: size.width * 0.25, // Responsive height
                     width: double.infinity,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Shimmer.fromColors(
@@ -947,7 +1046,7 @@ class _ProductCardState extends State<ProductCard> {
                       print('Image Load Error for $url: $error');
                       return Image.asset(
                         'assets/images/placeholder.png',
-                        height: 100,
+                        height: size.width * 0.25,
                         width: double.infinity,
                         fit: BoxFit.cover,
                       );
@@ -956,31 +1055,33 @@ class _ProductCardState extends State<ProductCard> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: EdgeInsets.all(size.width * 0.02),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       widget.title,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: size.width * 0.035, // Responsive font
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: size.width * 0.005),
                     Text(
                       widget.subcategory,
-                      style: const TextStyle(fontSize: 10, color: Colors.grey),
+                      style: TextStyle(
+                          fontSize: size.width * 0.025, // Responsive font
+                          color: Colors.grey),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: size.width * 0.01),
                     Text(
                       widget.price,
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: TextStyle(
+                        fontSize: size.width * 0.03, // Responsive font
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A3C34),
+                        color: const Color(0xFF1A3C34),
                       ),
                     ),
                   ],

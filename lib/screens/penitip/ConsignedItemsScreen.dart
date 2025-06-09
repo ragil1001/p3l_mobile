@@ -211,7 +211,7 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text('Gagal memuat barang titikan: ${e.toString()}')),
+                content: Text('Gagal memuat barang titipan: ${e.toString()}')),
           );
           return;
         }
@@ -271,536 +271,609 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
   @override
   Widget build(BuildContext context) {
     const oliveGreen = Color(0xFF7A7C52);
-    const double bottomNavBarHeight =
-        56.0; // Standard BottomNavigationBar height
+    final bottomNavBarHeight = MediaQuery.of(context).padding.bottom + 56.0;
 
-    return Container(
-      color: Colors.white,
-      child: Stack(
-        children: [
-          CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              SliverAppBar(
-                pinned: true,
-                floating: false,
-                elevation: 8,
-                backgroundColor: Colors.transparent,
-                flexibleSpace: AnimatedBuilder(
-                  animation: _animationController!,
-                  builder: (context, child) {
-                    return SlideTransition(
-                      position: _slideAnimation!,
-                      child: FadeTransition(
-                        opacity: _fadeAnimation!,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                oliveGreen,
-                                oliveGreen.withOpacity(0.9),
-                                const Color(0xFF5A5D3A),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(25),
-                              bottomRight: Radius.circular(25),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 15,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                          ),
-                          child: Stack(
-                            children: [
-                              Positioned(
-                                top: -50,
-                                right: -50,
-                                child: Container(
-                                  width: 150,
-                                  height: 150,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white.withOpacity(0.05),
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                bottom: -30,
-                                left: -30,
-                                child: Container(
-                                  width: 100,
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white.withOpacity(0.03),
-                                  ),
-                                ),
-                              ),
-                              SafeArea(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(18.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                FadeInDown(
-                                                  duration: const Duration(
-                                                      milliseconds: 800),
-                                                  child: LayoutBuilder(
-                                                    builder:
-                                                        (context, constraints) {
-                                                      double availableWidth =
-                                                          constraints.maxWidth;
-                                                      String displayText =
-                                                          _getDisplayText(
-                                                              availableWidth,
-                                                              _isScrolled);
-                                                      double fontSize =
-                                                          _getFontSize(
-                                                              _isScrolled,
-                                                              availableWidth);
-
-                                                      return Text(
-                                                        displayText,
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: fontSize,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          height: 1.2,
-                                                        ),
-                                                        maxLines:
-                                                            _isScrolled ? 1 : 2,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                        softWrap: true,
-                                                      );
-                                                    },
-                                                  ),
-                                                ),
-                                                if (!_isScrolled) ...[
-                                                  const SizedBox(height: 6),
-                                                  FadeInDown(
-                                                    duration: const Duration(
-                                                        milliseconds: 900),
-                                                    child: const Text(
-                                                      'Lihat barang yang Anda titipkan',
-                                                      style: TextStyle(
-                                                        color: Colors.white70,
-                                                        fontSize: 13,
-                                                        height: 1.3,
-                                                      ),
-                                                      maxLines: 2,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      if (!_isScrolled) ...[
-                                        const SizedBox(height: 16),
-                                        FadeInUp(
-                                          duration: const Duration(
-                                              milliseconds: 1000),
-                                          child: Container(
-                                            height: 48,
-                                            decoration: BoxDecoration(
-                                              color: Colors.white
-                                                  .withOpacity(0.95),
-                                              borderRadius:
-                                                  BorderRadius.circular(25),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black
-                                                      .withOpacity(0.1),
-                                                  blurRadius: 10,
-                                                  offset: const Offset(0, 3),
-                                                ),
-                                              ],
-                                              border: Border.all(
-                                                color: Colors.white
-                                                    .withOpacity(0.3),
-                                                width: 1,
-                                              ),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                const Padding(
-                                                  padding: EdgeInsets.symmetric(
-                                                      horizontal: 16),
-                                                  child: Icon(
-                                                    Icons.search,
-                                                    color: Colors.grey,
-                                                    size: 22,
-                                                  ),
-                                                ),
-                                                const Expanded(
-                                                  child: TextField(
-                                                    decoration: InputDecoration(
-                                                      hintText:
-                                                          'Cari barang Anda...',
-                                                      hintStyle: TextStyle(
-                                                        color: Colors.grey,
-                                                        fontSize: 14,
-                                                      ),
-                                                      border: InputBorder.none,
-                                                      contentPadding:
-                                                          EdgeInsets.symmetric(
-                                                              vertical: 14),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                expandedHeight: _isScrolled ? 90 : 180,
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16.0, 5.0, 16.0, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      FadeInLeft(
-                        duration: const Duration(milliseconds: 500),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 4,
-                              height: 30,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          color: Colors.white,
+          child: Stack(
+            children: [
+              CustomScrollView(
+                controller: _scrollController,
+                slivers: [
+                  SliverAppBar(
+                    pinned: true,
+                    floating: false,
+                    elevation: 8,
+                    backgroundColor: Colors.transparent,
+                    flexibleSpace: AnimatedBuilder(
+                      animation: _animationController!,
+                      builder: (context, child) {
+                        return SlideTransition(
+                          position: _slideAnimation!,
+                          child: FadeTransition(
+                            opacity: _fadeAnimation!,
+                            child: Container(
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1A3C34),
-                                borderRadius: BorderRadius.circular(2),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    oliveGreen,
+                                    oliveGreen.withOpacity(0.9),
+                                    const Color(0xFF5A5D3A),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: const BorderRadius.only(
+                                  bottomLeft: Radius.circular(25),
+                                  bottomRight: Radius.circular(25),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 5),
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'Barang Titipan Saya',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A3C34),
-                              ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              '${_filteredItems.length} barang',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _isLoading
-                          ? GridView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                childAspectRatio:
-                                    0.65, // Adjusted to accommodate extra text
-                                crossAxisSpacing: 8,
-                                mainAxisSpacing: 8,
-                              ),
-                              itemCount: 6,
-                              itemBuilder: (context, index) {
-                                return Shimmer.fromColors(
-                                  baseColor: Colors.grey[300]!,
-                                  highlightColor: Colors.grey[100]!,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.1),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Container(
-                                          height: 100,
-                                          width: double.infinity,
-                                          decoration: const BoxDecoration(
-                                            color: Colors.grey,
-                                            borderRadius: BorderRadius.vertical(
-                                                top: Radius.circular(12)),
-                                          ),
-                                        ),
-                                        const Padding(
-                                          padding: EdgeInsets.all(8.0),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              SizedBox(
-                                                height: 16,
-                                                width: 100,
-                                                child: DecoratedBox(
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.grey,
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                            Radius.circular(4)),
-                                                  ),
-                                                ),
-                                              ),
-                                              SizedBox(height: 4),
-                                              SizedBox(
-                                                height: 12,
-                                                width: 80,
-                                                child: DecoratedBox(
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.grey,
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                            Radius.circular(4)),
-                                                  ),
-                                                ),
-                                              ),
-                                              SizedBox(height: 4),
-                                              SizedBox(
-                                                height: 12,
-                                                width: 60,
-                                                child: DecoratedBox(
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.grey,
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                            Radius.circular(4)),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
+                              child: Stack(
+                                children: [
+                                  Positioned(
+                                    top: -50,
+                                    right: -50,
+                                    child: Container(
+                                      width: constraints.maxWidth * 0.4,
+                                      height: constraints.maxWidth * 0.4,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white.withOpacity(0.05),
+                                      ),
                                     ),
                                   ),
-                                );
-                              },
-                            )
-                          : _filteredItems.isEmpty
-                              ? const Center(
-                                  child: Text('Tidak ada barang tersedia'))
-                              : GridView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    childAspectRatio:
-                                        0.65, // Adjusted to accommodate extra text
-                                    crossAxisSpacing: 16,
-                                    mainAxisSpacing: 16,
+                                  Positioned(
+                                    bottom: -30,
+                                    left: -30,
+                                    child: Container(
+                                      width: constraints.maxWidth * 0.25,
+                                      height: constraints.maxWidth * 0.25,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white.withOpacity(0.03),
+                                      ),
+                                    ),
                                   ),
-                                  itemCount: _filteredItems.length +
-                                      (_isFetchingMore ? 2 : 0),
-                                  itemBuilder: (context, index) {
-                                    if (index >= _filteredItems.length) {
-                                      return Shimmer.fromColors(
-                                        baseColor: Colors.grey[300]!,
-                                        highlightColor: Colors.grey[100]!,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black
-                                                    .withOpacity(0.1),
-                                                blurRadius: 8,
-                                                offset: const Offset(0, 4),
-                                              ),
-                                            ],
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                  SafeArea(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(constraints.maxWidth * 0.04),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Row(
                                             children: [
-                                              Container(
-                                                height: 100,
-                                                width: double.infinity,
-                                                decoration: const BoxDecoration(
-                                                  color: Colors.grey,
-                                                  borderRadius:
-                                                      BorderRadius.vertical(
-                                                          top: Radius.circular(
-                                                              12)),
-                                                ),
-                                              ),
-                                              const Padding(
-                                                padding: EdgeInsets.all(8.0),
+                                              Expanded(
                                                 child: Column(
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.start,
                                                   children: [
-                                                    SizedBox(
-                                                      height: 16,
-                                                      width: 100,
-                                                      child: DecoratedBox(
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color: Colors.grey,
-                                                          borderRadius:
-                                                              BorderRadius.all(
-                                                                  Radius
-                                                                      .circular(
-                                                                          4)),
-                                                        ),
+                                                    FadeInDown(
+                                                      duration: const Duration(
+                                                          milliseconds: 800),
+                                                      child: LayoutBuilder(
+                                                        builder: (context,
+                                                            textConstraints) {
+                                                          double availableWidth =
+                                                              textConstraints
+                                                                  .maxWidth;
+                                                          String displayText =
+                                                              _getDisplayText(
+                                                                  availableWidth,
+                                                                  _isScrolled);
+                                                          double fontSize =
+                                                              _getFontSize(
+                                                                  _isScrolled,
+                                                                  availableWidth);
+
+                                                          return Text(
+                                                            displayText,
+                                                            style: TextStyle(
+                                                              color: Colors.white,
+                                                              fontSize: fontSize,
+                                                              fontWeight:
+                                                                  FontWeight.bold,
+                                                              height: 1.2,
+                                                            ),
+                                                            maxLines: _isScrolled
+                                                                ? 1
+                                                                : 2,
+                                                            overflow: TextOverflow
+                                                                .ellipsis,
+                                                            softWrap: true,
+                                                          );
+                                                        },
                                                       ),
                                                     ),
-                                                    SizedBox(height: 4),
-                                                    SizedBox(
-                                                      height: 12,
-                                                      width: 80,
-                                                      child: DecoratedBox(
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color: Colors.grey,
-                                                          borderRadius:
-                                                              BorderRadius.all(
-                                                                  Radius
-                                                                      .circular(
-                                                                          4)),
+                                                    if (!_isScrolled) ...[
+                                                      const SizedBox(height: 6),
+                                                      FadeInDown(
+                                                        duration: const Duration(
+                                                            milliseconds: 900),
+                                                        child: Text(
+                                                          'Lihat barang yang Anda titipkan',
+                                                          style: TextStyle(
+                                                            color:
+                                                                Colors.white70,
+                                                            fontSize:
+                                                                constraints.maxWidth <
+                                                                        360
+                                                                    ? 12
+                                                                    : 13,
+                                                            height: 1.3,
+                                                          ),
+                                                          maxLines: 2,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
                                                         ),
                                                       ),
+                                                    ],
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          if (!_isScrolled) ...[
+                                            SizedBox(
+                                                height:
+                                                    constraints.maxWidth * 0.04),
+                                            FadeInUp(
+                                              duration: const Duration(
+                                                  milliseconds: 1000),
+                                              child: Container(
+                                                height: 48,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white
+                                                      .withOpacity(0.95),
+                                                  borderRadius:
+                                                      BorderRadius.circular(25),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black
+                                                          .withOpacity(0.1),
+                                                      blurRadius: 10,
+                                                      offset: const Offset(0, 3),
                                                     ),
-                                                    SizedBox(height: 4),
-                                                    SizedBox(
-                                                      height: 12,
-                                                      width: 60,
-                                                      child: DecoratedBox(
+                                                  ],
+                                                  border: Border.all(
+                                                    color: Colors.white
+                                                        .withOpacity(0.3),
+                                                    width: 1,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Padding(
+                                                      padding: EdgeInsets.symmetric(
+                                                          horizontal:
+                                                              constraints.maxWidth *
+                                                                  0.04),
+                                                      child: Icon(
+                                                        Icons.search,
+                                                        color: Colors.grey,
+                                                        size: constraints.maxWidth <
+                                                                360
+                                                            ? 20
+                                                            : 22,
+                                                      ),
+                                                    ),
+                                                    const Expanded(
+                                                      child: TextField(
                                                         decoration:
-                                                            BoxDecoration(
-                                                          color: Colors.grey,
-                                                          borderRadius:
-                                                              BorderRadius.all(
-                                                                  Radius
-                                                                      .circular(
-                                                                          4)),
+                                                            InputDecoration(
+                                                          hintText:
+                                                              'Cari barang Anda...',
+                                                          hintStyle: TextStyle(
+                                                            color: Colors.grey,
+                                                            fontSize: 14,
+                                                          ),
+                                                          border:
+                                                              InputBorder.none,
+                                                          contentPadding:
+                                                              EdgeInsets
+                                                                  .symmetric(
+                                                                      vertical:
+                                                                          14),
                                                         ),
                                                       ),
                                                     ),
                                                   ],
                                                 ),
                                               ),
-                                            ],
-                                          ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    expandedHeight:
+                        _isScrolled ? constraints.maxHeight * 0 : constraints.maxHeight * 0.18,
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                          constraints.maxWidth * 0.04, 4.0, constraints.maxWidth * 0.04, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          FadeInLeft(
+                            duration: const Duration(milliseconds: 500),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 4,
+                                  height: 30,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1A3C34),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                SizedBox(width: constraints.maxWidth * 0.03),
+                                Text(
+                                  'Barang Titipan Saya',
+                                  style: TextStyle(
+                                    fontSize:
+                                        constraints.maxWidth < 360 ? 18 : 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF1A3C34),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const Spacer(),
+                                Text(
+                                  '${_filteredItems.length} barang',
+                                  style: TextStyle(
+                                    fontSize:
+                                        constraints.maxWidth < 360 ? 11 : 12,
+                                    color: Colors.grey,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          _isLoading
+                              ? GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount:
+                                        constraints.maxWidth < 600 ? 2 : 3,
+                                    childAspectRatio: constraints.maxWidth < 360
+                                        ? 0.6
+                                        : 0.65,
+                                    crossAxisSpacing:
+                                        constraints.maxWidth * 0.04,
+                                    mainAxisSpacing:
+                                        constraints.maxWidth * 0.04,
+                                  ),
+                                  itemCount: 6,
+                                  itemBuilder: (context, index) {
+                                    return Shimmer.fromColors(
+                                      baseColor: Colors.grey[300]!,
+                                      highlightColor: Colors.grey[100]!,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black
+                                                  .withOpacity(0.1),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
                                         ),
-                                      );
-                                    }
-                                    final item = _filteredItems[index];
-                                    return FadeInUp(
-                                      duration: Duration(
-                                          milliseconds: 500 + (index * 100)),
-                                      child: ConsignedItemCard(
-                                        id: item['kode_produk'].toString(),
-                                        title:
-                                            item['nama'] ?? 'Barang Tanpa Nama',
-                                        price: _formatRupiah(
-                                            item['harga_jual'] ?? 0),
-                                        status: item['status'] ?? 'N/A',
-                                        images: List<String>.from(
-                                            item['images'] ??
-                                                ['/api/placeholder/60/60']),
-                                        condition: item['kondisi'] ?? 'N/A',
-                                        weight:
-                                            item['berat']?.toString() ?? 'N/A',
-                                        warranty:
-                                            item['tanggal_garansi'] ?? '-',
-                                        description: item['deskripsi'] ?? '',
-                                        tanggalPenitipan:
-                                            item['tanggal_penitipan'] ?? '-',
-                                        tanggalKadaluarsa:
-                                            item['tanggal_kadaluarsa'] ?? '-',
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Container(
+                                              height:
+                                                  constraints.maxWidth * 0.25,
+                                              width: double.infinity,
+                                              decoration: const BoxDecoration(
+                                                color: Colors.grey,
+                                                borderRadius: BorderRadius
+                                                    .vertical(
+                                                    top: Radius.circular(12)),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: EdgeInsets.all(
+                                                  constraints.maxWidth * 0.02),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  SizedBox(
+                                                    height: 16,
+                                                    width: 100,
+                                                    child: DecoratedBox(
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.grey,
+                                                        borderRadius:
+                                                            BorderRadius.all(
+                                                                Radius.circular(
+                                                                    4)),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                      height: constraints
+                                                              .maxWidth *
+                                                          0.01),
+                                                  SizedBox(
+                                                    height: 12,
+                                                    width: 80,
+                                                    child: DecoratedBox(
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.grey,
+                                                        borderRadius:
+                                                            BorderRadius.all(
+                                                                Radius.circular(
+                                                                    4)),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                      height: constraints
+                                                              .maxWidth *
+                                                          0.01),
+                                                  SizedBox(
+                                                    height: 12,
+                                                    width: 60,
+                                                    child: DecoratedBox(
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.grey,
+                                                        borderRadius:
+                                                            BorderRadius.all(
+                                                                Radius.circular(
+                                                                    4)),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     );
                                   },
-                                ),
-                      const SizedBox(height: 80),
-                    ],
+                                )
+                              : _filteredItems.isEmpty
+                                  ? const Center(
+                                      child: Text('Tidak ada barang tersedia'))
+                                  : GridView.builder(
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount:
+                                            constraints.maxWidth < 600 ? 2 : 3,
+                                        childAspectRatio:
+                                            constraints.maxWidth < 360
+                                                ? 0.6
+                                                : 0.65,
+                                        crossAxisSpacing:
+                                            constraints.maxWidth * 0.04,
+                                        mainAxisSpacing:
+                                            constraints.maxWidth * 0.04,
+                                      ),
+                                      itemCount: _filteredItems.length +
+                                          (_isFetchingMore ? 2 : 0),
+                                      itemBuilder: (context, index) {
+                                        if (index >= _filteredItems.length) {
+                                          return Shimmer.fromColors(
+                                            baseColor: Colors.grey[300]!,
+                                            highlightColor: Colors.grey[100]!,
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black
+                                                        .withOpacity(0.1),
+                                                    blurRadius: 8,
+                                                    offset: const Offset(0, 4),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Container(
+                                                    height: constraints.maxWidth *
+                                                        0.25,
+                                                    width: double.infinity,
+                                                    decoration:
+                                                        const BoxDecoration(
+                                                      color: Colors.grey,
+                                                      borderRadius:
+                                                          BorderRadius.vertical(
+                                                              top: Radius
+                                                                  .circular(12)),
+                                                    ),
+                                                  ),
+                                                  Padding(
+                                                    padding: EdgeInsets.all(
+                                                        constraints.maxWidth *
+                                                            0.02),
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        SizedBox(
+                                                          height: 16,
+                                                          width: 100,
+                                                          child: DecoratedBox(
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: Colors.grey,
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .all(Radius
+                                                                          .circular(
+                                                                              4)),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        SizedBox(
+                                                            height: constraints
+                                                                    .maxWidth *
+                                                                0.01),
+                                                        SizedBox(
+                                                          height: 12,
+                                                          width: 80,
+                                                          child: DecoratedBox(
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: Colors.grey,
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .all(Radius
+                                                                          .circular(
+                                                                              4)),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        SizedBox(
+                                                            height: constraints
+                                                                    .maxWidth *
+                                                                0.01),
+                                                        SizedBox(
+                                                          height: 12,
+                                                          width: 60,
+                                                          child: DecoratedBox(
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: Colors.grey,
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .all(Radius
+                                                                          .circular(
+                                                                              4)),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                        final item = _filteredItems[index];
+                                        return FadeInUp(
+                                          duration: Duration(
+                                              milliseconds: 500 + (index * 100)),
+                                          child: ConsignedItemCard(
+                                            id: item['kode_produk'].toString(),
+                                            title: item['nama'] ??
+                                                'Barang Tanpa Nama',
+                                            price: _formatRupiah(
+                                                item['harga_jual'] ?? 0),
+                                            status: item['status'] ?? 'N/A',
+                                            images: List<String>.from(
+                                                item['images'] ??
+                                                    ['/api/placeholder/60/60']),
+                                            condition: item['kondisi'] ?? 'N/A',
+                                            weight:
+                                                item['berat']?.toString() ??
+                                                    'N/A',
+                                            warranty:
+                                                item['tanggal_garansi'] ?? '-',
+                                            description:
+                                                item['deskripsi'] ?? '',
+                                            tanggalPenitipan:
+                                                item['tanggal_penitipan'] ??
+                                                    '-',
+                                            tanggalKadaluarsa:
+                                                item['tanggal_kadaluarsa'] ??
+                                                    '-',
+                                          ),
+                                        );
+                                      },
+                                    ),
+                          SizedBox(height: bottomNavBarHeight + 80),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Positioned(
+                bottom: bottomNavBarHeight + 50,
+                right: constraints.maxWidth * 0.04,
+                child: ZoomIn(
+                  duration: const Duration(milliseconds: 800),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF1A3C34).withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: FloatingActionButton.extended(
+                      onPressed: () {
+                        _showFilterSortDialog(context);
+                      },
+                      backgroundColor: oliveGreen,
+                      elevation: 0,
+                      label: Text(
+                        'Filter',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: constraints.maxWidth < 360 ? 14 : 16,
+                        ),
+                      ),
+                      icon: Icon(
+                        Icons.tune,
+                        color: Colors.white,
+                        size: constraints.maxWidth < 360 ? 20 : 24,
+                      ),
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-          Positioned(
-            bottom: 100, // Above bottom navigation bar with 16px margin
-            right: 16,
-            child: ZoomIn(
-              duration: const Duration(milliseconds: 800),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF1A3C34).withOpacity(0.3),
-                      blurRadius: 15,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: FloatingActionButton.extended(
-                  onPressed: () {
-                    _showFilterSortDialog(context);
-                  },
-                  backgroundColor: const Color(0xFF1A3C34),
-                  elevation: 0,
-                  label: const Text(
-                    'Filter',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  icon: const Icon(Icons.tune, color: Colors.white),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -839,75 +912,121 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Filter & Sort',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A3C34),
-                ),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            return Container(
+              padding: EdgeInsets.all(constraints.maxWidth * 0.04),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Filter & Sort',
+                    style: TextStyle(
+                      fontSize: constraints.maxWidth < 360 ? 16 : 18,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1A3C34),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: constraints.maxWidth * 0.04),
+                  ListTile(
+                    leading: Icon(
+                      Icons.sort,
+                      color: const Color(0xFF1A3C34),
+                      size: constraints.maxWidth < 360 ? 20 : 24,
+                    ),
+                    title: Text(
+                      'Tanggal Penitipan: Terbaru',
+                      style: TextStyle(
+                          fontSize: constraints.maxWidth < 360 ? 14 : 16),
+                    ),
+                    onTap: () {
+                      setState(() {
+                        _sortBy = 'tanggal_penitipan';
+                        _sortOrder = 'desc';
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(
+                      Icons.sort,
+                      color: const Color(0xFF1A3C34),
+                      size: constraints.maxWidth < 360 ? 20 : 24,
+                    ),
+                    title: Text(
+                      'Tanggal Penitipan: Terlama',
+                      style: TextStyle(
+                          fontSize: constraints.maxWidth < 360 ? 14 : 16),
+                    ),
+                    onTap: () {
+                      setState(() {
+                        _sortBy = 'tanggal_penitipan';
+                        _sortOrder = 'asc';
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(
+                      Icons.sort,
+                      color: const Color(0xFF1A3C34),
+                      size: constraints.maxWidth < 360 ? 20 : 24,
+                    ),
+                    title: Text(
+                      'Tanggal Kadaluarsa: Terdekat',
+                      style: TextStyle(
+                          fontSize: constraints.maxWidth < 360 ? 14 : 16),
+                    ),
+                    onTap: () {
+                      setState(() {
+                        _sortBy = 'tanggal_kadaluarsa';
+                        _sortOrder = 'asc';
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(
+                      Icons.sort,
+                      color: const Color(0xFF1A3C34),
+                      size: constraints.maxWidth < 360 ? 20 : 24,
+                    ),
+                    title: Text(
+                      'Tanggal Kadaluarsa: Terjauh',
+                      style: TextStyle(
+                          fontSize: constraints.maxWidth < 360 ? 14 : 16),
+                    ),
+                    onTap: () {
+                      setState(() {
+                        _sortBy = 'tanggal_kadaluarsa';
+                        _sortOrder = 'desc';
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(
+                      Icons.filter_alt,
+                      color: const Color(0xFF1A3C34),
+                      size: constraints.maxWidth < 360 ? 20 : 24,
+                    ),
+                    title: Text(
+                      'Filter by Status',
+                      style: TextStyle(
+                          fontSize: constraints.maxWidth < 360 ? 14 : 16),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showStatusFilterDialog(context);
+                    },
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(Icons.sort, color: Color(0xFF1A3C34)),
-                title: const Text('Tanggal Penitipan: Terbaru'),
-                onTap: () {
-                  setState(() {
-                    _sortBy = 'tanggal_penitipan';
-                    _sortOrder = 'desc';
-                  });
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.sort, color: Color(0xFF1A3C34)),
-                title: const Text('Tanggal Penitipan: Terlama'),
-                onTap: () {
-                  setState(() {
-                    _sortBy = 'tanggal_penitipan';
-                    _sortOrder = 'asc';
-                  });
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.sort, color: Color(0xFF1A3C34)),
-                title: const Text('Tanggal Kadaluarsa: Terdekat'),
-                onTap: () {
-                  setState(() {
-                    _sortBy = 'tanggal_kadaluarsa';
-                    _sortOrder = 'asc';
-                  });
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.sort, color: Color(0xFF1A3C34)),
-                title: const Text('Tanggal Kadaluarsa: Terjauh'),
-                onTap: () {
-                  setState(() {
-                    _sortBy = 'tanggal_kadaluarsa';
-                    _sortOrder = 'desc';
-                  });
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.filter_alt, color: Color(0xFF1A3C34)),
-                title: const Text('Filter by Status'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showStatusFilterDialog(context);
-                },
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -920,98 +1039,140 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return SingleChildScrollView(
-          child: Container(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Filter by Status',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A3C34),
-                  ),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: Container(
+                padding: EdgeInsets.all(constraints.maxWidth * 0.04),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Filter by Status',
+                      style: TextStyle(
+                        fontSize: constraints.maxWidth < 360 ? 16 : 18,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF1A3C34),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: constraints.maxWidth * 0.04),
+                    ListTile(
+                      title: Text(
+                        'Tersedia',
+                        style: TextStyle(
+                            fontSize: constraints.maxWidth < 360 ? 14 : 16),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _selectedStatus = 'Tersedia';
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                    ListTile(
+                      title: Text(
+                        'Terjual',
+                        style: TextStyle(
+                            fontSize: constraints.maxWidth < 360 ? 14 : 16),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _selectedStatus = 'Terjual';
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                    ListTile(
+                      title: Text(
+                        'Hangus',
+                        style: TextStyle(
+                            fontSize: constraints.maxWidth < 360 ? 14 : 16),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _selectedStatus = 'Hangus';
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                    ListTile(
+                      title: Text(
+                        'Kadaluarsa',
+                        style: TextStyle(
+                            fontSize: constraints.maxWidth < 360 ? 14 : 16),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _selectedStatus = 'Kadaluarsa';
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                    ListTile(
+                      title: Text(
+                        'Telah Didonasikan',
+                        style: TextStyle(
+                            fontSize: constraints.maxWidth < 360 ? 14 : 16),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _selectedStatus = 'Telah Didonasikan';
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                    ListTile(
+                      title: Text(
+                        'Siap Diambil Kembali',
+                        style: TextStyle(
+                            fontSize: constraints.maxWidth < 360 ? 14 : 16),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _selectedStatus = 'Siap Diambil Kembali';
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                    ListTile(
+                      title: Text(
+                        'Dikembalikan',
+                        style: TextStyle(
+                            fontSize: constraints.maxWidth < 360 ? 14 : 16),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _selectedStatus = 'Dikembalikan';
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                    ListTile(
+                      leading: Icon(
+                        Icons.clear,
+                        color: const Color(0xFF1A3C34),
+                        size: constraints.maxWidth < 360 ? 20 : 24,
+                      ),
+                      title: Text(
+                        'Clear Filter',
+                        style: TextStyle(
+                            fontSize: constraints.maxWidth < 360 ? 14 : 16),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          _selectedStatus = null;
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                ListTile(
-                  title: const Text('Tersedia'),
-                  onTap: () {
-                    setState(() {
-                      _selectedStatus = 'Tersedia';
-                    });
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  title: const Text('Terjual'),
-                  onTap: () {
-                    setState(() {
-                      _selectedStatus = 'Terjual';
-                    });
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  title: const Text('Hangus'),
-                  onTap: () {
-                    setState(() {
-                      _selectedStatus = 'Hangus';
-                    });
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  title: const Text('Kadaluarsa'),
-                  onTap: () {
-                    setState(() {
-                      _selectedStatus = 'Kadaluarsa';
-                    });
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  title: const Text('Telah Didonasikan'),
-                  onTap: () {
-                    setState(() {
-                      _selectedStatus = 'Telah Didonasikan';
-                    });
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  title: const Text('Siap Diambil Kembali'),
-                  onTap: () {
-                    setState(() {
-                      _selectedStatus = 'Siap Diambil Kembali';
-                    });
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  title: const Text('Dikembalikan'),
-                  onTap: () {
-                    setState(() {
-                      _selectedStatus = 'Dikembalikan';
-                    });
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.clear, color: Color(0xFF1A3C34)),
-                  title: const Text('Clear Filter'),
-                  onTap: () {
-                    setState(() {
-                      _selectedStatus = null;
-                    });
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -1122,101 +1283,124 @@ class _ConsignedItemCardState extends State<ConsignedItemCard> {
     final imageUrl = widget.images.isNotEmpty && widget.images[0].isNotEmpty
         ? widget.images[0]
         : '/api/placeholder/60/60';
-    return GestureDetector(
-      onTapDown: _onTapDown,
-      onTapUp: _onTapUp,
-      onTapCancel: _onTapCancel,
-      child: AnimatedScale(
-        scale: _scale,
-        duration: const Duration(milliseconds: 200),
-        child: Card(
-          elevation: 10,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Hero(
-                tag: 'consignedItemImage${widget.id}_0',
-                child: ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: CachedNetworkImage(
-                    imageUrl: imageUrl,
-                    height: 100,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Shimmer.fromColors(
-                      baseColor: Colors.grey[300]!,
-                      highlightColor: Colors.grey[100]!,
-                      child: Container(color: Colors.grey),
-                    ),
-                    errorWidget: (context, url, error) {
-                      print('Image Load Error for $url: $error');
-                      return Image.asset(
-                        'assets/images/placeholder.png',
-                        height: 100,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return GestureDetector(
+          onTapDown: _onTapDown,
+          onTapUp: _onTapUp,
+          onTapCancel: _onTapCancel,
+          child: AnimatedScale(
+            scale: _scale,
+            duration: const Duration(milliseconds: 200),
+            child: Card(
+              elevation: 10,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Hero(
+                    tag: 'consignedItemImage${widget.id}_0',
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(16)),
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        height: constraints.maxWidth * 0.8,
                         width: double.infinity,
                         fit: BoxFit.cover,
-                      );
-                    },
+                        placeholder: (context, url) => Shimmer.fromColors(
+                          baseColor: Colors.grey[300]!,
+                          highlightColor: Colors.grey[100]!,
+                          child: Container(color: Colors.grey),
+                        ),
+                        errorWidget: (context, url, error) {
+                          print('Image Load Error for $url: $error');
+                          return Image.asset(
+                            'assets/images/placeholder.png',
+                            height: constraints.maxWidth * 0.8,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          );
+                        },
+                      ),
+                    ),
                   ),
-                ),
+                  Padding(
+                    padding: EdgeInsets.all(constraints.maxWidth * 0.04),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.title,
+                          style: TextStyle(
+                            fontSize: constraints.maxWidth < 360 ? 12 : 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: constraints.maxWidth * 0.01),
+                        Text(
+                          widget.price,
+                          style: TextStyle(
+                            fontSize: constraints.maxWidth < 360 ? 11 : 12,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF1A3C34),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: constraints.maxWidth * 0.01),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: constraints.maxWidth * 0.04,
+                            vertical: constraints.maxWidth * 0.02,
+                          ),
+                          decoration: BoxDecoration(
+                            color: getStatusColor(),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            widget.status,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: constraints.maxWidth < 360 ? 9 : 10,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        SizedBox(height: constraints.maxWidth * 0.01),
+                        Text(
+                          'Penitipan: ${_formatDate(widget.tanggalPenitipan)}',
+                          style: TextStyle(
+                            fontSize: constraints.maxWidth < 360 ? 9 : 10,
+                            color: Colors.grey,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: constraints.maxWidth * 0.01),
+                        Text(
+                          'Kadaluarsa: ${_formatDate(widget.tanggalKadaluarsa)}',
+                          style: TextStyle(
+                            fontSize: constraints.maxWidth < 360 ? 9 : 10,
+                            color: Colors.grey,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      widget.price,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A3C34),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: getStatusColor(),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        widget.status,
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 10),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Penitipan: ${_formatDate(widget.tanggalPenitipan)}',
-                      style: const TextStyle(fontSize: 10, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Kadaluarsa: ${_formatDate(widget.tanggalKadaluarsa)}',
-                      style: const TextStyle(fontSize: 10, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
