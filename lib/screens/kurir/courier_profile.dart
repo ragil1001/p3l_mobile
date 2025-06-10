@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:animate_do/animate_do.dart';
 import '../../services/auth_service.dart';
 import '../otentikasi/login.dart';
-import '../../screens/homepage.dart';
+import '../dashboard.dart';
 
 class CourierProfileScreen extends StatefulWidget {
   const CourierProfileScreen({super.key});
@@ -84,7 +84,7 @@ class _CourierProfileScreenState extends State<CourierProfileScreen>
 
       // Fetch user profile
       final profileResponse = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/auth/profile'),
+        Uri.parse('http://192.168.154.254:8000/api/auth/profile'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -97,7 +97,8 @@ class _CourierProfileScreenState extends State<CourierProfileScreen>
             profileData['user']['role'].contains('kurir')) {
           // Fetch transactions assigned to this courier
           final transactionsResponse = await http.get(
-            Uri.parse('http://10.0.2.2:8000/api/kurir/transaksi-penjualan'),
+            Uri.parse(
+                'http://192.168.154.254:8000/api/kurir/transaksi-penjualan'),
             headers: {
               'Authorization': 'Bearer $token',
               'Content-Type': 'application/json',
@@ -581,7 +582,8 @@ class _CourierProfileScreenState extends State<CourierProfileScreen>
                 color: const Color(0xFF7A7C52).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: const Color(0xFF7A7C52), size: size.width * 0.04),
+              child: Icon(icon,
+                  color: const Color(0xFF7A7C52), size: size.width * 0.04),
             ),
             SizedBox(width: size.width * 0.03),
             Expanded(
@@ -688,7 +690,7 @@ class _CourierProfileScreenState extends State<CourierProfileScreen>
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const PembeliScreen()),
+                      builder: (context) => const PembeliDashboard()),
                 );
               }
             } else {
@@ -762,50 +764,50 @@ class _CourierProfileScreenState extends State<CourierProfileScreen>
                 SizedBox(width: size.width * 0.04),
                 Expanded(
                   child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['title'],
-                          style: TextStyle(
-                            fontSize: size.width * 0.04,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item['title'],
+                        style: TextStyle(
+                          fontSize: size.width * 0.04,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
                         ),
-                        SizedBox(height: size.height * 0.005),
-                        Text(
-                          item['subtitle'],
-                          style: TextStyle(
-                            fontSize: size.width * 0.03,
-                            color: Colors.grey[600],
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: size.height * 0.005),
+                      Text(
+                        item['subtitle'],
+                        style: TextStyle(
+                          fontSize: size.width * 0.03,
+                          color: Colors.grey[600],
                         ),
-                      ],
-                    ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
-                  Container(
-                    padding: EdgeInsets.all(size.width * 0.02),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.arrow_forward_ios,
-                      size: size.width * 0.03,
-                      color: Colors.grey,
-                    ),
+                ),
+                Container(
+                  padding: EdgeInsets.all(size.width * 0.02),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    shape: BoxShape.circle,
                   ),
-                ],
-              ),
+                  child: Icon(
+                    Icons.arrow_forward_ios,
+                    size: size.width * 0.03,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-      );
-    }
+      ),
+    );
+  }
 
   void _copyToClipboard(String text) {
     final size = MediaQuery.of(context).size;

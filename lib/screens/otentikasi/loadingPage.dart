@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'login.dart';
-import 'package:p3l_mobile/screens/homepage.dart';
+import 'package:p3l_mobile/screens/dashboard.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
@@ -81,7 +81,7 @@ class SplashScreen extends StatelessWidget {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const PembeliScreen()),
+                          builder: (context) => const PembeliDashboard()),
                     );
                   },
                   style: ElevatedButton.styleFrom(

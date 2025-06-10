@@ -75,7 +75,7 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
       }
 
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/kurir/transaksi-penjualan'),
+        Uri.parse('http://192.168.154.254:8000/api/kurir/transaksi-penjualan'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -90,7 +90,7 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
         for (var transaction in data) {
           final detailResponse = await http.get(
             Uri.parse(
-                'http://10.0.2.2:8000/api/kurir/transaksi-penjualan/${transaction['no_nota']}'),
+                'http://192.168.154.254:8000/api/kurir/transaksi-penjualan/${transaction['no_nota']}'),
             headers: {
               'Authorization': 'Bearer $token',
               'Content-Type': 'application/json',
@@ -102,8 +102,8 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
             final products = detailData['products'] as List<dynamic>? ?? [];
             final items = products.map((p) {
               final imageUrl = p['image'] != '/api/placeholder/60/60'
-                  ? 'http://10.0.2.2:8000/api/products/${p['product_id']}/thumbnail'
-                  : 'http://10.0.2.2:8000/api/placeholder/60/60';
+                  ? 'http://192.168.154.254:8000/api/products/${p['product_id']}/thumbnail'
+                  : 'http://192.168.154.254:8000/api/placeholder/60/60';
               print(
                   'Image URL for ${p['nama_barang']}: $imageUrl'); // Debug log
               return {
@@ -178,11 +178,15 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
   }
 
   String _getDisplayText(double availableWidth, double screenWidth) {
-    return availableWidth < screenWidth * 0.5 ? 'Riwayat\nPengiriman' : 'Riwayat Pengiriman';
+    return availableWidth < screenWidth * 0.5
+        ? 'Riwayat\nPengiriman'
+        : 'Riwayat Pengiriman';
   }
 
   double _getFontSize(double availableWidth, double screenWidth) {
-    return availableWidth < screenWidth * 0.5 ? screenWidth * 0.045 : screenWidth * 0.05;
+    return availableWidth < screenWidth * 0.5
+        ? screenWidth * 0.045
+        : screenWidth * 0.05;
   }
 
   Widget _buildDeliveryList() {
@@ -200,7 +204,8 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
         child: ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.symmetric(horizontal: size.width * 0.04, vertical: size.height * 0.01),
+          padding: EdgeInsets.symmetric(
+              horizontal: size.width * 0.04, vertical: size.height * 0.01),
           itemCount: _deliveries.length,
           itemBuilder: (context, index) {
             return FadeInUp(
@@ -225,7 +230,8 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.symmetric(horizontal: size.width * 0.04, vertical: size.height * 0.01),
+      padding: EdgeInsets.symmetric(
+          horizontal: size.width * 0.04, vertical: size.height * 0.01),
       itemCount: 3,
       itemBuilder: (context, index) {
         return Shimmer.fromColors(
@@ -447,9 +453,12 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
                                 children: [
                                   LayoutBuilder(
                                     builder: (context, constraints) {
-                                      double availableWidth = constraints.maxWidth;
-                                      String displayText = _getDisplayText(availableWidth, size.width);
-                                      double fontSize = _getFontSize(availableWidth, size.width);
+                                      double availableWidth =
+                                          constraints.maxWidth;
+                                      String displayText = _getDisplayText(
+                                          availableWidth, size.width);
+                                      double fontSize = _getFontSize(
+                                          availableWidth, size.width);
 
                                       return Text(
                                         displayText,
@@ -459,7 +468,10 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
                                           fontWeight: FontWeight.bold,
                                           height: 1.2,
                                         ),
-                                        maxLines: availableWidth < size.width * 0.5 ? 2 : 1,
+                                        maxLines:
+                                            availableWidth < size.width * 0.5
+                                                ? 2
+                                                : 1,
                                         overflow: TextOverflow.ellipsis,
                                         softWrap: true,
                                       );
@@ -688,7 +700,8 @@ class _DeliveryCardState extends State<DeliveryCard>
                             ),
                             decoration: BoxDecoration(
                               color: _getStatusColor().withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(size.width * 0.05),
+                              borderRadius:
+                                  BorderRadius.circular(size.width * 0.05),
                               border: Border.all(
                                 color: _getStatusColor().withOpacity(0.3),
                                 width: 1,
@@ -823,7 +836,8 @@ class _DeliveryCardState extends State<DeliveryCard>
     final size = MediaQuery.of(context).size;
     final items = widget.delivery['items'] as List<dynamic>? ?? [];
     return Padding(
-      padding: EdgeInsets.fromLTRB(size.width * 0.04, size.height * 0.01, size.width * 0.04, size.height * 0.02),
+      padding: EdgeInsets.fromLTRB(size.width * 0.04, size.height * 0.01,
+          size.width * 0.04, size.height * 0.02),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -856,7 +870,8 @@ class _DeliveryCardState extends State<DeliveryCard>
                         padding: EdgeInsets.all(size.width * 0.02),
                         decoration: BoxDecoration(
                           color: const Color(0xFF7A7C52).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(size.width * 0.015),
+                          borderRadius:
+                              BorderRadius.circular(size.width * 0.015),
                         ),
                         child: Icon(
                           Icons.local_shipping,

@@ -1,11 +1,6 @@
-// homepage.dart
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:p3l_mobile/services/auth_service.dart';
-import 'catalogue_screen.dart';
-import 'riwayat_pesanan.dart';
-import 'profile.dart';
-import 'package:p3l_mobile/screens/otentikasi/login.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
@@ -13,320 +8,20 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'product_detail.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
-import 'dart:ui';
+import '../screens/otentikasi/login.dart';
 
-const String baseUrl = 'http://10.0.2.2:8000/api';
+const String baseUrl = 'http://192.168.154.254:8000/api';
 
-class PembeliScreen extends StatefulWidget {
-  const PembeliScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  final Function(String)? onCategorySelected; // Callback for category selection
+
+  const HomeScreen({super.key, this.onCategorySelected});
 
   @override
-  _PembeliScreenState createState() => _PembeliScreenState();
+  _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _PembeliScreenState extends State<PembeliScreen>
-    with TickerProviderStateMixin {
-  int _selectedIndex = 0;
-  final AuthService authService = AuthService();
-  AnimationController? _animationController;
-  Animation<double>? _scaleAnimation;
-
-  final List<Widget> _pages = [
-    const HomeTab(),
-    const CatalogueScreen(),
-    const OrderHistoryScreen(),
-    const ProfileScreen(),
-  ];
-
-  final List<NavItem> _navItems = [
-    NavItem(icon: Icons.home_rounded, label: 'Home'),
-    NavItem(icon: Icons.search_rounded, label: 'Catalogue'),
-    NavItem(icon: Icons.receipt_long_rounded, label: 'Orders'),
-    NavItem(icon: Icons.person_rounded, label: 'Profile'),
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeAnimations();
-  }
-
-  void _initializeAnimations() {
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _animationController!,
-      curve: Curves.elasticOut,
-    ));
-  }
-
-  @override
-  void dispose() {
-    _animationController?.dispose();
-    super.dispose();
-  }
-
-  void _onItemTapped(int index) async {
-    if (index == 2 || index == 3) {
-      final token = await authService.getToken();
-      if (token == null) {
-        bool? shouldLogin = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: const Text(
-              'Login Diperlukan',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF77784A),
-              ),
-            ),
-            content: const Text(
-                'Anda harus login untuk mengakses halaman ini. Apakah Anda ingin login sekarang?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text(
-                  'Batal',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text(
-                  'Login',
-                  style: TextStyle(color: Color(0xFF77784A)),
-                ),
-              ),
-            ],
-          ),
-        );
-
-        if (shouldLogin == true && mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const LoginScreen(),
-            ),
-          );
-        }
-        return;
-      }
-    }
-
-    if (_selectedIndex != index) {
-      setState(() {
-        _selectedIndex = index;
-      });
-      _animationController?.forward().then((_) {
-        _animationController?.reverse();
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final Size size = MediaQuery.of(context).size;
-    // Responsive bottom nav height
-    final double navHeight = size.height * 0.1 > 80 ? 80 : size.height * 0.1;
-
-    return Scaffold(
-      body: Stack(
-        children: [
-          _pages[_selectedIndex],
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: navHeight, // Responsive height
-              margin: EdgeInsets.symmetric(horizontal: size.width * 0.03),
-              child: Stack(
-                children: [
-                  PhysicalModel(
-                    color: Colors.transparent,
-                    elevation: 10,
-                    shadowColor: Colors.black.withOpacity(0.4),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(25),
-                      topRight: Radius.circular(25),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(25),
-                        topRight: Radius.circular(25),
-                      ),
-                      child: Container(
-                        height: navHeight,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              const Color(0xFF7A7C52),
-                              const Color(0xFF6A6D42),
-                              const Color(0xFF5A5D32),
-                            ],
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: List.generate(_navItems.length, (index) {
-                            return Expanded(
-                              child: _buildNavItem(index),
-                            );
-                          }),
-                        ),
-                      ),
-                    ),
-                  ),
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOutQuint,
-                    left: (_selectedIndex * (size.width / 4)) +
-                        (size.width / 8) -
-                        (size.width * 0.065), // Responsive indicator width
-                    top: size.height * 0.005,
-                    child: Container(
-                      width: size.width * 0.13, // Responsive indicator width
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.5),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem(int index) {
-    final isSelected = _selectedIndex == index;
-    final navItem = _navItems[index];
-    final size = MediaQuery.of(context).size;
-
-    return GestureDetector(
-      onTap: () => _onItemTapped(index),
-      child: Container(
-        height: size.height * 0.1 > 80 ? 80 : size.height * 0.1, // Responsive height
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              width: isSelected ? size.width * 0.15 : 0, // Responsive width
-              height: isSelected ? size.width * 0.15 : 0,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(isSelected ? 0.15 : 0),
-                borderRadius: BorderRadius.circular(30),
-              ),
-            ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedBuilder(
-                  animation:
-                      _scaleAnimation ?? const AlwaysStoppedAnimation(1.0),
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: isSelected &&
-                              (_animationController?.isAnimating == true)
-                          ? _scaleAnimation?.value ?? 1.0
-                          : 1.0,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        padding: EdgeInsets.all(isSelected ? 8 : 6),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? Colors.white.withOpacity(0.2)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Icon(
-                          navItem.icon,
-                          color: Colors.white,
-                          size: isSelected ? size.width * 0.07 : size.width * 0.06, // Responsive icon size
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                SizedBox(height: size.height * 0.002),
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 300),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: isSelected ? size.width * 0.032 : size.width * 0.028, // Responsive font
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  ),
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 300),
-                    opacity: isSelected ? 1.0 : 0.7,
-                    child: Text(navItem.label),
-                  ),
-                ),
-              ],
-            ),
-            if (isSelected)
-              Positioned.fill(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 600),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(40),
-                    gradient: RadialGradient(
-                      center: Alignment.center,
-                      radius: 1.0,
-                      colors: [
-                        Colors.white.withOpacity(0.1),
-                        Colors.transparent,
-                      ],
-                      stops: const [0.0, 1.0],
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class NavItem {
-  final IconData icon;
-  final String label;
-
-  NavItem({required this.icon, required this.label});
-}
-
-class HomeTab extends StatefulWidget {
-  const HomeTab({super.key});
-
-  @override
-  _HomeTabState createState() => _HomeTabState();
-}
-
-class _HomeTabState extends State<HomeTab> {
+class _HomeScreenState extends State<HomeScreen> {
   bool _isLoggedIn = false;
   final AuthService _authService = AuthService();
   List<dynamic> _categories = [];
@@ -535,7 +230,8 @@ class _HomeTabState extends State<HomeTab> {
             child: Column(
               children: [
                 Padding(
-                  padding: EdgeInsets.all(size.width * 0.04), // Responsive padding
+                  padding:
+                      EdgeInsets.all(size.width * 0.04), // Responsive padding
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -545,10 +241,13 @@ class _HomeTabState extends State<HomeTab> {
                           children: [
                             Expanded(
                               child: Container(
-                                height: size.height * 0.05 > 40 ? 40 : size.height * 0.05, // Responsive height
+                                height: size.height * 0.05 > 40
+                                    ? 40
+                                    : size.height * 0.05, // Responsive height
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.9),
-                                  borderRadius: BorderRadius.circular(size.width * 0.05),
+                                  borderRadius:
+                                      BorderRadius.circular(size.width * 0.05),
                                 ),
                                 child: TextField(
                                   decoration: InputDecoration(
@@ -556,8 +255,8 @@ class _HomeTabState extends State<HomeTab> {
                                     prefixIcon:
                                         Icon(Icons.search, color: Colors.grey),
                                     border: InputBorder.none,
-                                    contentPadding:
-                                        EdgeInsets.symmetric(vertical: size.height * 0.012),
+                                    contentPadding: EdgeInsets.symmetric(
+                                        vertical: size.height * 0.012),
                                   ),
                                 ),
                               ),
@@ -565,10 +264,13 @@ class _HomeTabState extends State<HomeTab> {
                             SizedBox(width: size.width * 0.03),
                             _isLoggedIn
                                 ? Container(
-                                    height: size.height * 0.05 > 40 ? 40 : size.height * 0.05,
+                                    height: size.height * 0.05 > 40
+                                        ? 40
+                                        : size.height * 0.05,
                                     decoration: BoxDecoration(
                                       color: Colors.white.withOpacity(0.4),
-                                      borderRadius: BorderRadius.circular(size.width * 0.025),
+                                      borderRadius: BorderRadius.circular(
+                                          size.width * 0.025),
                                     ),
                                     child: IconButton(
                                       icon: const Icon(Icons.notifications,
@@ -577,10 +279,13 @@ class _HomeTabState extends State<HomeTab> {
                                     ),
                                   )
                                 : Container(
-                                    height: size.height * 0.05 > 40 ? 40 : size.height * 0.05,
+                                    height: size.height * 0.05 > 40
+                                        ? 40
+                                        : size.height * 0.05,
                                     decoration: BoxDecoration(
                                       color: Colors.white.withOpacity(0.4),
-                                      borderRadius: BorderRadius.circular(size.width * 0.025),
+                                      borderRadius: BorderRadius.circular(
+                                          size.width * 0.025),
                                     ),
                                     child: IconButton(
                                       icon: const Icon(Icons.login,
@@ -678,6 +383,7 @@ class _HomeTabState extends State<HomeTab> {
                               isLoading: _isLoadingCategories,
                               errorMessage: _errorMessage,
                               onRetry: _fetchCategories,
+                              onCategorySelected: widget.onCategorySelected,
                             ),
                             SizedBox(height: size.height * 0.03),
                             FadeInUp(
@@ -686,7 +392,10 @@ class _HomeTabState extends State<HomeTab> {
                                 color: oliveGreen.withOpacity(0.3),
                                 width: double.infinity,
                                 padding: EdgeInsets.fromLTRB(
-                                    size.width * 0.04, size.height * 0.03, size.width * 0.04, size.height * 0.03),
+                                    size.width * 0.04,
+                                    size.height * 0.03,
+                                    size.width * 0.04,
+                                    size.height * 0.03),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
@@ -694,7 +403,8 @@ class _HomeTabState extends State<HomeTab> {
                                       'Mengapa Memilih ReuseMart',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        fontSize: size.width * 0.045, // Responsive font
+                                        fontSize: size.width *
+                                            0.045, // Responsive font
                                         color: oliveGreen,
                                       ),
                                     ),
@@ -728,21 +438,29 @@ class _HomeTabState extends State<HomeTab> {
                               duration: const Duration(milliseconds: 1200),
                               child: Padding(
                                 padding: EdgeInsets.fromLTRB(
-                                    size.width * 0.04, size.height * 0.03, size.width * 0.04, size.height * 0.03),
+                                    size.width * 0.04,
+                                    size.height * 0.03,
+                                    size.width * 0.04,
+                                    size.height * 0.03),
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(size.width * 0.04),
+                                    borderRadius: BorderRadius.circular(
+                                        size.width * 0.04),
                                     image: const DecorationImage(
                                       image: AssetImage(
                                           'assets/images/hero-bg.png'),
                                       fit: BoxFit.cover,
                                     ),
                                   ),
-                                  height: size.height * 0.45 > 390 ? 390 : size.height * 0.45, // Responsive height
+                                  height: size.height * 0.4 > 350
+                                      ? 350
+                                      : size.height *
+                                          0.4, // Adjusted responsive height
                                   width: double.infinity,
                                   child: Container(
                                     decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(size.width * 0.04),
+                                      borderRadius: BorderRadius.circular(
+                                          size.width * 0.04),
                                       gradient: const LinearGradient(
                                         colors: [
                                           Colors.black12,
@@ -753,41 +471,54 @@ class _HomeTabState extends State<HomeTab> {
                                         end: Alignment.bottomCenter,
                                       ),
                                     ),
-                                    padding: EdgeInsets.all(size.width * 0.06),
+                                    padding: EdgeInsets.all(
+                                        size.width * 0.04), // Reduced padding
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        SizedBox(height: size.height * 0.15),
+                                        SizedBox(
+                                            height: size.height *
+                                                0.1), // Reduced top space
                                         Text(
                                           'Temukan Barang Berkualitas dengan Mudah',
                                           style: TextStyle(
                                             color: Colors.white,
-                                            fontSize: size.width * 0.045, // Responsive font
+                                            fontSize: size.width * 0.045,
                                             fontWeight: FontWeight.bold,
                                           ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        SizedBox(height: size.height * 0.01),
+                                        SizedBox(
+                                            height: size.height *
+                                                0.005), // Reduced spacing
                                         Text(
                                           'Daftar sekarang sebagai pembeli dan jelajahi ribuan produk preloved yang telah dikurasi. Hemat lebih banyak, temukan lebih cepat.',
                                           style: TextStyle(
                                             color: Colors.white70,
-                                            fontSize: size.width * 0.035, // Responsive font
+                                            fontSize: size.width * 0.035,
                                           ),
                                           textAlign: TextAlign.justify,
+                                          maxLines: 3,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        SizedBox(height: size.height * 0.015),
+                                        SizedBox(
+                                            height: size.height *
+                                                0.01), // Reduced spacing
                                         Center(
                                           child: ElevatedButton(
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: oliveGreen,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius:
-                                                    BorderRadius.circular(size.width * 0.03),
+                                                    BorderRadius.circular(
+                                                        size.width * 0.03),
                                               ),
                                               padding: EdgeInsets.symmetric(
-                                                  vertical: size.height * 0.015,
-                                                  horizontal: size.width * 0.06),
+                                                  vertical: size.height * 0.01,
+                                                  horizontal: size.width *
+                                                      0.04), // Reduced button padding
                                             ),
                                             onPressed: () {},
                                             child: Text(
@@ -795,8 +526,12 @@ class _HomeTabState extends State<HomeTab> {
                                               style: TextStyle(
                                                 color: Colors.white,
                                                 fontWeight: FontWeight.bold,
-                                                fontSize: size.width * 0.034, // Responsive font
+                                                fontSize: size.width *
+                                                    0.032, // Slightly smaller font
                                               ),
+                                              textAlign: TextAlign.center,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
                                         ),
@@ -812,7 +547,10 @@ class _HomeTabState extends State<HomeTab> {
                               child: Container(
                                 width: double.infinity,
                                 padding: EdgeInsets.fromLTRB(
-                                    size.width * 0.04, size.height * 0.03, size.width * 0.04, size.height * 0.03),
+                                    size.width * 0.04,
+                                    size.height * 0.03,
+                                    size.width * 0.04,
+                                    size.height * 0.03),
                                 color: const Color(0xFF7A7C52),
                                 constraints: BoxConstraints(
                                   minHeight: size.height * 0.3,
@@ -824,7 +562,7 @@ class _HomeTabState extends State<HomeTab> {
                                     Text(
                                       'ReUseMart',
                                       style: TextStyle(
-                                        fontSize: size.width * 0.045, // Responsive font
+                                        fontSize: size.width * 0.045,
                                         fontWeight: FontWeight.w700,
                                         color: Colors.white,
                                       ),
@@ -835,18 +573,18 @@ class _HomeTabState extends State<HomeTab> {
                                       'ReuseMart adalah platform jual beli barang bekas terpercaya di Yogyakarta, mendukung transaksi mudah dan ramah lingkungan. Gabunglah dengan kami untuk menemukan barang berkualitas dengan harga terjangkau.',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
-                                          fontSize: size.width * 0.03, // Responsive font
+                                          fontSize: size.width * 0.03,
                                           color: Colors.white70),
                                     ),
-                                    SizedBox(height: size.height * 0.01),
+                                    SizedBox(height: size.height * 0.005),
                                     Text(
                                       '© 2025 ReuseMart. All Rights Reserved.',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
-                                          fontSize: size.width * 0.03, // Responsive font
+                                          fontSize: size.width * 0.03,
                                           color: Colors.white70),
                                     ),
-                                    SizedBox(height: size.height * 0.01),
+                                    SizedBox(height: size.height * 0.005),
                                     Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
@@ -854,7 +592,7 @@ class _HomeTabState extends State<HomeTab> {
                                         Text(
                                           'Privacy Policy',
                                           style: TextStyle(
-                                            fontSize: size.width * 0.03, // Responsive font
+                                            fontSize: size.width * 0.03,
                                             color: Colors.white70,
                                             decoration:
                                                 TextDecoration.underline,
@@ -864,7 +602,7 @@ class _HomeTabState extends State<HomeTab> {
                                         Text(
                                           'Terms of Service',
                                           style: TextStyle(
-                                            fontSize: size.width * 0.03, // Responsive font
+                                            fontSize: size.width * 0.03,
                                             color: Colors.white70,
                                             decoration:
                                                 TextDecoration.underline,
@@ -872,6 +610,7 @@ class _HomeTabState extends State<HomeTab> {
                                         ),
                                       ],
                                     ),
+                                    SizedBox(height: size.height * 0.12),
                                   ],
                                 ),
                               ),
@@ -937,8 +676,8 @@ class ProductSection extends StatelessWidget {
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: Colors.grey,
-                    borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(size.width * 0.03)),
+                    borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(size.width * 0.03)),
                   ),
                 ),
                 Padding(
@@ -986,7 +725,9 @@ class ProductSection extends StatelessWidget {
           ),
           SizedBox(height: size.height * 0.015),
           SizedBox(
-            height: size.width * 0.45 > 180 ? 180 : size.width * 0.45, // Responsive height
+            height: size.width * 0.45 > 180
+                ? 180
+                : size.width * 0.45, // Responsive height
             child: isLoading
                 ? _buildProductLoadingShimmer(context)
                 : errorMessage != null
@@ -1009,7 +750,8 @@ class ProductSection extends StatelessWidget {
                                 'Coba Lagi',
                                 style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: size.width * 0.035), // Responsive font
+                                    fontSize:
+                                        size.width * 0.035), // Responsive font
                               ),
                             ),
                           ],
@@ -1024,15 +766,17 @@ class ProductSection extends StatelessWidget {
                               final int secondProductIndex =
                                   firstProductIndex + 1;
                               return Padding(
-                                padding:
-                                    EdgeInsets.symmetric(horizontal: size.width * 0.015),
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: size.width * 0.015),
                                 child: Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     ProductCard(
                                       id: products[firstProductIndex]['id'],
-                                      title: products[firstProductIndex]['name'],                                      price: products[firstProductIndex]
+                                      title: products[firstProductIndex]
+                                          ['name'],
+                                      price: products[firstProductIndex]
                                               ['price']
                                           .toString(),
                                       imageUrl: products[firstProductIndex]
@@ -1105,7 +849,8 @@ class ProductCard extends StatelessWidget {
       },
       child: Card(
         elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(size.width * 0.03)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(size.width * 0.03)),
         child: Container(
           width: size.width * 0.4, // Responsive width
           height: size.width * 0.4, // Responsive height
@@ -1118,11 +863,12 @@ class ProductCard extends StatelessWidget {
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(size.width * 0.03)),
+                  borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(size.width * 0.03)),
                 ),
                 child: ClipRRect(
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(size.width * 0.03)),
+                  borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(size.width * 0.03)),
                   child: imageUrl != '/api/placeholder/60/60'
                       ? CachedNetworkImage(
                           imageUrl: imageUrl,
@@ -1188,6 +934,7 @@ class CategorySection extends StatelessWidget {
   final bool isLoading;
   final String? errorMessage;
   final VoidCallback onRetry;
+  final Function(String)? onCategorySelected;
 
   const CategorySection({
     super.key,
@@ -1196,6 +943,7 @@ class CategorySection extends StatelessWidget {
     required this.isLoading,
     this.errorMessage,
     required this.onRetry,
+    this.onCategorySelected,
   });
 
   List<List<Map<String, dynamic>>> _groupCategories() {
@@ -1251,7 +999,8 @@ class CategorySection extends StatelessWidget {
     final double cardWidth = size.width * 0.45; // Responsive card width
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: size.width * 0.04, vertical: size.height * 0.01),
+      padding: EdgeInsets.symmetric(
+          horizontal: size.width * 0.04, vertical: size.height * 0.01),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1265,7 +1014,9 @@ class CategorySection extends StatelessWidget {
           ),
           SizedBox(height: size.height * 0.01),
           SizedBox(
-            height: size.width * 0.3 > 120 ? 120 : size.width * 0.3, // Responsive height
+            height: size.width * 0.3 > 120
+                ? 120
+                : size.width * 0.3, // Responsive height
             child: isLoading
                 ? _buildCategoryLoadingShimmer(context)
                 : errorMessage != null
@@ -1288,7 +1039,8 @@ class CategorySection extends StatelessWidget {
                                 'Coba Lagi',
                                 style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: size.width * 0.035), // Responsive font
+                                    fontSize:
+                                        size.width * 0.035), // Responsive font
                               ),
                             ),
                           ],
@@ -1303,32 +1055,28 @@ class CategorySection extends StatelessWidget {
                             itemBuilder: (context, index) {
                               final pair = groupedCategories[index];
                               return Padding(
-                                padding: EdgeInsets.only(right: size.width * 0.04),
+                                padding:
+                                    EdgeInsets.only(right: size.width * 0.04),
                                 child: Column(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: pair.map((category) {
                                     return GestureDetector(
                                       onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                CatalogueScreen(
-                                              selectedCategory:
-                                                  category['name'],
-                                            ),
-                                          ),
-                                        );
+                                        if (onCategorySelected != null) {
+                                          onCategorySelected!(category['name']);
+                                        }
                                       },
                                       child: SizedBox(
                                         width: cardWidth,
-                                        height: size.width * 0.145, // Responsive height
+                                        height: size.width *
+                                            0.145, // Responsive height
                                         child: Card(
                                           color: Colors.white,
                                           shape: RoundedRectangleBorder(
                                               borderRadius:
-                                                  BorderRadius.circular(size.width * 0.02)),
+                                                  BorderRadius.circular(
+                                                      size.width * 0.02)),
                                           child: Padding(
                                             padding: EdgeInsets.symmetric(
                                                 horizontal: size.width * 0.03,
@@ -1337,16 +1085,19 @@ class CategorySection extends StatelessWidget {
                                               children: [
                                                 Icon(
                                                   category['icon'],
-                                                  size: size.width * 0.06, // Responsive icon size
+                                                  size: size.width *
+                                                      0.06, // Responsive icon size
                                                   color:
                                                       const Color(0xFF1A3C34),
                                                 ),
-                                                SizedBox(width: size.width * 0.02),
+                                                SizedBox(
+                                                    width: size.width * 0.02),
                                                 Expanded(
                                                   child: Text(
                                                     category['name'],
                                                     style: TextStyle(
-                                                      fontSize: size.width * 0.03, // Responsive font
+                                                      fontSize: size.width *
+                                                          0.03, // Responsive font
                                                       color: Colors.black,
                                                     ),
                                                     textAlign: TextAlign.left,
@@ -1419,7 +1170,8 @@ class _InfoCard extends StatelessWidget {
     final size = MediaQuery.of(context).size;
     return Container(
       width: (size.width - 56) / 2, // Keep original logic but ensure it scales
-      height: size.width * 0.3 > 120 ? 120 : size.width * 0.3, // Responsive height
+      height:
+          size.width * 0.3 > 120 ? 120 : size.width * 0.3, // Responsive height
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(size.width * 0.03),
         gradient: const LinearGradient(
@@ -1435,7 +1187,9 @@ class _InfoCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.white, size: size.width * 0.07), // Responsive icon size
+            Icon(icon,
+                color: Colors.white,
+                size: size.width * 0.07), // Responsive icon size
             SizedBox(height: size.height * 0.01),
             Text(
               label,

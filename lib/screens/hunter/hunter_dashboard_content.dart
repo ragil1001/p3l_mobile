@@ -23,14 +23,36 @@ class _DashboardContentState extends State<DashboardContent> {
   String? _errorMessage;
   final AuthService _authService = AuthService();
   List<dynamic> _hauntedItems = [];
+  List<dynamic> _filteredItems = [];
+  final TextEditingController _searchController = TextEditingController();
+  String _selectedStatus = 'All';
+  final List<String> _statusFilters = [
+    'All',
+    'Tersedia',
+    'Terjual',
+    'Didonasikan',
+    'Dikembalikan',
+    'Kadaluarsa',
+    'Siap Diambil Kembali',
+    'Hangus'
+  ];
 
   @override
   void initState() {
     super.initState();
     _fetchDashboardData();
+    _searchController.addListener(_filterItems);
   }
 
-  Future<void> _fetchDashboardData() async {
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // In _DashboardContentState class
+
+  Future<void> _fetchDashboardData({String? search, String? status}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = await _authService.getToken();
@@ -46,7 +68,7 @@ class _DashboardContentState extends State<DashboardContent> {
       }
 
       final profileResponse = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/auth/profile'),
+        Uri.parse('http://192.168.154.254:8000/api/auth/profile'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -66,20 +88,26 @@ class _DashboardContentState extends State<DashboardContent> {
           return;
         }
 
-        final hunterId = await _authService.getUserId();
-
-        // Fetch commissions for stats
         final commissionResponse = await http.get(
-          Uri.parse('http://10.0.2.2:8000/api/hunter/komisi'),
+          Uri.parse('http://192.168.154.254:8000/api/hunter/komisi'),
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
           },
         );
 
-        // Fetch consigned items for Haunted Items
+        // Build query parameters for consigned items
+        final queryParams = <String, String>{};
+        if (search != null && search.isNotEmpty) {
+          queryParams['search'] = search;
+        }
+        if (status != null && status != 'All') {
+          queryParams['status'] = status;
+        }
+
         final itemsResponse = await http.get(
-          Uri.parse('http://10.0.2.2:8000/api/hunter/barang-titipan'),
+          Uri.parse('http://192.168.154.254:8000/api/hunter/barang-titipan')
+              .replace(queryParameters: queryParams),
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
@@ -117,11 +145,11 @@ class _DashboardContentState extends State<DashboardContent> {
               'status': item['status'] ?? 'Pending',
               'product_image': item['product_image'] != null &&
                       item['product_image'] != '/api/placeholder/60/60'
-                  ? 'http://10.0.2.2:8000/api/products/${item['KODE_PRODUK']}/thumbnail'
-                  : 'http://10.0.2.2:8000/api/placeholder/60/60',
+                  ? 'http://192.168.154.254:8000/api/products/${item['KODE_PRODUK']}/thumbnail'
+                  : 'http://192.168.154.254:8000/api/placeholder/60/60',
             };
           }).toList();
-          totalItemsHunted = hauntedItems.length; // Count total consigned items
+          totalItemsHunted = hauntedItems.length;
         } else {
           final errorData = jsonDecode(itemsResponse.body);
           if (mounted) {
@@ -142,6 +170,7 @@ class _DashboardContentState extends State<DashboardContent> {
               'name': profileData['user']['nama'],
             };
             _hauntedItems = hauntedItems;
+            _filteredItems = hauntedItems;
             _isLoading = false;
           });
         }
@@ -177,8 +206,16 @@ class _DashboardContentState extends State<DashboardContent> {
     }
   }
 
+  void _filterItems() {
+    final query = _searchController.text;
+    final status = _selectedStatus;
+    // Trigger API call with search and status
+    _fetchDashboardData(search: query, status: status);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     final oliveGreen = const Color(0xFF7A7C52);
 
     return Scaffold(
@@ -187,11 +224,7 @@ class _DashboardContentState extends State<DashboardContent> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.grey[50]!,
-              Colors.white,
-              Colors.grey[50]!,
-            ],
+            colors: [Colors.grey[50]!, Colors.white, Colors.grey[50]!],
           ),
         ),
         child: CustomScrollView(
@@ -212,27 +245,27 @@ class _DashboardContentState extends State<DashboardContent> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(25),
-                    bottomRight: Radius.circular(25),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(size.width * 0.06),
+                    bottomRight: Radius.circular(size.width * 0.06),
                   ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.3),
-                      blurRadius: 15,
+                      blurRadius: size.width * 0.04,
                       offset: const Offset(0, 5),
                     ),
                   ],
                 ),
-                height: 140,
+                height: size.height * 0.18,
                 child: Stack(
                   children: [
                     Positioned(
-                      top: -50,
-                      right: -50,
+                      top: -size.height * 0.06,
+                      right: -size.width * 0.12,
                       child: Container(
-                        width: 150,
-                        height: 150,
+                        width: size.width * 0.35,
+                        height: size.width * 0.35,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.white.withOpacity(0.05),
@@ -240,11 +273,11 @@ class _DashboardContentState extends State<DashboardContent> {
                       ),
                     ),
                     Positioned(
-                      bottom: -30,
-                      left: -30,
+                      bottom: -size.height * 0.04,
+                      left: -size.width * 0.08,
                       child: Container(
-                        width: 100,
-                        height: 100,
+                        width: size.width * 0.25,
+                        height: size.width * 0.25,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.white.withOpacity(0.03),
@@ -253,21 +286,23 @@ class _DashboardContentState extends State<DashboardContent> {
                     ),
                     SafeArea(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0, vertical: 12.0),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: size.width * 0.04,
+                          vertical: size.height * 0.015,
+                        ),
                         child: Row(
                           children: [
-                            const SizedBox(width: 48),
+                            SizedBox(width: size.width * 0.12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Hunter Dashboard',
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 20,
+                                      fontSize: size.width * 0.05,
                                       fontWeight: FontWeight.bold,
                                       height: 1.2,
                                     ),
@@ -299,8 +334,9 @@ class _DashboardContentState extends State<DashboardContent> {
   }
 
   Widget _buildLoadingShimmer() {
+    final size = MediaQuery.of(context).size;
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.all(size.width * 0.04),
       child: Shimmer.fromColors(
         baseColor: Colors.grey[300]!,
         highlightColor: Colors.grey[100]!,
@@ -308,36 +344,36 @@ class _DashboardContentState extends State<DashboardContent> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              height: 100,
+              height: size.height * 0.12,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(size.width * 0.03),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: size.height * 0.02),
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: size.width < 600 ? 2 : 3,
                 childAspectRatio: 1.2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
+                crossAxisSpacing: size.width * 0.04,
+                mainAxisSpacing: size.width * 0.04,
               ),
               itemCount: 2,
               itemBuilder: (context, index) => Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(size.width * 0.03),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: size.height * 0.03),
             Container(
-              height: 200,
+              height: size.height * 0.25,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(size.width * 0.03),
               ),
             ),
           ],
@@ -347,47 +383,52 @@ class _DashboardContentState extends State<DashboardContent> {
   }
 
   Widget _buildErrorState() {
+    final size = MediaQuery.of(context).size;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           BounceInDown(
             child: Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(size.width * 0.05),
               decoration: BoxDecoration(
                 color: Colors.grey[100],
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.error_outline,
-                size: 80,
+                size: size.width * 0.2,
                 color: Colors.red[400],
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: size.height * 0.03),
           FadeInUp(
             delay: const Duration(milliseconds: 300),
             child: Text(
               'Gagal Memuat Data',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: size.width * 0.05,
                 color: Colors.grey[700],
                 fontWeight: FontWeight.w600,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: size.height * 0.01),
           FadeInUp(
             delay: const Duration(milliseconds: 500),
             child: Text(
               _errorMessage!,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: size.width * 0.04,
                 color: Colors.grey[500],
                 fontWeight: FontWeight.w400,
               ),
               textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -396,8 +437,9 @@ class _DashboardContentState extends State<DashboardContent> {
   }
 
   Widget _buildContent() {
+    final size = MediaQuery.of(context).size;
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.all(size.width * 0.04),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -409,31 +451,37 @@ class _DashboardContentState extends State<DashboardContent> {
             duration: const Duration(milliseconds: 1000),
             child: _buildStatsGrid(),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: size.height * 0.03),
           FadeInUp(
             duration: const Duration(milliseconds: 1200),
+            child: _buildSearchAndFilter(),
+          ),
+          SizedBox(height: size.height * 0.02),
+          FadeInUp(
+            duration: const Duration(milliseconds: 1400),
             child: _buildHauntedItemsSection(),
           ),
-          const SizedBox(height: 80),
+          SizedBox(height: size.height * 0.1),
         ],
       ),
     );
   }
 
   Widget _buildWelcomeSection() {
+    final size = MediaQuery.of(context).size;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(size.width * 0.04),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF7A7C52), Color(0xFF5A5D3A)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(size.width * 0.03),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
+            blurRadius: size.width * 0.02,
             offset: const Offset(0, 4),
           ),
         ],
@@ -443,19 +491,23 @@ class _DashboardContentState extends State<DashboardContent> {
         children: [
           Text(
             'Welcome, ${_dashboardData!['name']}!',
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 20,
+              fontSize: size.width * 0.05,
               fontWeight: FontWeight.bold,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: size.height * 0.01),
           Text(
-            'Track your hunting items and commissions here.',
+            'Manage your consigned items here.',
             style: TextStyle(
               color: Colors.white.withOpacity(0.9),
-              fontSize: 14,
+              fontSize: size.width * 0.035,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -463,6 +515,7 @@ class _DashboardContentState extends State<DashboardContent> {
   }
 
   Widget _buildStatsGrid() {
+    final size = MediaQuery.of(context).size;
     final stats = [
       {
         'title': 'Items Hunted',
@@ -482,38 +535,122 @@ class _DashboardContentState extends State<DashboardContent> {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: size.width < 600 ? 2 : 3,
         childAspectRatio: 1.2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
+        crossAxisSpacing: size.width * 0.04,
+        mainAxisSpacing: size.width * 0.04,
       ),
       itemCount: stats.length,
       itemBuilder: (context, index) => _buildStatCard(stats[index]),
     );
   }
 
+  Widget _buildSearchAndFilter() {
+    final size = MediaQuery.of(context).size;
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(size.width * 0.02),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: size.width * 0.02,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search by product, penitip, or code...',
+                prefixIcon: Icon(Icons.search, size: size.width * 0.05),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(size.width * 0.02),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: EdgeInsets.symmetric(
+                  vertical: size.height * 0.015,
+                  horizontal: size.width * 0.04,
+                ),
+              ),
+              style: TextStyle(fontSize: size.width * 0.035),
+            ),
+          ),
+        ),
+        SizedBox(width: size.width * 0.03),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(size.width * 0.02),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: size.width * 0.02,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: DropdownButton<String>(
+            value: _selectedStatus,
+            items: _statusFilters.map((String status) {
+              return DropdownMenuItem<String>(
+                value: status,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: size.width * 0.04),
+                  child: Text(
+                    status,
+                    style: TextStyle(fontSize: size.width * 0.035),
+                  ),
+                ),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              setState(() {
+                _selectedStatus = newValue!;
+                _filterItems();
+              });
+            },
+            underline: const SizedBox(),
+            icon: Icon(Icons.filter_list, size: size.width * 0.05),
+            borderRadius: BorderRadius.circular(size.width * 0.02),
+            padding: EdgeInsets.symmetric(
+              vertical: size.height * 0.01,
+              horizontal: size.width * 0.02,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildHauntedItemsSection() {
+    final size = MediaQuery.of(context).size;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Haunted Items',
+        Text(
+          'Consigned Items',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: size.width * 0.045,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF7A7C52),
+            color: const Color(0xFF7A7C52),
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 16),
-        _hauntedItems.isEmpty
+        SizedBox(height: size.height * 0.02),
+        _filteredItems.isEmpty
             ? _buildEmptyHauntedItems()
             : ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: _hauntedItems.length,
+                itemCount: _filteredItems.length,
                 itemBuilder: (context, index) {
-                  final item = _hauntedItems[index];
+                  final item = _filteredItems[index];
                   return FadeInUp(
                     duration: Duration(milliseconds: 600 + (index * 200)),
                     child: _buildHauntedItemCard(item),
@@ -525,22 +662,25 @@ class _DashboardContentState extends State<DashboardContent> {
   }
 
   Widget _buildEmptyHauntedItems() {
+    final size = MediaQuery.of(context).size;
     return Center(
       child: Column(
         children: [
           Icon(
             Icons.inventory_2_outlined,
-            size: 80,
+            size: size.width * 0.2,
             color: Colors.grey[400],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: size.height * 0.02),
           Text(
-            'Belum ada barang yang dihunting',
+            'Belum ada barang titipan',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: size.width * 0.04,
               color: Colors.grey[700],
               fontWeight: FontWeight.w600,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -548,6 +688,7 @@ class _DashboardContentState extends State<DashboardContent> {
   }
 
   Widget _buildHauntedItemCard(Map<String, dynamic> item) {
+    final size = MediaQuery.of(context).size;
     Color getStatusColor() {
       switch (item['status']) {
         case 'Tersedia':
@@ -569,127 +710,181 @@ class _DashboardContentState extends State<DashboardContent> {
       }
     }
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CommissionDetailScreen(
-              commission: Commission(
-                commissionId: item['KODE_PRODUK'],
-                productName: item['product_name'],
-                penitipName: item['penitip_name'],
-                amount: 0, // No commission data for consigned items
-                date: item['consignment_date'],
-                status: item['status'],
-                imagePath: item['product_image'],
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(size.width * 0.03),
+      ),
+      margin: EdgeInsets.only(bottom: size.height * 0.02),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, Colors.grey[50]!],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(size.width * 0.03),
+        ),
+        padding: EdgeInsets.all(size.width * 0.04),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(size.width * 0.02),
+                  child: CachedNetworkImage(
+                    imageUrl: item['product_image'],
+                    width: size.width * 0.15,
+                    height: size.width * 0.15,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        width: size.width * 0.15,
+                        height: size.width * 0.15,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    errorWidget: (context, url, error) {
+                      print('Image Load Error for $url: $error');
+                      return Container(
+                        width: size.width * 0.15,
+                        height: size.width * 0.15,
+                        color: Colors.grey[200],
+                        child: const Icon(
+                          Icons.image_not_supported,
+                          color: Colors.grey,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(width: size.width * 0.04),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item['product_name'],
+                        style: TextStyle(
+                          fontSize: size.width * 0.04,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1A3C34),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: size.height * 0.005),
+                      Text(
+                        item['penitip_name'],
+                        style: TextStyle(
+                          fontSize: size.width * 0.035,
+                          color: Colors.grey,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: size.height * 0.01),
+            Text(
+              'Kode: ${item['KODE_PRODUK']}',
+              style: TextStyle(
+                fontSize: size.width * 0.035,
+                color: Colors.grey,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: size.height * 0.01),
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: size.width * 0.02,
+                vertical: size.height * 0.005,
+              ),
+              decoration: BoxDecoration(
+                color: getStatusColor(),
+                borderRadius: BorderRadius.circular(size.width * 0.03),
+              ),
+              child: Text(
+                item['status'],
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: size.width * 0.025,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-          ),
-        );
-      },
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        margin: const EdgeInsets.only(bottom: 16),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.white, Colors.grey[50]!],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: CachedNetworkImage(
-                  imageUrl: item['product_image'],
-                  width: 60,
-                  height: 60,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Shimmer.fromColors(
-                    baseColor: Colors.grey[300]!,
-                    highlightColor: Colors.grey[100]!,
-                    child: Container(
-                      width: 60,
-                      height: 60,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  errorWidget: (context, url, error) {
-                    print('Image Load Error for $url: $error');
-                    return Container(
-                      width: 60,
-                      height: 60,
-                      color: Colors.grey[200],
-                      child: const Icon(
-                        Icons.image_not_supported,
-                        color: Colors.grey,
+            SizedBox(height: size.height * 0.015),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CommissionDetailScreen(
+                          commission: Commission(
+                            commissionId: item['KODE_PRODUK'],
+                            productName: item['product_name'],
+                            penitipName: item['penitip_name'],
+                            amount: 0,
+                            date: item['consignment_date'],
+                            status: item['status'],
+                            imagePath: item['product_image'],
+                            transactionDate: item['transaction_date'] ??
+                                item['consignment_date'],
+                            consignmentDate: item['consignment_date'],
+                            sellingPrice: item['selling_price'] ?? 0,
+                          ),
+                        ),
                       ),
                     );
                   },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF7A7C52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(size.width * 0.02),
+                      side: const BorderSide(color: Color(0xFF7A7C52)),
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: size.width * 0.04,
+                      vertical: size.height * 0.01,
+                    ),
+                    elevation: 2,
+                  ),
+                  child: Text(
+                    'Lihat Detail',
+                    style: TextStyle(
+                      fontSize: size.width * 0.035,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item['product_name'],
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A3C34),
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item['penitip_name'],
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: getStatusColor(),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        item['status'],
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildStatCard(Map<String, dynamic> stat) {
+    final size = MediaQuery.of(context).size;
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(size.width * 0.03),
       ),
       child: Container(
         decoration: BoxDecoration(
@@ -698,39 +893,43 @@ class _DashboardContentState extends State<DashboardContent> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(size.width * 0.03),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(size.width * 0.04),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(stat['icon'], color: stat['color'], size: 28),
-                  const SizedBox(width: 8),
+                  Icon(
+                    stat['icon'],
+                    color: stat['color'],
+                    size: size.width * 0.07,
+                  ),
+                  SizedBox(width: size.width * 0.02),
                   Flexible(
                     child: Text(
                       stat['title'],
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: size.width * 0.035,
                         fontWeight: FontWeight.bold,
                       ),
-                      softWrap: true,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  stat['value'].toString(),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+              SizedBox(height: size.height * 0.01),
+              Text(
+                stat['value'].toString(),
+                style: TextStyle(
+                  fontSize: size.width * 0.05,
+                  fontWeight: FontWeight.bold,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

@@ -25,6 +25,22 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
   ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
   List<Transaction> _transactions = [];
+  String _selectedStatus = "Semua";
+  String _sortBy = "Tanggal Pesanan";
+  bool _isAscending = false;
+
+  final List<String> _statusFilters = [
+    "Semua",
+    "Menunggu Pembayaran",
+    "Menunggu Verifikasi",
+    "Sedang Dikemas",
+    "Siap Dikirim",
+    "Sedang Dikirim",
+    "Siap Diambil",
+    "Sudah Diambil",
+    "Sudah Diterima",
+    "Dibatalkan",
+  ];
 
   @override
   void initState() {
@@ -69,7 +85,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
       }
 
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/pembeli/transaksi'),
+        Uri.parse('http://192.168.154.254:8000/api/pembeli/transaksi'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -97,8 +113,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
             final penitipName =
                 product['nama_penitip'] as String? ?? 'Unknown Penitip';
             product['image'] = product['image'] != '/api/placeholder/60/60'
-                ? 'http://10.0.2.2:8000/api/products/${product['product_id']}/thumbnail'
-                : 'http://10.0.2.2:8000/api/placeholder/60/60';
+                ? 'http://192.168.154.254:8000/api/products/${product['product_id']}/thumbnail'
+                : 'http://192.168.154.254:8000/api/placeholder/60/60';
             if (!groupedProducts.containsKey(penitipName)) {
               groupedProducts[penitipName] = [];
             }
@@ -196,7 +212,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
     if (isScrolled) {
       return availableWidth < 250 ? 'Riwayat Pesanan' : 'Riwayat Pesanan';
     } else {
-      return availableWidth < 300 ? 'Riwayat\nPesanan' : 'Riwayat Pesanan';
+      return availableWidth < 150 ? 'Riwayat\nPesanan' : 'Riwayat Pesanan';
     }
   }
 
@@ -204,11 +220,32 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
     if (isScrolled) {
       return availableWidth < 250 ? 14 : 16;
     } else {
-      return availableWidth < 300 ? 16 : 18;
+      return availableWidth < 150 ? 12 : 16;
     }
   }
 
+  List<Transaction> _getFilteredAndSortedTransactions() {
+    List<Transaction> filtered = _selectedStatus == "Semua"
+        ? _transactions
+        : _transactions.where((tx) => tx.status == _selectedStatus).toList();
+
+    filtered.sort((a, b) {
+      if (_sortBy == "No. Nota") {
+        return _isAscending
+            ? a.transactionId.compareTo(b.transactionId)
+            : b.transactionId.compareTo(a.transactionId);
+      } else {
+        return _isAscending
+            ? a.date.compareTo(b.date)
+            : b.date.compareTo(a.date);
+      }
+    });
+
+    return filtered;
+  }
+
   Widget _buildTransactionList() {
+    final filteredTransactions = _getFilteredAndSortedTransactions();
     return FadeTransition(
       opacity: _fadeController,
       child: SlideTransition(
@@ -226,14 +263,14 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
             horizontal: MediaQuery.of(context).size.width * 0.04,
             vertical: 8,
           ),
-          itemCount: _transactions.length,
+          itemCount: filteredTransactions.length,
           itemBuilder: (context, index) {
             return FadeInUp(
               duration: Duration(milliseconds: 600 + (index * 200)),
               child: SlideInLeft(
                 duration: Duration(milliseconds: 800 + (index * 150)),
                 child: TransactionCard(
-                  transaction: _transactions[index],
+                  transaction: filteredTransactions[index],
                   index: index,
                 ),
               ),
@@ -377,6 +414,128 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
     );
   }
 
+  Widget _buildFilterSection() {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.of(context).size.width * 0.04,
+        vertical: 8,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _statusFilters.map((status) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: ChoiceChip(
+                    label: Text(
+                      status,
+                      style: TextStyle(
+                        fontSize: MediaQuery.of(context).size.width * 0.035,
+                        fontWeight: FontWeight.w500,
+                        color: _selectedStatus == status
+                            ? Colors.white
+                            : const Color(0xFF1A3C34),
+                      ),
+                    ),
+                    selected: _selectedStatus == status,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() {
+                          _selectedStatus = status;
+                        });
+                      }
+                    },
+                    selectedColor: const Color(0xFF7A7C52),
+                    backgroundColor: Colors.grey[100],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(
+                        color: const Color(0xFF7A7C52).withOpacity(0.2),
+                      ),
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: MediaQuery.of(context).size.width * 0.03,
+                      vertical: 4,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _sortBy,
+                  decoration: InputDecoration(
+                    labelText: 'Urutkan Berdasarkan',
+                    labelStyle: TextStyle(
+                      fontSize: MediaQuery.of(context).size.width * 0.035,
+                      color: Colors.grey[600],
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: const Color(0xFF7A7C52).withOpacity(0.2),
+                      ),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: MediaQuery.of(context).size.width * 0.03,
+                      vertical: 10,
+                    ),
+                  ),
+                  items: ['Tanggal Pesanan', 'No. Nota']
+                      .map((sortOption) => DropdownMenuItem(
+                            value: sortOption,
+                            child: Text(
+                              sortOption,
+                              style: TextStyle(
+                                fontSize:
+                                    MediaQuery.of(context).size.width * 0.035,
+                                color: const Color(0xFF1A3C34),
+                              ),
+                            ),
+                          ))
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _sortBy = value!;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(width: 8),
+              IconButton(
+                icon: Icon(
+                  _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                  color: const Color(0xFF7A7C52),
+                  size: MediaQuery.of(context).size.width * 0.06,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isAscending = !_isAscending;
+                  });
+                },
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.grey[50],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final oliveGreen = const Color(0xFF7A7C52);
@@ -402,137 +561,162 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
               floating: false,
               elevation: 8,
               backgroundColor: Colors.transparent,
-              
-              expandedHeight: _isScrolled ? 90 : MediaQuery.of(context).size.height * 0.1,
+              expandedHeight:
+                  _isScrolled ? 90 : MediaQuery.of(context).size.height * 0.1,
               flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        oliveGreen,
-                        oliveGreen.withOpacity(0.9),
-                        const Color(0xFF5A5D3A),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(25),
-                      bottomRight: Radius.circular(25),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
-                      ),
-                      BoxShadow(
-                        color: oliveGreen.withOpacity(0.2),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
+                background: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(25),
+                    bottomRight: Radius.circular(25),
                   ),
-                  child: Stack(
-                    children: [
-                      Positioned(
-                        top: -50,
-                        right: -50,
-                        child: Container(
-                          width: MediaQuery.of(context).size.width * 0.4,
-                          height: MediaQuery.of(context).size.width * 0.4,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.05),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          oliveGreen,
+                          oliveGreen.withOpacity(0.9),
+                          const Color(0xFF5A5D3A),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                        BoxShadow(
+                          color: oliveGreen.withOpacity(0.2),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          top: -50,
+                          right: -50,
+                          child: Container(
+                            width: MediaQuery.of(context).size.width * 0.4,
+                            height: MediaQuery.of(context).size.width * 0.4,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.05),
+                            ),
                           ),
                         ),
-                      ),
-                      Positioned(
-                        bottom: -30,
-                        left: -30,
-                        child: Container(
-                          width: MediaQuery.of(context).size.width * 0.25,
-                          height: MediaQuery.of(context).size.width * 0.25,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.03),
+                        Positioned(
+                          bottom: -30,
+                          left: -30,
+                          child: Container(
+                            width: MediaQuery.of(context).size.width * 0.25,
+                            height: MediaQuery.of(context).size.width * 0.25,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.03),
+                            ),
                           ),
                         ),
-                      ),
-                      SafeArea(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: MediaQuery.of(context).size.width * 0.04,
-                            vertical: MediaQuery.of(context).size.height * 0.015,
-                          ),
-                          child: Row(
-                            children: [
-                              SizedBox(width: MediaQuery.of(context).size.width * 0.12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    FadeInDown(
-                                      duration: const Duration(milliseconds: 800),
-                                      child: LayoutBuilder(
-                                        builder: (context, constraints) {
-                                          double availableWidth = constraints.maxWidth;
-                                          String displayText = _getDisplayText(availableWidth, _isScrolled);
-                                          double fontSize = _getFontSize(_isScrolled, availableWidth);
-
-                                          return Text(
-                                            displayText,
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: fontSize,
-                                              fontWeight: FontWeight.bold,
-                                              height: 1.2,
-                                            ),
-                                            maxLines: _isScrolled ? 1 : 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            softWrap: true,
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    if (!_isScrolled) ...[
-                                      SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+                        SafeArea(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal:
+                                  MediaQuery.of(context).size.width * 0.04,
+                              vertical:
+                                  MediaQuery.of(context).size.height * 0.015,
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                    width: MediaQuery.of(context).size.width *
+                                        0.12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
                                       FadeInDown(
-                                        duration: const Duration(milliseconds: 900),
-                                        child: Text(
-                                          '${_transactions.length} Transaksi',
-                                          style: TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: MediaQuery.of(context).size.width * 0.035,
-                                            height: 1.3,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                        duration:
+                                            const Duration(milliseconds: 800),
+                                        child: LayoutBuilder(
+                                          builder: (context, constraints) {
+                                            double availableWidth =
+                                                constraints.maxWidth;
+                                            String displayText =
+                                                _getDisplayText(availableWidth,
+                                                    _isScrolled);
+                                            double fontSize = _getFontSize(
+                                                _isScrolled, availableWidth);
+
+                                            return Text(
+                                              displayText,
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: fontSize,
+                                                fontWeight: FontWeight.bold,
+                                                height: 1.2,
+                                              ),
+                                              maxLines: _isScrolled ? 1 : 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              softWrap: true,
+                                            );
+                                          },
                                         ),
                                       ),
+                                      if (!_isScrolled) ...[
+                                        SizedBox(
+                                            height: MediaQuery.of(context)
+                                                    .size
+                                                    .height *
+                                                0.01),
+                                        FadeInDown(
+                                          duration:
+                                              const Duration(milliseconds: 900),
+                                          child: Text(
+                                            '${_transactions.length} Transaksi',
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  0.035,
+                                              height: 1.3,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
                                     ],
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
             SliverToBoxAdapter(
+              child: _buildFilterSection(),
+            ),
+            SliverToBoxAdapter(
               child: _isLoading
                   ? _buildLoadingShimmer()
-                  : _transactions.isEmpty
+                  : _getFilteredAndSortedTransactions().isEmpty
                       ? _buildEmptyState()
                       : Column(
                           children: [
                             _buildTransactionList(),
-                            SizedBox(height: MediaQuery.of(context).size.height * 0.1),
+                            SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.1),
                           ],
                         ),
             ),
@@ -693,7 +877,8 @@ class _TransactionCardState extends State<TransactionCard>
         );
       },
       child: Card(
-        margin: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.02),
+        margin:
+            EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.02),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -789,7 +974,8 @@ class _TransactionCardState extends State<TransactionCard>
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+                      SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.01),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -797,8 +983,10 @@ class _TransactionCardState extends State<TransactionCard>
                           Flexible(
                             child: Container(
                               padding: EdgeInsets.symmetric(
-                                horizontal: MediaQuery.of(context).size.width * 0.03,
-                                vertical: MediaQuery.of(context).size.height * 0.008,
+                                horizontal:
+                                    MediaQuery.of(context).size.width * 0.03,
+                                vertical:
+                                    MediaQuery.of(context).size.height * 0.008,
                               ),
                               decoration: BoxDecoration(
                                 color: _getStatusColor().withOpacity(0.1),
@@ -814,14 +1002,19 @@ class _TransactionCardState extends State<TransactionCard>
                                   Icon(
                                     _getStatusIcon(),
                                     color: _getStatusColor(),
-                                    size: MediaQuery.of(context).size.width * 0.04,
+                                    size: MediaQuery.of(context).size.width *
+                                        0.04,
                                   ),
-                                  SizedBox(width: MediaQuery.of(context).size.width * 0.01),
+                                  SizedBox(
+                                      width: MediaQuery.of(context).size.width *
+                                          0.01),
                                   Flexible(
                                     child: Text(
                                       widget.transaction.status,
                                       style: TextStyle(
-                                        fontSize: MediaQuery.of(context).size.width * 0.035,
+                                        fontSize:
+                                            MediaQuery.of(context).size.width *
+                                                0.035,
                                         fontWeight: FontWeight.w600,
                                         color: _getStatusColor(),
                                       ),
@@ -865,7 +1058,8 @@ class _TransactionCardState extends State<TransactionCard>
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: MediaQuery.of(context).size.height * 0.005),
+                      SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.005),
                       Text(
                         widget.transaction.date.split(' ')[0],
                         style: TextStyle(
@@ -890,7 +1084,8 @@ class _TransactionCardState extends State<TransactionCard>
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.005),
+                    SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.005),
                     Text(
                       widget.transaction.total,
                       style: TextStyle(
@@ -962,8 +1157,10 @@ class _TransactionCardState extends State<TransactionCard>
             return FadeInUp(
               duration: Duration(milliseconds: 300 + (penitipIndex * 100)),
               child: Container(
-                margin: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.02),
-                padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
+                margin: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).size.height * 0.02),
+                padding:
+                    EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -985,7 +1182,8 @@ class _TransactionCardState extends State<TransactionCard>
                     Row(
                       children: [
                         Container(
-                          padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
+                          padding: EdgeInsets.all(
+                              MediaQuery.of(context).size.width * 0.02),
                           decoration: BoxDecoration(
                             color: const Color(0xFF7A7C52).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
@@ -996,12 +1194,14 @@ class _TransactionCardState extends State<TransactionCard>
                             color: const Color(0xFF7A7C52),
                           ),
                         ),
-                        SizedBox(width: MediaQuery.of(context).size.width * 0.03),
+                        SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.03),
                         Expanded(
                           child: Text(
                             penitip.penitipName,
                             style: TextStyle(
-                              fontSize: MediaQuery.of(context).size.width * 0.04,
+                              fontSize:
+                                  MediaQuery.of(context).size.width * 0.04,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF1A3C34),
                             ),
@@ -1016,7 +1216,8 @@ class _TransactionCardState extends State<TransactionCard>
                       TransactionItem item = itemEntry.value;
 
                       return SlideInLeft(
-                        duration: Duration(milliseconds: 400 + (itemIndex * 100)),
+                        duration:
+                            Duration(milliseconds: 400 + (itemIndex * 100)),
                         child: TransactionItemWidget(item: item),
                       );
                     }).toList(),
@@ -1039,7 +1240,8 @@ class TransactionItemWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.015),
+      margin:
+          EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.015),
       padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.03),
       decoration: BoxDecoration(
         color: Colors.grey[50]!,

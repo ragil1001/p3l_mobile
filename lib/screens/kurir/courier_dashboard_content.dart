@@ -11,7 +11,8 @@ class CourierDashboardContent extends StatefulWidget {
   const CourierDashboardContent({super.key});
 
   @override
-  _CourierDashboardContentState createState() => _CourierDashboardContentState();
+  _CourierDashboardContentState createState() =>
+      _CourierDashboardContentState();
 }
 
 class _CourierDashboardContentState extends State<CourierDashboardContent> {
@@ -44,7 +45,7 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
 
       // Fetch user profile
       final profileResponse = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/auth/profile'),
+        Uri.parse('http://192.168.154.254:8000/api/auth/profile'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -66,7 +67,8 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
 
         // Fetch transactions
         final transactionsResponse = await http.get(
-          Uri.parse('http://10.0.2.2:8000/api/kurir/transaksi-penjualan'),
+          Uri.parse(
+              'http://192.168.154.254:8000/api/kurir/transaksi-penjualan'),
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
@@ -85,10 +87,11 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
 
           // Filter for active deliveries (Siap Dikirim or Sedang Dikirim)
           for (var transaction in transactions) {
-            if (['Siap Dikirim', 'Sedang Dikirim'].contains(transaction['status'])) {
+            if (['Siap Dikirim', 'Sedang Dikirim']
+                .contains(transaction['status'])) {
               final detailResponse = await http.get(
                 Uri.parse(
-                    'http://10.0.2.2:8000/api/kurir/transaksi-penjualan/${transaction['no_nota']}'),
+                    'http://192.168.154.254:8000/api/kurir/transaksi-penjualan/${transaction['no_nota']}'),
                 headers: {
                   'Authorization': 'Bearer $token',
                   'Content-Type': 'application/json',
@@ -100,8 +103,8 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
                 final products = detailData['products'] as List<dynamic>? ?? [];
                 final items = products.map((p) {
                   final imageUrl = p['image'] != '/api/placeholder/60/60'
-                      ? 'http://10.0.2.2:8000/api/products/${p['product_id']}/thumbnail'
-                      : 'http://10.0.2.2:8000/api/placeholder/60/60';
+                      ? 'http://192.168.154.254:8000/api/products/${p['product_id']}/thumbnail'
+                      : 'http://192.168.154.254:8000/api/placeholder/60/60';
                   return {
                     'name': p['nama_barang'] as String? ?? 'Unknown Item',
                     'price': p['harga_barang'] as String? ?? 'Rp0',
@@ -113,7 +116,8 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
                 activeDeliveries.add({
                   'id_penjualan': transaction['id_penjualan'],
                   'order_id': transaction['no_nota'] ?? 'Unknown ID',
-                  'customer_name': detailData['nama_pembeli'] ?? 'Unknown Buyer',
+                  'customer_name':
+                      detailData['nama_pembeli'] ?? 'Unknown Buyer',
                   'address': detailData['alamat'] ?? 'Unknown Address',
                   'status': transaction['status'] ?? 'Unknown',
                   'date': transaction['tanggal_transaksi'] ?? 'Unknown Date',
@@ -195,7 +199,8 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
       builder: (context) {
         final size = MediaQuery.of(context).size;
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(size.width * 0.04)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(size.width * 0.04)),
           title: Text(
             'Konfirmasi Status',
             style: TextStyle(
@@ -249,7 +254,7 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
 
         final response = await http.put(
           Uri.parse(
-              'http://10.0.2.2:8000/api/kurir/transaksi-penjualan/${task['id_penjualan']}'),
+              'http://192.168.154.254:8000/api/kurir/transaksi-penjualan/${task['id_penjualan']}'),
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
@@ -270,31 +275,35 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
             SnackBar(
               content: Text(
                 'Status diubah menjadi $newStatus',
-                style: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.035),
+                style: TextStyle(
+                    fontSize: MediaQuery.of(context).size.width * 0.035),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.025),
+                borderRadius: BorderRadius.circular(
+                    MediaQuery.of(context).size.width * 0.025),
               ),
             ),
           );
         } else {
           final responseBody = jsonDecode(response.body);
-          final errorMessage =
-              responseBody['message'] ?? 'Gagal memperbarui status: ${response.statusCode}';
+          final errorMessage = responseBody['message'] ??
+              'Gagal memperbarui status: ${response.statusCode}';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
                 errorMessage,
-                style: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.035),
+                style: TextStyle(
+                    fontSize: MediaQuery.of(context).size.width * 0.035),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.025),
+                borderRadius: BorderRadius.circular(
+                    MediaQuery.of(context).size.width * 0.025),
               ),
             ),
           );
@@ -304,13 +313,15 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
           SnackBar(
             content: Text(
               'Error memperbarui status: $e',
-              style: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.035),
+              style: TextStyle(
+                  fontSize: MediaQuery.of(context).size.width * 0.035),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(MediaQuery.of(context).size.width * 0.025),
+              borderRadius: BorderRadius.circular(
+                  MediaQuery.of(context).size.width * 0.025),
             ),
           ),
         );
@@ -720,7 +731,8 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
 
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(size.width * 0.03)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(size.width * 0.03)),
       margin: EdgeInsets.only(bottom: size.height * 0.02),
       child: Container(
         decoration: BoxDecoration(
@@ -829,7 +841,8 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
                           backgroundColor: Colors.white,
                           foregroundColor: Color(0xFF7A7C52),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(size.width * 0.02),
+                            borderRadius:
+                                BorderRadius.circular(size.width * 0.02),
                             side: BorderSide(color: Color(0xFF7A7C52)),
                           ),
                           padding: EdgeInsets.symmetric(
@@ -857,7 +870,8 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
                           backgroundColor: Color(0xFF7A7C52),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(size.width * 0.02),
+                            borderRadius:
+                                BorderRadius.circular(size.width * 0.02),
                           ),
                           padding: EdgeInsets.symmetric(
                             horizontal: size.width * 0.04,
@@ -900,7 +914,8 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
                           backgroundColor: Colors.white,
                           foregroundColor: Color(0xFF7A7C52),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(size.width * 0.02),
+                            borderRadius:
+                                BorderRadius.circular(size.width * 0.02),
                             side: BorderSide(color: Color(0xFF7A7C52)),
                           ),
                           padding: EdgeInsets.symmetric(
@@ -928,7 +943,8 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
                           backgroundColor: Color(0xFF7A7C52),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(size.width * 0.02),
+                            borderRadius:
+                                BorderRadius.circular(size.width * 0.02),
                           ),
                           padding: EdgeInsets.symmetric(
                             horizontal: size.width * 0.04,
@@ -962,7 +978,8 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
     final size = MediaQuery.of(context).size;
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(size.width * 0.03)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(size.width * 0.03)),
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
