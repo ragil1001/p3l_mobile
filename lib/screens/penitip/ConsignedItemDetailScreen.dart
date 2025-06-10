@@ -8,7 +8,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String baseUrl = 'http://10.0.2.2:8000/api';
+const String baseUrl = 'http://192.168.154.254:8000/api';
 
 class ConsignedItemDetailScreen extends StatefulWidget {
   final String id;
@@ -39,7 +39,8 @@ class ConsignedItemDetailScreen extends StatefulWidget {
   });
 
   @override
-  _ConsignedItemDetailScreenState createState() => _ConsignedItemDetailScreenState();
+  _ConsignedItemDetailScreenState createState() =>
+      _ConsignedItemDetailScreenState();
 }
 
 class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
@@ -130,7 +131,8 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
                 return photo;
               }).toList();
               setState(() {
-                _imageLoaded = List<bool>.filled(itemData['photos'].length, false);
+                _imageLoaded =
+                    List<bool>.filled(itemData['photos'].length, false);
               });
             } else {
               itemData['photos'] = [
@@ -256,7 +258,8 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: const Text('Hubungi admin untuk info lebih lanjut'),
+                            content: const Text(
+                                'Hubungi admin untuk info lebih lanjut'),
                             backgroundColor: const Color(0xFF7A7C52),
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
@@ -385,7 +388,8 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Error: $_errorMessage', style: const TextStyle(color: Colors.red)),
+            Text('Error: $_errorMessage',
+                style: const TextStyle(color: Colors.red)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
@@ -403,9 +407,14 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
       );
     }
 
-    final images = _item!['photos']?.map((photo) => photo['url'] as String).toList() ?? ['/api/placeholder/60/60'];
-    final warranty = _item!['warranty_date'] != null ? _formatDate(_item!['warranty_date']) : 'Tidak Ada';
-    final rating = _item!['rating'] != null ? _item!['rating'].toString() : 'N/A';
+    final images =
+        _item!['photos']?.map((photo) => photo['url'] as String).toList() ??
+            ['/api/placeholder/60/60'];
+    final warranty = _item!['warranty_date'] != null
+        ? _formatDate(_item!['warranty_date'])
+        : 'Tidak Ada';
+    final rating =
+        _item!['rating'] != null ? _item!['rating'].toString() : 'N/A';
 
     return CustomScrollView(
       slivers: [
@@ -465,7 +474,8 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
                               height: MediaQuery.of(context).size.height * 0.4,
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
+                                image: DecorationImage(
+                                    image: imageProvider, fit: BoxFit.cover),
                               ),
                             );
                           },
@@ -494,7 +504,8 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
                     left: 0,
                     right: 0,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 4, horizontal: 8),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(
@@ -505,7 +516,9 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
                             height: 8,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: _currentPage == index ? Colors.white : Colors.white.withOpacity(0.5),
+                              color: _currentPage == index
+                                  ? Colors.white
+                                  : Colors.white.withOpacity(0.5),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withOpacity(0.2),
@@ -531,7 +544,8 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
                 color: const Color(0xFF7A7C52).withOpacity(0.7),
               ),
               child: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                    color: Colors.white),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -642,7 +656,8 @@ class _ConsignedItemDetailScreenState extends State<ConsignedItemDetailScreen> {
                                     child: _ModernDetailChip(
                                       icon: Icons.calendar_today,
                                       label: 'Penitipan',
-                                      value: _formatDate(_item!['penitip_tanggal_penitipan']),
+                                      value: _formatDate(
+                                          _item!['penitip_tanggal_penitipan']),
                                       color: Colors.purple,
                                     ),
                                   ),

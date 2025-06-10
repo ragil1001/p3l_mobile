@@ -9,7 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'ConsignedItemDetailScreen.dart'; // Adjust import based on your project structure
 
-const String baseUrl = 'http://10.0.2.2:8000/api';
+const String baseUrl = 'http://192.168.154.254:8000/api';
 
 class ConsignedItemsScreen extends StatefulWidget {
   const ConsignedItemsScreen({super.key});
@@ -33,6 +33,8 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
   int _currentPage = 1;
   int _totalPages = 1;
   bool _isFetchingMore = false;
+  TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -73,6 +75,15 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
     });
 
     _fetchConsignedItems();
+
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+        _isLoading = true;
+        _currentPage = 1; // Reset pagination on search
+      });
+      _fetchConsignedItems();
+    });
   }
 
   Future<bool> _checkConnectivity() async {
@@ -135,14 +146,22 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
           );
           final prefs = await SharedPreferences.getInstance();
           await prefs.remove('token');
-          // Optionally navigate to login screen
-          // Navigator.pushReplacementNamed(context, '/login');
           return;
         }
 
+        var uri = Uri.parse('$baseUrl/penitip/barang-titipan');
+        Map<String, dynamic> queryParams = {
+          'page': _currentPage.toString(),
+          'per_page': '10',
+        };
+        if (_searchQuery.isNotEmpty) {
+          queryParams['search'] = _searchQuery;
+        }
+        uri = uri.replace(queryParameters: queryParams);
+
+        print('Fetching consigned items with query: $uri');
         final response = await http.get(
-          Uri.parse(
-              '$baseUrl/penitip/barang-titipan?page=$_currentPage&per_page=10'),
+          uri,
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
@@ -193,8 +212,6 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
               backgroundColor: Colors.red,
             ),
           );
-          // Optionally navigate to login screen
-          // Navigator.pushReplacementNamed(context, '/login');
           return;
         } else {
           throw Exception(
@@ -263,6 +280,7 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
 
   @override
   void dispose() {
+    _searchController.dispose();
     _animationController?.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -282,19 +300,29 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
               CustomScrollView(
                 controller: _scrollController,
                 slivers: [
+                  /* Replace the SliverAppBar in ConsignedItemsScreen.dart */
                   SliverAppBar(
                     pinned: true,
                     floating: false,
                     elevation: 8,
                     backgroundColor: Colors.transparent,
-                    flexibleSpace: AnimatedBuilder(
-                      animation: _animationController!,
-                      builder: (context, child) {
-                        return SlideTransition(
-                          position: _slideAnimation!,
-                          child: FadeTransition(
-                            opacity: _fadeAnimation!,
+                    expandedHeight: _isScrolled
+                        ? constraints.maxHeight * 0.05
+                        : constraints.maxHeight * 0.22,
+                    flexibleSpace: FlexibleSpaceBar(
+                      background: AnimatedBuilder(
+                        animation: _animationController!,
+                        builder: (context, child) {
+                          final double headerHeight = _isScrolled
+                              ? constraints.maxHeight * 0.1
+                              : constraints.maxHeight * 0.22;
+                          return ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(25),
+                              bottomRight: Radius.circular(25),
+                            ),
                             child: Container(
+                              height: headerHeight,
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
@@ -305,23 +333,12 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
-                                borderRadius: const BorderRadius.only(
-                                  bottomLeft: Radius.circular(25),
-                                  bottomRight: Radius.circular(25),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    blurRadius: 15,
-                                    offset: const Offset(0, 5),
-                                  ),
-                                ],
                               ),
                               child: Stack(
                                 children: [
                                   Positioned(
-                                    top: -50,
-                                    right: -50,
+                                    top: -constraints.maxWidth * 0.15,
+                                    right: -constraints.maxWidth * 0.15,
                                     child: Container(
                                       width: constraints.maxWidth * 0.4,
                                       height: constraints.maxWidth * 0.4,
@@ -332,11 +349,11 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                     ),
                                   ),
                                   Positioned(
-                                    bottom: -30,
-                                    left: -30,
+                                    bottom: -constraints.maxWidth * 0.1,
+                                    left: -constraints.maxWidth * 0.1,
                                     child: Container(
-                                      width: constraints.maxWidth * 0.25,
-                                      height: constraints.maxWidth * 0.25,
+                                      width: constraints.maxWidth * 0.3,
+                                      height: constraints.maxWidth * 0.3,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: Colors.white.withOpacity(0.03),
@@ -345,7 +362,9 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                   ),
                                   SafeArea(
                                     child: Padding(
-                                      padding: EdgeInsets.all(constraints.maxWidth * 0.04),
+                                      padding: EdgeInsets.all(_isScrolled
+                                          ? constraints.maxWidth * 0.03
+                                          : constraints.maxWidth * 0.045),
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
@@ -364,7 +383,8 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                                       child: LayoutBuilder(
                                                         builder: (context,
                                                             textConstraints) {
-                                                          double availableWidth =
+                                                          double
+                                                              availableWidth =
                                                               textConstraints
                                                                   .maxWidth;
                                                           String displayText =
@@ -374,42 +394,51 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                                           double fontSize =
                                                               _getFontSize(
                                                                   _isScrolled,
-                                                                  availableWidth);
-
+                                                                  availableWidth,
+                                                                  constraints
+                                                                      .maxWidth);
                                                           return Text(
                                                             displayText,
                                                             style: TextStyle(
-                                                              color: Colors.white,
-                                                              fontSize: fontSize,
+                                                              color:
+                                                                  Colors.white,
+                                                              fontSize:
+                                                                  fontSize,
                                                               fontWeight:
-                                                                  FontWeight.bold,
+                                                                  FontWeight
+                                                                      .bold,
                                                               height: 1.2,
                                                             ),
-                                                            maxLines: _isScrolled
-                                                                ? 1
-                                                                : 2,
-                                                            overflow: TextOverflow
-                                                                .ellipsis,
+                                                            maxLines:
+                                                                _isScrolled
+                                                                    ? 1
+                                                                    : 2,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
                                                             softWrap: true,
                                                           );
                                                         },
                                                       ),
                                                     ),
                                                     if (!_isScrolled) ...[
-                                                      const SizedBox(height: 6),
+                                                      SizedBox(
+                                                          height: constraints
+                                                                  .maxHeight *
+                                                              0.01),
                                                       FadeInDown(
-                                                        duration: const Duration(
-                                                            milliseconds: 900),
+                                                        duration:
+                                                            const Duration(
+                                                                milliseconds:
+                                                                    900),
                                                         child: Text(
                                                           'Lihat barang yang Anda titipkan',
                                                           style: TextStyle(
                                                             color:
                                                                 Colors.white70,
-                                                            fontSize:
-                                                                constraints.maxWidth <
-                                                                        360
-                                                                    ? 12
-                                                                    : 13,
+                                                            fontSize: constraints
+                                                                    .maxWidth *
+                                                                0.035,
                                                             height: 1.3,
                                                           ),
                                                           maxLines: 2,
@@ -425,24 +454,39 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                           ),
                                           if (!_isScrolled) ...[
                                             SizedBox(
-                                                height:
-                                                    constraints.maxWidth * 0.04),
+                                                height: constraints.maxHeight *
+                                                    0.02),
                                             FadeInUp(
                                               duration: const Duration(
                                                   milliseconds: 1000),
-                                              child: Container(
-                                                height: 48,
+                                              child: AnimatedContainer(
+                                                duration: const Duration(
+                                                    milliseconds: 300),
+                                                height: _isScrolled
+                                                    ? 0
+                                                    : (constraints.maxHeight *
+                                                                0.06 >
+                                                            48
+                                                        ? 48
+                                                        : constraints
+                                                                .maxHeight *
+                                                            0.06),
                                                 decoration: BoxDecoration(
                                                   color: Colors.white
                                                       .withOpacity(0.95),
-                                                  borderRadius:
-                                                      BorderRadius.circular(25),
+                                                  borderRadius: BorderRadius
+                                                      .circular(_isScrolled
+                                                          ? 0
+                                                          : constraints
+                                                                  .maxWidth *
+                                                              0.06),
                                                   boxShadow: [
                                                     BoxShadow(
                                                       color: Colors.black
                                                           .withOpacity(0.1),
                                                       blurRadius: 10,
-                                                      offset: const Offset(0, 3),
+                                                      offset:
+                                                          const Offset(0, 3),
                                                     ),
                                                   ],
                                                   border: Border.all(
@@ -455,35 +499,65 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                                   children: [
                                                     Padding(
                                                       padding: EdgeInsets.symmetric(
-                                                          horizontal:
-                                                              constraints.maxWidth *
-                                                                  0.04),
+                                                          horizontal: constraints
+                                                                  .maxWidth *
+                                                              0.04),
                                                       child: Icon(
                                                         Icons.search,
                                                         color: Colors.grey,
-                                                        size: constraints.maxWidth <
-                                                                360
-                                                            ? 20
-                                                            : 22,
+                                                        size: constraints
+                                                                .maxWidth *
+                                                            0.055,
                                                       ),
                                                     ),
-                                                    const Expanded(
+                                                    Expanded(
                                                       child: TextField(
+                                                        controller:
+                                                            _searchController,
                                                         decoration:
                                                             InputDecoration(
                                                           hintText:
                                                               'Cari barang Anda...',
                                                           hintStyle: TextStyle(
                                                             color: Colors.grey,
-                                                            fontSize: 14,
+                                                            fontSize: constraints
+                                                                    .maxWidth *
+                                                                0.035,
                                                           ),
                                                           border:
                                                               InputBorder.none,
                                                           contentPadding:
-                                                              EdgeInsets
-                                                                  .symmetric(
-                                                                      vertical:
-                                                                          14),
+                                                              EdgeInsets.symmetric(
+                                                                  vertical:
+                                                                      constraints
+                                                                              .maxHeight *
+                                                                          0.017),
+                                                          suffixIcon:
+                                                              _searchQuery
+                                                                      .isNotEmpty
+                                                                  ? IconButton(
+                                                                      icon:
+                                                                          Icon(
+                                                                        Icons
+                                                                            .clear,
+                                                                        color: Colors
+                                                                            .grey,
+                                                                        size: constraints.maxWidth *
+                                                                            0.05,
+                                                                      ),
+                                                                      onPressed:
+                                                                          () {
+                                                                        _searchController
+                                                                            .clear();
+                                                                      },
+                                                                    )
+                                                                  : null,
+                                                        ),
+                                                        style: TextStyle(
+                                                          color: Colors.black,
+                                                          fontSize: constraints
+                                                                  .maxWidth *
+                                                              0.035,
                                                         ),
                                                       ),
                                                     ),
@@ -499,17 +573,15 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                 ],
                               ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
-                    expandedHeight:
-                        _isScrolled ? constraints.maxHeight * 0 : constraints.maxHeight * 0.18,
                   ),
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                          constraints.maxWidth * 0.04, 4.0, constraints.maxWidth * 0.04, 0),
+                      padding: EdgeInsets.fromLTRB(constraints.maxWidth * 0.04,
+                          4.0, constraints.maxWidth * 0.04, 0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -559,9 +631,8 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                       SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount:
                                         constraints.maxWidth < 600 ? 2 : 3,
-                                    childAspectRatio: constraints.maxWidth < 360
-                                        ? 0.6
-                                        : 0.65,
+                                    childAspectRatio:
+                                        constraints.maxWidth < 360 ? 0.6 : 0.65,
                                     crossAxisSpacing:
                                         constraints.maxWidth * 0.04,
                                     mainAxisSpacing:
@@ -579,8 +650,8 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                               BorderRadius.circular(12),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: Colors.black
-                                                  .withOpacity(0.1),
+                                              color:
+                                                  Colors.black.withOpacity(0.1),
                                               blurRadius: 8,
                                               offset: const Offset(0, 4),
                                             ),
@@ -596,9 +667,10 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                               width: double.infinity,
                                               decoration: const BoxDecoration(
                                                 color: Colors.grey,
-                                                borderRadius: BorderRadius
-                                                    .vertical(
-                                                    top: Radius.circular(12)),
+                                                borderRadius:
+                                                    BorderRadius.vertical(
+                                                        top: Radius.circular(
+                                                            12)),
                                               ),
                                             ),
                                             Padding(
@@ -622,9 +694,9 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                                     ),
                                                   ),
                                                   SizedBox(
-                                                      height: constraints
-                                                              .maxWidth *
-                                                          0.01),
+                                                      height:
+                                                          constraints.maxWidth *
+                                                              0.01),
                                                   SizedBox(
                                                     height: 12,
                                                     width: 80,
@@ -639,9 +711,9 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                                     ),
                                                   ),
                                                   SizedBox(
-                                                      height: constraints
-                                                              .maxWidth *
-                                                          0.01),
+                                                      height:
+                                                          constraints.maxWidth *
+                                                              0.01),
                                                   SizedBox(
                                                     height: 12,
                                                     width: 60,
@@ -710,8 +782,9 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                                     CrossAxisAlignment.start,
                                                 children: [
                                                   Container(
-                                                    height: constraints.maxWidth *
-                                                        0.25,
+                                                    height:
+                                                        constraints.maxWidth *
+                                                            0.25,
                                                     width: double.infinity,
                                                     decoration:
                                                         const BoxDecoration(
@@ -719,7 +792,8 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                                       borderRadius:
                                                           BorderRadius.vertical(
                                                               top: Radius
-                                                                  .circular(12)),
+                                                                  .circular(
+                                                                      12)),
                                                     ),
                                                   ),
                                                   Padding(
@@ -737,7 +811,8 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                                           child: DecoratedBox(
                                                             decoration:
                                                                 BoxDecoration(
-                                                              color: Colors.grey,
+                                                              color:
+                                                                  Colors.grey,
                                                               borderRadius:
                                                                   BorderRadius
                                                                       .all(Radius
@@ -756,7 +831,8 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                                           child: DecoratedBox(
                                                             decoration:
                                                                 BoxDecoration(
-                                                              color: Colors.grey,
+                                                              color:
+                                                                  Colors.grey,
                                                               borderRadius:
                                                                   BorderRadius
                                                                       .all(Radius
@@ -775,7 +851,8 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                                           child: DecoratedBox(
                                                             decoration:
                                                                 BoxDecoration(
-                                                              color: Colors.grey,
+                                                              color:
+                                                                  Colors.grey,
                                                               borderRadius:
                                                                   BorderRadius
                                                                       .all(Radius
@@ -795,7 +872,8 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                         final item = _filteredItems[index];
                                         return FadeInUp(
                                           duration: Duration(
-                                              milliseconds: 500 + (index * 100)),
+                                              milliseconds:
+                                                  500 + (index * 100)),
                                           child: ConsignedItemCard(
                                             id: item['kode_produk'].toString(),
                                             title: item['nama'] ??
@@ -807,9 +885,8 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
                                                 item['images'] ??
                                                     ['/api/placeholder/60/60']),
                                             condition: item['kondisi'] ?? 'N/A',
-                                            weight:
-                                                item['berat']?.toString() ??
-                                                    'N/A',
+                                            weight: item['berat']?.toString() ??
+                                                'N/A',
                                             warranty:
                                                 item['tanggal_garansi'] ?? '-',
                                             description:
@@ -893,286 +970,236 @@ class _ConsignedItemsScreenState extends State<ConsignedItemsScreen>
     }
   }
 
-  double _getFontSize(bool isScrolled, double availableWidth) {
+  double _getFontSize(
+      bool isScrolled, double availableWidth, double screenWidth) {
     if (isScrolled) {
-      return availableWidth < 250 ? 14 : 16;
+      return availableWidth < 250 ? screenWidth * 0.035 : screenWidth * 0.04;
     } else {
-      if (availableWidth < 280) {
-        return 18;
-      } else {
-        return 20;
-      }
+      return availableWidth < 280 ? screenWidth * 0.05 : screenWidth * 0.05;
     }
   }
 
   void _showFilterSortDialog(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(size.width * 0.05)),
       ),
       builder: (context) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            return Container(
-              padding: EdgeInsets.all(constraints.maxWidth * 0.04),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Filter & Sort',
-                    style: TextStyle(
-                      fontSize: constraints.maxWidth < 360 ? 16 : 18,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1A3C34),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: constraints.maxWidth * 0.04),
-                  ListTile(
-                    leading: Icon(
-                      Icons.sort,
-                      color: const Color(0xFF1A3C34),
-                      size: constraints.maxWidth < 360 ? 20 : 24,
-                    ),
-                    title: Text(
-                      'Tanggal Penitipan: Terbaru',
-                      style: TextStyle(
-                          fontSize: constraints.maxWidth < 360 ? 14 : 16),
-                    ),
-                    onTap: () {
-                      setState(() {
-                        _sortBy = 'tanggal_penitipan';
-                        _sortOrder = 'desc';
-                      });
-                      Navigator.pop(context);
-                    },
-                  ),
-                  ListTile(
-                    leading: Icon(
-                      Icons.sort,
-                      color: const Color(0xFF1A3C34),
-                      size: constraints.maxWidth < 360 ? 20 : 24,
-                    ),
-                    title: Text(
-                      'Tanggal Penitipan: Terlama',
-                      style: TextStyle(
-                          fontSize: constraints.maxWidth < 360 ? 14 : 16),
-                    ),
-                    onTap: () {
-                      setState(() {
-                        _sortBy = 'tanggal_penitipan';
-                        _sortOrder = 'asc';
-                      });
-                      Navigator.pop(context);
-                    },
-                  ),
-                  ListTile(
-                    leading: Icon(
-                      Icons.sort,
-                      color: const Color(0xFF1A3C34),
-                      size: constraints.maxWidth < 360 ? 20 : 24,
-                    ),
-                    title: Text(
-                      'Tanggal Kadaluarsa: Terdekat',
-                      style: TextStyle(
-                          fontSize: constraints.maxWidth < 360 ? 14 : 16),
-                    ),
-                    onTap: () {
-                      setState(() {
-                        _sortBy = 'tanggal_kadaluarsa';
-                        _sortOrder = 'asc';
-                      });
-                      Navigator.pop(context);
-                    },
-                  ),
-                  ListTile(
-                    leading: Icon(
-                      Icons.sort,
-                      color: const Color(0xFF1A3C34),
-                      size: constraints.maxWidth < 360 ? 20 : 24,
-                    ),
-                    title: Text(
-                      'Tanggal Kadaluarsa: Terjauh',
-                      style: TextStyle(
-                          fontSize: constraints.maxWidth < 360 ? 14 : 16),
-                    ),
-                    onTap: () {
-                      setState(() {
-                        _sortBy = 'tanggal_kadaluarsa';
-                        _sortOrder = 'desc';
-                      });
-                      Navigator.pop(context);
-                    },
-                  ),
-                  ListTile(
-                    leading: Icon(
-                      Icons.filter_alt,
-                      color: const Color(0xFF1A3C34),
-                      size: constraints.maxWidth < 360 ? 20 : 24,
-                    ),
-                    title: Text(
-                      'Filter by Status',
-                      style: TextStyle(
-                          fontSize: constraints.maxWidth < 360 ? 14 : 16),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showStatusFilterDialog(context);
-                    },
-                  ),
-                ],
+        return Container(
+          padding: EdgeInsets.all(size.width * 0.04),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Filter & Sort',
+                style: TextStyle(
+                  fontSize: size.width * 0.045,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1A3C34),
+                ),
               ),
-            );
-          },
+              SizedBox(height: size.height * 0.02),
+              ListTile(
+                leading: Icon(Icons.sort,
+                    color: const Color(0xFF1A3C34), size: size.width * 0.05),
+                title: Text(
+                  'Tanggal Penitipan: Terbaru',
+                  style: TextStyle(fontSize: size.width * 0.035),
+                ),
+                onTap: () {
+                  setState(() {
+                    _sortBy = 'tanggal_penitipan';
+                    _sortOrder = 'desc';
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.sort,
+                    color: const Color(0xFF1A3C34), size: size.width * 0.05),
+                title: Text(
+                  'Tanggal Penitipan: Terlama',
+                  style: TextStyle(fontSize: size.width * 0.035),
+                ),
+                onTap: () {
+                  setState(() {
+                    _sortBy = 'tanggal_penitipan';
+                    _sortOrder = 'asc';
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.sort,
+                    color: const Color(0xFF1A3C34), size: size.width * 0.05),
+                title: Text(
+                  'Tanggal Kadaluarsa: Terdekat',
+                  style: TextStyle(fontSize: size.width * 0.035),
+                ),
+                onTap: () {
+                  setState(() {
+                    _sortBy = 'tanggal_kadaluarsa';
+                    _sortOrder = 'asc';
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.sort,
+                    color: const Color(0xFF1A3C34), size: size.width * 0.05),
+                title: Text(
+                  'Tanggal Kadaluarsa: Terjauh',
+                  style: TextStyle(fontSize: size.width * 0.035),
+                ),
+                onTap: () {
+                  setState(() {
+                    _sortBy = 'tanggal_kadaluarsa';
+                    _sortOrder = 'desc';
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.filter_alt,
+                    color: const Color(0xFF1A3C34), size: size.width * 0.05),
+                title: Text(
+                  'Filter by Status',
+                  style: TextStyle(fontSize: size.width * 0.035),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showStatusFilterDialog(context);
+                },
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
   void _showStatusFilterDialog(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(size.width * 0.05)),
       ),
       builder: (context) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: Container(
-                padding: EdgeInsets.all(constraints.maxWidth * 0.04),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        return SingleChildScrollView(
+          child: Container(
+            padding: EdgeInsets.all(size.width * 0.04),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Filter by Status',
+                  style: TextStyle(
+                    fontSize: size.width * 0.045,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF5A5D3A),
+                  ),
+                ),
+                SizedBox(height: size.height * 0.02),
+                Row(
                   children: [
-                    Text(
-                      'Filter by Status',
-                      style: TextStyle(
-                        fontSize: constraints.maxWidth < 360 ? 16 : 18,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1A3C34),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        icon: Icon(Icons.clear,
+                            color: const Color(0xFF5A5D3A),
+                            size: size.width * 0.05),
+                        label: Text(
+                          'Clear Filter',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF5A5D3A),
+                            fontSize: size.width * 0.035,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF5A5D3A),
+                          elevation: 0,
+                          side: const BorderSide(color: Color(0xFF5A5D3A)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(size.width * 0.02),
+                          ),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _selectedStatus = null;
+                          });
+                          Navigator.pop(context);
+                        },
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(height: constraints.maxWidth * 0.04),
-                    ListTile(
-                      title: Text(
-                        'Tersedia',
-                        style: TextStyle(
-                            fontSize: constraints.maxWidth < 360 ? 14 : 16),
+                    SizedBox(width: size.width * 0.02),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF5A5D3A),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(size.width * 0.02),
+                          ),
+                        ),
+                        child: Text(
+                          'Apply Filter',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            fontSize: size.width * 0.035,
+                          ),
+                        ),
                       ),
-                      onTap: () {
-                        setState(() {
-                          _selectedStatus = 'Tersedia';
-                        });
-                        Navigator.pop(context);
-                      },
-                    ),
-                    ListTile(
-                      title: Text(
-                        'Terjual',
-                        style: TextStyle(
-                            fontSize: constraints.maxWidth < 360 ? 14 : 16),
-                      ),
-                      onTap: () {
-                        setState(() {
-                          _selectedStatus = 'Terjual';
-                        });
-                        Navigator.pop(context);
-                      },
-                    ),
-                    ListTile(
-                      title: Text(
-                        'Hangus',
-                        style: TextStyle(
-                            fontSize: constraints.maxWidth < 360 ? 14 : 16),
-                      ),
-                      onTap: () {
-                        setState(() {
-                          _selectedStatus = 'Hangus';
-                        });
-                        Navigator.pop(context);
-                      },
-                    ),
-                    ListTile(
-                      title: Text(
-                        'Kadaluarsa',
-                        style: TextStyle(
-                            fontSize: constraints.maxWidth < 360 ? 14 : 16),
-                      ),
-                      onTap: () {
-                        setState(() {
-                          _selectedStatus = 'Kadaluarsa';
-                        });
-                        Navigator.pop(context);
-                      },
-                    ),
-                    ListTile(
-                      title: Text(
-                        'Telah Didonasikan',
-                        style: TextStyle(
-                            fontSize: constraints.maxWidth < 360 ? 14 : 16),
-                      ),
-                      onTap: () {
-                        setState(() {
-                          _selectedStatus = 'Telah Didonasikan';
-                        });
-                        Navigator.pop(context);
-                      },
-                    ),
-                    ListTile(
-                      title: Text(
-                        'Siap Diambil Kembali',
-                        style: TextStyle(
-                            fontSize: constraints.maxWidth < 360 ? 14 : 16),
-                      ),
-                      onTap: () {
-                        setState(() {
-                          _selectedStatus = 'Siap Diambil Kembali';
-                        });
-                        Navigator.pop(context);
-                      },
-                    ),
-                    ListTile(
-                      title: Text(
-                        'Dikembalikan',
-                        style: TextStyle(
-                            fontSize: constraints.maxWidth < 360 ? 14 : 16),
-                      ),
-                      onTap: () {
-                        setState(() {
-                          _selectedStatus = 'Dikembalikan';
-                        });
-                        Navigator.pop(context);
-                      },
-                    ),
-                    ListTile(
-                      leading: Icon(
-                        Icons.clear,
-                        color: const Color(0xFF1A3C34),
-                        size: constraints.maxWidth < 360 ? 20 : 24,
-                      ),
-                      title: Text(
-                        'Clear Filter',
-                        style: TextStyle(
-                            fontSize: constraints.maxWidth < 360 ? 14 : 16),
-                      ),
-                      onTap: () {
-                        setState(() {
-                          _selectedStatus = null;
-                        });
-                        Navigator.pop(context);
-                      },
                     ),
                   ],
                 ),
-              ),
-            );
-          },
+                SizedBox(height: size.height * 0.02),
+                ...[
+                  'Tersedia',
+                  'Terjual',
+                  'Hangus',
+                  'Kadaluarsa',
+                  'Telah Didonasikan',
+                  'Siap Diambil Kembali',
+                  'Dikembalikan',
+                ].map((status) {
+                  return CheckboxListTile(
+                    title: Text(
+                      status,
+                      style: TextStyle(fontSize: size.width * 0.035),
+                    ),
+                    value: _selectedStatus == status ||
+                        (_selectedStatus == 'Telah Didonasikan' &&
+                            status == 'Didonasikan'),
+                    onChanged: (bool? value) {
+                      setState(() {
+                        if (value == true) {
+                          _selectedStatus = status;
+                        } else {
+                          _selectedStatus = null;
+                        }
+                      });
+                      Navigator.pop(context);
+                    },
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -1302,8 +1329,8 @@ class _ConsignedItemCardState extends State<ConsignedItemCard> {
                   Hero(
                     tag: 'consignedItemImage${widget.id}_0',
                     child: ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(16)),
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(16)),
                       child: CachedNetworkImage(
                         imageUrl: imageUrl,
                         height: constraints.maxWidth * 0.8,

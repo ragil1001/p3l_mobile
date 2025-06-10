@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/otentikasi/login.dart';
 import 'screens/otentikasi/register.dart';
-import 'screens/homepage.dart';
+import 'screens/dashboard.dart';
 import 'screens/hunter/hunter_dashboard.dart';
 import 'screens/kurir/courier_dashboard.dart';
 import 'screens/penitip/dashboardPenitip.dart';
@@ -64,7 +64,7 @@ class MyApp extends StatelessWidget {
     final userType = await authService.getUserType();
     final role = await authService.getRole();
     if (userType == 'pembeli' && role == 'pembeli') {
-      return const PembeliScreen();
+      return const PembeliDashboard();
     } else if (userType == 'penitip' && role == 'penitip') {
       return const PenitipDashboard();
     } else if (userType == 'pegawai' && role == 'hunter') {
@@ -130,7 +130,7 @@ class MyApp extends StatelessWidget {
             ),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
-        '/pembeli_dashboard': (context) => const PembeliScreen(),
+        '/pembeli_dashboard': (context) => const PembeliDashboard(),
         '/hunter_dashboard': (context) => const HunterDashboard(),
         '/kurir_dashboard': (context) => const CourierDashboard(),
         '/penitip_dashboard': (context) => const PenitipDashboard(),

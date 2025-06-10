@@ -75,7 +75,7 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
       }
 
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/auth/profile'),
+        Uri.parse('http://192.168.154.254:8000/api/auth/profile'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -115,7 +115,7 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
       }
 
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/merchandise'),
+        Uri.parse('http://192.168.154.254:8000/api/merchandise'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -150,6 +150,10 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final baseFontSize =
+        size.width < 360 ? size.width * 0.035 : size.width * 0.04;
+
     if (_isLoading) {
       return Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -162,7 +166,7 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
           child: Text(
             _errorMessage!,
             style: TextStyle(
-              fontSize: MediaQuery.of(context).size.width * 0.04,
+              fontSize: baseFontSize,
               color: Colors.red,
             ),
             textAlign: TextAlign.center,
@@ -191,70 +195,46 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
             SliverAppBar(
               pinned: true,
               floating: false,
-              expandedHeight: MediaQuery.of(context).size.height * 0.22,
-              elevation: 0,
+              expandedHeight: size.height * 0.22,
+              elevation: 8,
               backgroundColor: Colors.transparent,
-              leading: AnimatedBuilder(
-                animation: _headerFadeAnimation,
-                builder: (context, child) {
-                  return Transform.translate(
-                    offset: Offset(_headerSlideAnimation.value, 0),
-                    child: Opacity(
-                      opacity: _headerFadeAnimation.value,
-                      child: Padding(
-                        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            color: Colors.white.withOpacity(0.9),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: IconButton(
-                            icon: Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              color: Color(0xFF77784A),
-                              size: MediaQuery.of(context).size.width * 0.05,
-                            ),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ),
-                      ),
+              leading: Padding(
+                padding: EdgeInsets.all(size.width * 0.02),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Color(0xFF7A7C52).withOpacity(0.7),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: size.width * 0.05,
                     ),
-                  );
-                },
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
               ),
               actions: [
                 Padding(
-                  padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
+                  padding: EdgeInsets.all(size.width * 0.02),
                   child: Container(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: Colors.white.withOpacity(0.9),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      borderRadius: BorderRadius.circular(10),
+                      color: Color(0xFF7A7C52).withOpacity(0.7),
                     ),
                     child: IconButton(
                       icon: Icon(
                         Icons.history,
-                        color: Color(0xFF77784A),
-                        size: MediaQuery.of(context).size.width * 0.05,
+                        color: Colors.white,
+                        size: size.width * 0.05,
                       ),
                       onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const PenukaranHistoryScreen(),
+                            builder: (context) =>
+                                const PenukaranHistoryScreen(),
                           ),
                         );
                       },
@@ -263,120 +243,125 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
                 ),
               ],
               flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFF77784A),
-                        const Color(0xFF8B8C5E),
-                        const Color(0xFF5A5D3A),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(30),
-                      bottomRight: Radius.circular(30),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF77784A).withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+                background: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(25),
+                    bottomRight: Radius.circular(25),
                   ),
-                  child: SafeArea(
-                    child: AnimatedBuilder(
-                      animation: _headerFadeAnimation,
-                      builder: (context, child) {
-                        return Transform.translate(
-                          offset: Offset(0, _headerSlideAnimation.value * 0.5),
-                          child: Opacity(
-                            opacity: _headerFadeAnimation.value,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Icon(
-                                        Icons.redeem_rounded,
-                                        color: Colors.white,
-                                        size: MediaQuery.of(context).size.width * 0.06,
-                                      ),
-                                    ),
-                                    SizedBox(width: MediaQuery.of(context).size.width * 0.03),
-                                    Text(
-                                      'Tukar Poin',
-                                      style: TextStyle(
-                                        fontSize: MediaQuery.of(context).size.width * 0.06,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                        letterSpacing: 0.5,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: MediaQuery.of(context).size.height * 0.015),
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: MediaQuery.of(context).size.width * 0.04,
-                                    vertical: MediaQuery.of(context).size.height * 0.01,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: Colors.white.withOpacity(0.3),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF77784A),
+                          const Color(0xFF8B8C5E),
+                          const Color(0xFF5A5D3A),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: SafeArea(
+                      child: AnimatedBuilder(
+                        animation: _headerFadeAnimation,
+                        builder: (context, child) {
+                          return Transform.translate(
+                            offset:
+                                Offset(0, _headerSlideAnimation.value * 0.5),
+                            child: Opacity(
+                              opacity: _headerFadeAnimation.value,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(height: size.height * 0.02),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(
-                                        Icons.stars_rounded,
-                                        color: Colors.amber,
-                                        size: MediaQuery.of(context).size.width * 0.05,
+                                      Container(
+                                        padding:
+                                            EdgeInsets.all(size.width * 0.02),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: Icon(
+                                          Icons.redeem_rounded,
+                                          color: Colors.white,
+                                          size: baseFontSize * 1.5,
+                                        ),
                                       ),
-                                      SizedBox(width: MediaQuery.of(context).size.width * 0.02),
+                                      SizedBox(width: size.width * 0.03),
                                       Text(
-                                        'Poin Anda: ${userPoints ?? 0}',
+                                        'Tukar Poin',
                                         style: TextStyle(
-                                          fontSize: MediaQuery.of(context).size.width * 0.04,
+                                          fontSize: baseFontSize * 1.5,
                                           fontWeight: FontWeight.bold,
                                           color: Colors.white,
+                                          letterSpacing: 0.5,
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ),
-                                ),
-                                SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-                                Text(
-                                  'Tukarkan poin dengan merchandise eksklusif',
-                                  style: TextStyle(
-                                    fontSize: MediaQuery.of(context).size.width * 0.035,
-                                    color: Colors.white.withOpacity(0.8),
-                                    letterSpacing: 0.3,
+                                  SizedBox(height: size.height * 0.015),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: size.width * 0.04,
+                                      vertical: size.height * 0.01,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.stars_rounded,
+                                          color: Colors.amber,
+                                          size: baseFontSize * 1.25,
+                                        ),
+                                        SizedBox(width: size.width * 0.02),
+                                        Text(
+                                          'Poin Anda: ${userPoints ?? 0}',
+                                          style: TextStyle(
+                                            fontSize: baseFontSize,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
+                                  SizedBox(height: size.height * 0.01),
+                                  Text(
+                                    'Tukarkan poin dengan merchandise eksklusif',
+                                    style: TextStyle(
+                                      fontSize: baseFontSize * 0.875,
+                                      color: Colors.white.withOpacity(0.8),
+                                      letterSpacing: 0.3,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
@@ -384,16 +369,16 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
             ),
             SliverPadding(
               padding: EdgeInsets.fromLTRB(
-                MediaQuery.of(context).size.width * 0.04,
-                MediaQuery.of(context).size.height * 0.02,
-                MediaQuery.of(context).size.width * 0.04,
-                MediaQuery.of(context).size.height * 0.02,
+                size.width * 0.04,
+                size.height * 0.02,
+                size.width * 0.04,
+                size.height * 0.02,
               ),
               sliver: SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: MediaQuery.of(context).size.width < 600 ? 2 : 3,
-                  crossAxisSpacing: MediaQuery.of(context).size.width * 0.03,
-                  mainAxisSpacing: MediaQuery.of(context).size.height * 0.015,
+                  crossAxisCount: size.width < 600 ? 2 : 3,
+                  crossAxisSpacing: size.width * 0.03,
+                  mainAxisSpacing: size.height * 0.015,
                   childAspectRatio: 0.75,
                 ),
                 delegate: SliverChildBuilderDelegate(
@@ -455,6 +440,10 @@ class PointsMerchandiseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final baseFontSize =
+        size.width < 360 ? size.width * 0.035 : size.width * 0.04;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -497,7 +486,7 @@ class PointsMerchandiseCard extends StatelessWidget {
                     flex: 3,
                     child: Container(
                       width: double.infinity,
-                      margin: EdgeInsets.all(MediaQuery.of(context).size.width * 0.02),
+                      margin: EdgeInsets.all(size.width * 0.02),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
@@ -524,12 +513,11 @@ class PointsMerchandiseCard extends StatelessWidget {
                                     width: double.infinity,
                                     height: double.infinity,
                                     errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            Center(
+                                        (context, error, stackTrace) => Center(
                                       child: Icon(
                                         Icons.image_outlined,
                                         color: Color(0xFF77784A),
-                                        size: MediaQuery.of(context).size.width * 0.1,
+                                        size: baseFontSize * 2.5,
                                       ),
                                     ),
                                   )
@@ -537,7 +525,7 @@ class PointsMerchandiseCard extends StatelessWidget {
                                     child: Icon(
                                       Icons.image_outlined,
                                       color: Color(0xFF77784A),
-                                      size: MediaQuery.of(context).size.width * 0.1,
+                                      size: baseFontSize * 2.5,
                                     ),
                                   ),
                           ),
@@ -572,7 +560,7 @@ class PointsMerchandiseCard extends StatelessWidget {
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: MediaQuery.of(context).size.width * 0.03,
+                                      fontSize: baseFontSize * 0.75,
                                     ),
                                   ),
                                 ),
@@ -586,10 +574,10 @@ class PointsMerchandiseCard extends StatelessWidget {
                     flex: 2,
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(
-                        MediaQuery.of(context).size.width * 0.03,
+                        size.width * 0.03,
                         0,
-                        MediaQuery.of(context).size.width * 0.03,
-                        MediaQuery.of(context).size.height * 0.015,
+                        size.width * 0.03,
+                        size.height * 0.015,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -597,7 +585,7 @@ class PointsMerchandiseCard extends StatelessWidget {
                           Text(
                             productName,
                             style: TextStyle(
-                              fontSize: MediaQuery.of(context).size.width * 0.029,
+                              fontSize: baseFontSize * 0.725,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF1A3C34),
                               height: 1.2,
@@ -605,19 +593,19 @@ class PointsMerchandiseCard extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+                          SizedBox(height: size.height * 0.01),
                           Row(
                             children: [
                               Icon(
                                 Icons.inventory_2_outlined,
-                                size: MediaQuery.of(context).size.width * 0.035,
+                                size: baseFontSize * 0.875,
                                 color: inStock ? Colors.green : Colors.red,
                               ),
-                              SizedBox(width: MediaQuery.of(context).size.width * 0.01),
+                              SizedBox(width: size.width * 0.01),
                               Text(
                                 'Stok: $stock',
                                 style: TextStyle(
-                                  fontSize: MediaQuery.of(context).size.width * 0.03,
+                                  fontSize: baseFontSize * 0.75,
                                   color: inStock
                                       ? Colors.green[700]
                                       : Colors.red[700],
@@ -630,8 +618,8 @@ class PointsMerchandiseCard extends StatelessWidget {
                           Spacer(),
                           Container(
                             padding: EdgeInsets.symmetric(
-                              horizontal: MediaQuery.of(context).size.width * 0.02,
-                              vertical: MediaQuery.of(context).size.height * 0.005,
+                              horizontal: size.width * 0.02,
+                              vertical: size.height * 0.005,
                             ),
                             decoration: BoxDecoration(
                               gradient: canAfford
@@ -655,14 +643,14 @@ class PointsMerchandiseCard extends StatelessWidget {
                                 Icon(
                                   Icons.stars_rounded,
                                   color: Colors.white,
-                                  size: MediaQuery.of(context).size.width * 0.035,
+                                  size: baseFontSize * 0.875,
                                 ),
-                                SizedBox(width: MediaQuery.of(context).size.width * 0.01),
+                                SizedBox(width: size.width * 0.01),
                                 Text(
                                   '$pointsRequired Poin',
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: MediaQuery.of(context).size.width * 0.03,
+                                    fontSize: baseFontSize * 0.75,
                                     fontWeight: FontWeight.bold,
                                   ),
                                   overflow: TextOverflow.ellipsis,
@@ -678,12 +666,12 @@ class PointsMerchandiseCard extends StatelessWidget {
               ),
               if (isPopular)
                 Positioned(
-                  top: MediaQuery.of(context).size.height * 0.015,
-                  left: MediaQuery.of(context).size.width * 0.03,
+                  top: size.height * 0.015,
+                  left: size.width * 0.03,
                   child: Container(
                     padding: EdgeInsets.symmetric(
-                      horizontal: MediaQuery.of(context).size.width * 0.015,
-                      vertical: MediaQuery.of(context).size.height * 0.005,
+                      horizontal: size.width * 0.015,
+                      vertical: size.height * 0.005,
                     ),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
@@ -702,7 +690,7 @@ class PointsMerchandiseCard extends StatelessWidget {
                       'POPULER',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: MediaQuery.of(context).size.width * 0.02,
+                        fontSize: baseFontSize * 0.5,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -716,6 +704,9 @@ class PointsMerchandiseCard extends StatelessWidget {
   }
 
   void _showExchangeDialog(BuildContext context, int merchandiseId) {
+    final size = MediaQuery.of(context).size;
+    final baseFontSize =
+        size.width < 360 ? size.width * 0.035 : size.width * 0.04;
     bool isProcessing = false;
 
     showDialog(
@@ -732,7 +723,7 @@ class PointsMerchandiseCard extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1A3C34),
-                  fontSize: MediaQuery.of(context).size.width * 0.045,
+                  fontSize: baseFontSize * 1.125,
                 ),
               ),
               content: Column(
@@ -742,30 +733,30 @@ class PointsMerchandiseCard extends StatelessWidget {
                   Text(
                     'Apakah Anda yakin ingin menukar:',
                     style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width * 0.035,
+                      fontSize: baseFontSize * 0.875,
                     ),
                   ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+                  SizedBox(height: size.height * 0.01),
                   Text(
                     productName,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF77784A),
-                      fontSize: MediaQuery.of(context).size.width * 0.04,
+                      fontSize: baseFontSize,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+                  SizedBox(height: size.height * 0.01),
                   Text(
                     'Dengan $pointsRequired poin?',
                     style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width * 0.035,
+                      fontSize: baseFontSize * 0.875,
                     ),
                   ),
                   if (isProcessing)
                     Padding(
-                      padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.02),
+                      padding: EdgeInsets.only(top: size.height * 0.02),
                       child: Center(
                         child: CircularProgressIndicator(
                           color: Color(0xFF77784A),
@@ -781,7 +772,7 @@ class PointsMerchandiseCard extends StatelessWidget {
                   child: Text(
                     'Batal',
                     style: TextStyle(
-                      fontSize: MediaQuery.of(context).size.width * 0.035,
+                      fontSize: baseFontSize * 0.875,
                     ),
                   ),
                 ),
@@ -802,7 +793,7 @@ class PointsMerchandiseCard extends StatelessWidget {
                                 content: Text(
                                   'Silakan login kembali.',
                                   style: TextStyle(
-                                    fontSize: MediaQuery.of(context).size.width * 0.035,
+                                    fontSize: baseFontSize * 0.875,
                                   ),
                                 ),
                                 backgroundColor: Colors.red,
@@ -813,7 +804,8 @@ class PointsMerchandiseCard extends StatelessWidget {
 
                           try {
                             final response = await http.post(
-                              Uri.parse('http://10.0.2.2:8000/api/penukaran'),
+                              Uri.parse(
+                                  'http://192.168.154.254:8000/api/penukaran'),
                               headers: {
                                 'Authorization': 'Bearer $token',
                                 'Content-Type': 'application/json',
@@ -829,7 +821,7 @@ class PointsMerchandiseCard extends StatelessWidget {
                                   content: Text(
                                     'Penukaran berhasil!',
                                     style: TextStyle(
-                                      fontSize: MediaQuery.of(context).size.width * 0.035,
+                                      fontSize: baseFontSize * 0.875,
                                     ),
                                   ),
                                   backgroundColor: Color(0xFF77784A),
@@ -843,7 +835,7 @@ class PointsMerchandiseCard extends StatelessWidget {
                                   content: Text(
                                     errorData['message'] ?? 'Penukaran gagal.',
                                     style: TextStyle(
-                                      fontSize: MediaQuery.of(context).size.width * 0.035,
+                                      fontSize: baseFontSize * 0.875,
                                     ),
                                   ),
                                   backgroundColor: Colors.red,
@@ -857,7 +849,7 @@ class PointsMerchandiseCard extends StatelessWidget {
                                 content: Text(
                                   'Terjadi kesalahan: ${e.toString()}',
                                   style: TextStyle(
-                                    fontSize: MediaQuery.of(context).size.width * 0.035,
+                                    fontSize: baseFontSize * 0.875,
                                   ),
                                 ),
                                 backgroundColor: Colors.red,
@@ -872,14 +864,14 @@ class PointsMerchandiseCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     padding: EdgeInsets.symmetric(
-                      horizontal: MediaQuery.of(context).size.width * 0.04,
-                      vertical: MediaQuery.of(context).size.height * 0.015,
+                      horizontal: size.width * 0.04,
+                      vertical: size.height * 0.015,
                     ),
                   ),
                   child: isProcessing
                       ? SizedBox(
-                          width: MediaQuery.of(context).size.width * 0.05,
-                          height: MediaQuery.of(context).size.width * 0.05,
+                          width: baseFontSize * 1.25,
+                          height: baseFontSize * 1.25,
                           child: CircularProgressIndicator(
                             color: Colors.white,
                             strokeWidth: 2,
@@ -888,7 +880,7 @@ class PointsMerchandiseCard extends StatelessWidget {
                       : Text(
                           'Tukar',
                           style: TextStyle(
-                            fontSize: MediaQuery.of(context).size.width * 0.035,
+                            fontSize: baseFontSize * 0.875,
                           ),
                         ),
                 ),

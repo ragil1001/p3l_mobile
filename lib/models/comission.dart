@@ -1,11 +1,14 @@
 class Commission {
-  final dynamic commissionId;
+  final String commissionId;
   final String productName;
   final String penitipName;
   final int amount;
   final String date;
   final String status;
   final String imagePath;
+  final String transactionDate;
+  final String consignmentDate;
+  final int sellingPrice;
 
   Commission({
     required this.commissionId,
@@ -15,5 +18,8 @@ class Commission {
     required this.date,
     required this.status,
     required this.imagePath,
+    required this.transactionDate,
+    required this.consignmentDate,
+    required this.sellingPrice,
   });
 }

@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'riwayat_pesanan.dart';
-import 'homepage.dart';
+import 'dashboard.dart';
 import 'merchandise.dart';
 import '../services/auth_service.dart';
 
@@ -80,7 +80,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           });
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const PembeliScreen()),
+            MaterialPageRoute(builder: (context) => const PembeliDashboard()),
           );
         }
         return;
@@ -88,7 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       // Fetch user profile
       final profileResponse = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/auth/profile'),
+        Uri.parse('http://192.168.154.254:8000/api/auth/profile'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -100,7 +100,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (profileData['user_type'] == 'pembeli') {
           // Fetch transactions
           final transactionsResponse = await http.get(
-            Uri.parse('http://10.0.2.2:8000/api/pembeli/transaksi'),
+            Uri.parse('http://192.168.154.254:8000/api/pembeli/transaksi'),
             headers: {
               'Authorization': 'Bearer $token',
               'Content-Type': 'application/json',
@@ -130,8 +130,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                       profileData['user']['telepon'] ?? '+62 812-3456-7890',
                   'email': profileData['user']['email'],
                   'transaksi_aktif': transactions
-                    .where((t) => activeStatuses.contains(t['status']))
-                    .length,
+                      .where((t) => activeStatuses.contains(t['status']))
+                      .length,
                   'total_transaksi': totalTransaksi,
                   'member_since': 'Januari 2024', // Static, as not in backend
                   'badge': 'Silver Member', // Static, as not in backend
@@ -325,7 +325,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildEnhancedHeader(Size size, Color oliveGreen) {
     return Container(
-      height: size.height * 0.3,
+      height: size.height * 0.32,
       child: Stack(
         children: [
           Positioned.fill(
@@ -503,36 +503,36 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildStatsSection(Size size) {
-  return Transform.translate(
-    offset: Offset(0, -size.height * 0.04),
-    child: Container(
-      margin: EdgeInsets.symmetric(horizontal: size.width * 0.05),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildStatCard(
-              'Transaksi Aktif',
-              '${userProfile?['transaksi_aktif'] ?? 0}',
-              Icons.shopping_cart,
-              Colors.blue,
-              size,
+    return Transform.translate(
+      offset: Offset(0, -size.height * 0.04),
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: size.width * 0.05),
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                'Transaksi Aktif',
+                '${userProfile?['transaksi_aktif'] ?? 0}',
+                Icons.shopping_cart,
+                Colors.blue,
+                size,
+              ),
             ),
-          ),
-          SizedBox(width: size.width * 0.05),
-          Expanded(
-            child: _buildStatCard(
-              'Total Transaksi',
-              '${userProfile?['total_transaksi'] ?? 0}',
-              Icons.receipt_long,
-              Colors.green,
-              size,
+            SizedBox(width: size.width * 0.05),
+            Expanded(
+              child: _buildStatCard(
+                'Total Transaksi',
+                '${userProfile?['total_transaksi'] ?? 0}',
+                Icons.receipt_long,
+                Colors.green,
+                size,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildQuickActionsSection(Size size) {
     return Container(
@@ -581,8 +581,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildContactInfo(
-      IconData icon, String label, String value, VoidCallback onTap, Size size) {
+  Widget _buildContactInfo(IconData icon, String label, String value,
+      VoidCallback onTap, Size size) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -600,7 +600,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                 color: const Color(0xFF77784A).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: const Color(0xFF77784A), size: size.width * 0.04),
+              child: Icon(icon,
+                  color: const Color(0xFF77784A), size: size.width * 0.04),
             ),
             SizedBox(width: size.width * 0.03),
             Expanded(
@@ -716,7 +717,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const PembeliScreen()),
+                      builder: (context) => const PembeliDashboard()),
                 );
               }
             } else {
@@ -743,8 +744,9 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Container(
       margin: EdgeInsets.symmetric(horizontal: size.width * 0.05),
       child: Column(
-        children:
-            menuItems.map((item) => _buildEnhancedMenuItem(item, size)).toList(),
+        children: menuItems
+            .map((item) => _buildEnhancedMenuItem(item, size))
+            .toList(),
       ),
     );
   }

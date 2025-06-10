@@ -9,7 +9,7 @@ import 'package:p3l_mobile/screens/otentikasi/login.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:intl/intl.dart';
 
-const String baseUrl = 'http://10.0.2.2:8000/api';
+const String baseUrl = 'http://192.168.154.254:8000/api';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -60,7 +60,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           SnackBar(
             content: Text(
               'Tidak ada koneksi internet',
-              style: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.035),
+              style: TextStyle(
+                  fontSize: MediaQuery.of(context).size.width * 0.035),
             ),
             backgroundColor: Colors.red,
           ),
@@ -103,7 +104,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           SnackBar(
             content: Text(
               'Tidak ada koneksi internet',
-              style: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.035),
+              style: TextStyle(
+                  fontSize: MediaQuery.of(context).size.width * 0.035),
             ),
             backgroundColor: Colors.red,
           ),
@@ -165,7 +167,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         SnackBar(
           content: Text(
             'Gagal memuat detail produk: $e',
-            style: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.035),
+            style:
+                TextStyle(fontSize: MediaQuery.of(context).size.width * 0.035),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -184,7 +187,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           SnackBar(
             content: Text(
               'Tidak ada koneksi internet',
-              style: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.035),
+              style: TextStyle(
+                  fontSize: MediaQuery.of(context).size.width * 0.035),
             ),
             backgroundColor: Colors.red,
           ),
@@ -247,7 +251,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         SnackBar(
           content: Text(
             'Gagal memuat diskusi: $e',
-            style: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.035),
+            style:
+                TextStyle(fontSize: MediaQuery.of(context).size.width * 0.035),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -336,7 +341,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             backgroundColor: const Color(0xFF7A7C52),
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(size.width * 0.025),
+                              borderRadius:
+                                  BorderRadius.circular(size.width * 0.025),
                             ),
                           ),
                         );
@@ -345,9 +351,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         backgroundColor: const Color(0xFF7A7C52),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(size.width * 0.03),
+                          borderRadius:
+                              BorderRadius.circular(size.width * 0.03),
                         ),
-                        padding: EdgeInsets.symmetric(vertical: size.height * 0.015),
+                        padding:
+                            EdgeInsets.symmetric(vertical: size.height * 0.015),
                         elevation: 4,
                       ),
                       child: Row(
@@ -427,7 +435,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           height: size.height * 0.075,
                           decoration: BoxDecoration(
                             color: Colors.grey,
-                            borderRadius: BorderRadius.circular(size.width * 0.03),
+                            borderRadius:
+                                BorderRadius.circular(size.width * 0.03),
                           ),
                         ),
                       ),
@@ -611,7 +620,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       children: List.generate(
                         images.length,
                         (index) => Container(
-                          margin: EdgeInsets.symmetric(horizontal: size.width * 0.01),
+                          margin: EdgeInsets.symmetric(
+                              horizontal: size.width * 0.01),
                           width: size.width * 0.02,
                           height: size.width * 0.02,
                           decoration: BoxDecoration(
@@ -838,8 +848,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                             begin: Alignment.topLeft,
                                             end: Alignment.bottomRight,
                                           ),
-                                          borderRadius:
-                                              BorderRadius.circular(size.width * 0.03),
+                                          borderRadius: BorderRadius.circular(
+                                              size.width * 0.03),
                                           boxShadow: [
                                             BoxShadow(
                                               color:
@@ -1009,12 +1019,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               : _discussions.isEmpty
                                   ? Text(
                                       'Belum ada diskusi untuk produk ini.',
-                                      style: TextStyle(fontSize: size.width * 0.035),
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.035),
                                     )
                                   : Column(
                                       children: _discussions.map((discussion) {
                                         return Padding(
-                                          padding: EdgeInsets.only(bottom: size.height * 0.02),
+                                          padding: EdgeInsets.only(
+                                              bottom: size.height * 0.02),
                                           child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
@@ -1029,13 +1041,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                       style: TextStyle(
                                                         fontWeight:
                                                             FontWeight.bold,
-                                                        fontSize: size.width * 0.035,
+                                                        fontSize:
+                                                            size.width * 0.035,
                                                       ),
                                                       maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
                                                   ),
-                                                  SizedBox(width: size.width * 0.02),
+                                                  SizedBox(
+                                                      width: size.width * 0.02),
                                                   Text(
                                                     discussion['TANGGAL_DISKUSI'] !=
                                                             null
@@ -1045,14 +1060,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                         : 'Tanggal Tidak Tersedia',
                                                     style: TextStyle(
                                                       color: Colors.grey[600],
-                                                      fontSize: size.width * 0.03,
+                                                      fontSize:
+                                                          size.width * 0.03,
                                                     ),
                                                     maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                                 ],
                                               ),
-                                              SizedBox(height: size.height * 0.005),
+                                              SizedBox(
+                                                  height: size.height * 0.005),
                                               Text(
                                                 discussion['PESAN_DISKUSI'] ??
                                                     'Pesan tidak tersedia',
@@ -1067,13 +1085,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                       'Sudah Dibalas' &&
                                                   discussion['BALASAN'] !=
                                                       null) ...[
-                                                SizedBox(height: size.height * 0.01),
+                                                SizedBox(
+                                                    height: size.height * 0.01),
                                                 Container(
-                                                  padding: EdgeInsets.all(size.width * 0.02),
+                                                  padding: EdgeInsets.all(
+                                                      size.width * 0.02),
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey[100],
                                                     borderRadius:
-                                                        BorderRadius.circular(size.width * 0.02),
+                                                        BorderRadius.circular(
+                                                            size.width * 0.02),
                                                   ),
                                                   child: Column(
                                                     crossAxisAlignment:
@@ -1092,15 +1113,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                                     FontWeight
                                                                         .bold,
                                                                 fontSize:
-                                                                    size.width * 0.035,
+                                                                    size.width *
+                                                                        0.035,
                                                               ),
                                                               maxLines: 1,
                                                               overflow:
-                                                                  TextOverflow.ellipsis,
+                                                                  TextOverflow
+                                                                      .ellipsis,
                                                             ),
                                                           ),
                                                           SizedBox(
-                                                              width: size.width * 0.02),
+                                                              width:
+                                                                  size.width *
+                                                                      0.02),
                                                           Text(
                                                             discussion['TANGGAL_BALASAN'] !=
                                                                     null
@@ -1113,25 +1138,29 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                               color: Colors
                                                                   .grey[600],
                                                               fontSize:
-                                                                  size.width * 0.03,
+                                                                  size.width *
+                                                                      0.03,
                                                             ),
                                                             maxLines: 1,
                                                             overflow:
-                                                                TextOverflow.ellipsis,
+                                                                TextOverflow
+                                                                    .ellipsis,
                                                           ),
                                                         ],
                                                       ),
                                                       SizedBox(
-                                                          height: size.height * 0.005),
+                                                          height: size.height *
+                                                              0.005),
                                                       Text(
                                                         discussion['BALASAN'] ??
                                                             'Balasan tidak tersedia',
                                                         style: TextStyle(
-                                                          fontSize:
-                                                              size.width * 0.035,
+                                                          fontSize: size.width *
+                                                              0.035,
                                                         ),
                                                         maxLines: 5,
-                                                        overflow: TextOverflow.ellipsis,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
                                                       ),
                                                     ],
                                                   ),
@@ -1326,8 +1355,8 @@ class _ModernProductCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius:
-                  BorderRadius.vertical(top: Radius.circular(size.width * 0.04)),
+              borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(size.width * 0.04)),
               child: CachedNetworkImage(
                 imageUrl: imageUrl,
                 height: size.height * 0.15,

@@ -126,7 +126,7 @@ class _CourierDeliveryDetailScreenState
 
         final response = await http.put(
           Uri.parse(
-              'http://10.0.2.2:8000/api/kurir/transaksi-penjualan/${widget.delivery['id_penjualan']}'),
+              'http://192.168.154.254:8000/api/kurir/transaksi-penjualan/${widget.delivery['id_penjualan']}'),
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
@@ -329,11 +329,13 @@ class _CourierDeliveryDetailScreenState
                       child: Card(
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(size.width * 0.03),
+                          borderRadius:
+                              BorderRadius.circular(size.width * 0.03),
                         ),
                         child: Container(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(size.width * 0.03),
+                            borderRadius:
+                                BorderRadius.circular(size.width * 0.03),
                             gradient: LinearGradient(
                               colors: [
                                 Colors.white,
@@ -359,8 +361,7 @@ class _CourierDeliveryDetailScreenState
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
                                   Expanded(
                                     child: Text(
@@ -379,18 +380,19 @@ class _CourierDeliveryDetailScreenState
                                       horizontal: size.width * 0.03,
                                       vertical: size.height * 0.01,
                                     ),
-                                      decoration: BoxDecoration(
+                                    decoration: BoxDecoration(
+                                      color: _getStatusColor(
+                                              widget.delivery['status'])
+                                          .withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(
+                                          size.width * 0.03),
+                                      border: Border.all(
                                         color: _getStatusColor(
                                                 widget.delivery['status'])
-                                            .withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(size.width * 0.03),
-                                        border: Border.all(
-                                          color: _getStatusColor(
-                                                  widget.delivery['status'])
-                                              .withOpacity(0.3),
-                                          width: 1,
-                                        ),
+                                            .withOpacity(0.3),
+                                        width: 1,
                                       ),
+                                    ),
                                     child: Row(
                                       children: [
                                         Icon(
@@ -407,7 +409,7 @@ class _CourierDeliveryDetailScreenState
                                             fontSize: size.width * 0.025,
                                             fontWeight: FontWeight.w600,
                                             color: _getStatusColor(
-                                              widget.delivery['status']),
+                                                widget.delivery['status']),
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -420,7 +422,8 @@ class _CourierDeliveryDetailScreenState
                               SizedBox(height: size.height * 0.02),
                               _buildDetailRow('Pelanggan',
                                   widget.delivery['customer_name']),
-                              _buildAddressRow('Alamat', widget.delivery['address']),
+                              _buildAddressRow(
+                                  'Alamat', widget.delivery['address']),
                               _buildDetailRow('Tanggal',
                                   _formatDate(widget.delivery['date'])),
                               _buildDetailRow(
@@ -436,11 +439,13 @@ class _CourierDeliveryDetailScreenState
                       child: Card(
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(size.width * 0.03),
+                          borderRadius:
+                              BorderRadius.circular(size.width * 0.03),
                         ),
                         child: Container(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(size.width * 0.03),
+                            borderRadius:
+                                BorderRadius.circular(size.width * 0.03),
                             gradient: LinearGradient(
                               colors: [
                                 Colors.white,
@@ -484,8 +489,9 @@ class _CourierDeliveryDetailScreenState
                                         child: Row(
                                           children: [
                                             ClipRRect(
-                                              borderRadius: BorderRadius.circular(
-                                                  size.width * 0.03),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      size.width * 0.03),
                                               child: CachedNetworkImage(
                                                 imageUrl:
                                                     item['image'] as String,
@@ -532,7 +538,8 @@ class _CourierDeliveryDetailScreenState
                                                     style: TextStyle(
                                                       fontSize:
                                                           size.width * 0.037,
-                                                      fontWeight: FontWeight.w600,
+                                                      fontWeight:
+                                                          FontWeight.w600,
                                                       color: const Color(
                                                           0xFF1A3C34),
                                                     ),
@@ -548,7 +555,8 @@ class _CourierDeliveryDetailScreenState
                                                     style: TextStyle(
                                                       fontSize:
                                                           size.width * 0.035,
-                                                      fontWeight: FontWeight.bold,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                       color: const Color(
                                                           0xFF7A7C52),
                                                     ),
