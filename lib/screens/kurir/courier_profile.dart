@@ -3,21 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'riwayat_pesanan.dart';
-import 'dashboard.dart';
-import 'merchandise.dart';
-import '../services/auth_service.dart';
+import 'package:animate_do/animate_do.dart';
+import '../../services/auth_service.dart';
+import '../otentikasi/login.dart';
+import '../dashboard.dart';
 
-class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+class CourierProfileScreen extends StatefulWidget {
+  const CourierProfileScreen({super.key});
 
   @override
-  _ProfileScreenState createState() => _ProfileScreenState();
+  _CourierProfileScreenState createState() => _CourierProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen>
+class _CourierProfileScreenState extends State<CourierProfileScreen>
     with TickerProviderStateMixin {
-  int _currentIndex = 3;
   final _authService = AuthService();
   AnimationController? _fadeController;
   AnimationController? _slideController;
@@ -78,10 +77,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             _errorMessage = 'Token tidak ditemukan. Silakan login kembali.';
             _isLoading = false;
           });
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const PembeliDashboard()),
-          );
+          Navigator.pushReplacementNamed(context, '/login');
         }
         return;
       }
@@ -97,61 +93,55 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       if (profileResponse.statusCode == 200) {
         final profileData = jsonDecode(profileResponse.body);
-        if (profileData['user_type'] == 'pembeli') {
-          // Fetch transactions
+        if (profileData['user_type'] == 'pegawai' &&
+            profileData['user']['role'].contains('kurir')) {
+          // Fetch transactions assigned to this courier
           final transactionsResponse = await http.get(
-            Uri.parse('http://10.0.2.2:8000/api/pembeli/transaksi'),
+            Uri.parse(
+                'http://10.0.2.2:8000/api/kurir/transaksi-penjualan'),
             headers: {
               'Authorization': 'Bearer $token',
               'Content-Type': 'application/json',
             },
           );
 
+          int totalDeliveries = 0;
+          int completedDeliveries = 0;
           if (transactionsResponse.statusCode == 200) {
-            final transactionsData = jsonDecode(transactionsResponse.body);
-            final List<dynamic> transactions = transactionsData['data'] ?? [];
-
-            // Calculate active and total transactions
-            final activeStatuses = [
-              'Menunggu Pembayaran',
-              'Menunggu Verifikasi',
-              'Sedang Dikemas',
-              'Sedang Dikirim',
-              'Siap Diambil'
-            ];
-            final totalTransaksi = transactions.length;
-
-            if (mounted) {
-              setState(() {
-                userProfile = {
-                  'nama': profileData['user']['nama'],
-                  'poin': profileData['user']['poin'],
-                  'telepon':
-                      profileData['user']['telepon'] ?? '+62 812-3456-7890',
-                  'email': profileData['user']['email'],
-                  'transaksi_aktif': transactions
-                      .where((t) => activeStatuses.contains(t['status']))
-                      .length,
-                  'total_transaksi': totalTransaksi,
-                  'member_since': 'Januari 2024', // Static, as not in backend
-                  'badge': 'Silver Member', // Static, as not in backend
-                };
-                _isLoading = false;
-              });
-            }
+            final transactions = jsonDecode(transactionsResponse.body)['data'];
+            totalDeliveries = transactions.length;
+            completedDeliveries = transactions
+                .where((t) => t['status'] == 'Sudah Diterima')
+                .length;
           } else {
             if (mounted) {
               setState(() {
                 _errorMessage =
-                    'Gagal memuat transaksi: ${transactionsResponse.statusCode} - ${transactionsResponse.body}';
+                    'Gagal memuat data transaksi: ${transactionsResponse.statusCode}';
                 _isLoading = false;
               });
             }
+            return;
+          }
+
+          if (mounted) {
+            setState(() {
+              userProfile = {
+                'nama': profileData['user']['nama'],
+                'email': profileData['user']['email'],
+                'telepon': profileData['user']['telepon'] ?? 'Tidak tersedia',
+                'alamat': profileData['user']['alamat'] ?? 'Tidak tersedia',
+                'total_deliveries': totalDeliveries,
+                'completed_deliveries': completedDeliveries,
+                'role': 'Kurir',
+              };
+              _isLoading = false;
+            });
           }
         } else {
           if (mounted) {
             setState(() {
-              _errorMessage = 'Profile only available for pembeli';
+              _errorMessage = 'Profil hanya tersedia untuk kurir';
               _isLoading = false;
             });
           }
@@ -160,7 +150,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         await prefs.remove('token');
         if (mounted) {
           setState(() {
-            _errorMessage = 'Session expired. Please login again.';
+            _errorMessage = 'Sesi telah berakhir. Silakan login kembali.';
             _isLoading = false;
           });
           Navigator.pushReplacementNamed(context, '/login');
@@ -169,7 +159,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (mounted) {
           setState(() {
             _errorMessage =
-                'Failed to load profile: ${profileResponse.statusCode} - ${profileResponse.body}';
+                'Gagal memuat profil: ${profileResponse.statusCode}';
             _isLoading = false;
           });
         }
@@ -177,7 +167,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Error fetching profile or transactions: $e';
+          _errorMessage = 'Error mengambil profil: $e';
           _isLoading = false;
         });
       }
@@ -192,29 +182,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.dispose();
   }
 
-  void _onTabTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, '/pembeli_dashboard');
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, '/pembeli_dashboard/catalogue');
-        break;
-      case 2:
-        Navigator.pushReplacementNamed(context, '/pembeli_dashboard/transaksi');
-        break;
-      case 3:
-        break;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    const oliveGreen = Color(0xFF77784A);
+    const oliveGreen = Color(0xFF7A7C52);
 
     if (_isLoading) {
       return Scaffold(
@@ -231,7 +202,12 @@ class _ProfileScreenState extends State<ProfileScreen>
               stops: const [0.0, 0.4, 0.7],
             ),
           ),
-          child: const Center(child: CircularProgressIndicator()),
+          child: Center(
+            child: CircularProgressIndicator(
+              color: oliveGreen,
+              strokeWidth: size.width * 0.01,
+            ),
+          ),
         ),
       );
     }
@@ -255,11 +231,13 @@ class _ProfileScreenState extends State<ProfileScreen>
             child: Text(
               _errorMessage!,
               style: TextStyle(
-                fontSize: size.width * 0.04,
-                color: Colors.red,
-                fontWeight: FontWeight.w500,
+                fontSize: size.width * 0.045,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ),
@@ -299,22 +277,22 @@ class _ProfileScreenState extends State<ProfileScreen>
                 _bounceAnimation != null
                     ? ScaleTransition(
                         scale: _bounceAnimation!,
-                        child: _buildStatsSection(size),
+                        child: _buildStatsSection(),
                       )
-                    : _buildStatsSection(size),
+                    : _buildStatsSection(),
                 _fadeAnimation != null
                     ? FadeTransition(
                         opacity: _fadeAnimation!,
-                        child: _buildQuickActionsSection(size),
+                        child: _buildContactInfoSection(),
                       )
-                    : _buildQuickActionsSection(size),
+                    : _buildContactInfoSection(),
                 _fadeAnimation != null
                     ? FadeTransition(
                         opacity: _fadeAnimation!,
                         child: _buildMenuSection(oliveGreen),
                       )
                     : _buildMenuSection(oliveGreen),
-                SizedBox(height: size.height * 0.1),
+                SizedBox(height: size.height * 0.09),
               ],
             ),
           ),
@@ -325,7 +303,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildEnhancedHeader(Size size, Color oliveGreen) {
     return Container(
-      height: size.height * 0.32,
+      height: size.height * 0.3,
       child: Stack(
         children: [
           Positioned.fill(
@@ -337,7 +315,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   colors: [
                     oliveGreen,
                     oliveGreen.withOpacity(0.9),
-                    const Color(0xFF5A5C3A),
+                    const Color(0xFF5A5D3A),
                   ],
                 ),
               ),
@@ -347,8 +325,8 @@ class _ProfileScreenState extends State<ProfileScreen>
             top: -size.height * 0.06,
             right: -size.width * 0.12,
             child: Container(
-              width: size.width * 0.4,
-              height: size.width * 0.4,
+              width: size.width * 0.35,
+              height: size.width * 0.35,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white.withOpacity(0.1),
@@ -378,7 +356,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     boxShadow: [
                       BoxShadow(
                         color: Colors.white.withOpacity(0.6),
-                        blurRadius: size.width * 0.015,
+                        blurRadius: size.width * 0.012,
                       ),
                     ],
                   ),
@@ -388,16 +366,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                     child: CircleAvatar(
                       radius: size.width * 0.11,
                       backgroundColor: Colors.grey[300],
-                      backgroundImage: userProfile?['foto_pembeli'] != null
-                          ? NetworkImage(userProfile!['foto_pembeli'])
-                          : null,
-                      child: userProfile?['foto_pembeli'] == null
-                          ? Icon(
-                              Icons.person,
-                              size: size.width * 0.15,
-                              color: Colors.white,
-                            )
-                          : null,
+                      child: Icon(
+                        Icons.person,
+                        size: size.width * 0.14,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -419,18 +392,18 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                   ],
                 ),
-                SizedBox(height: size.height * 0.01),
+                SizedBox(height: size.height * 0.000001),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.stars,
+                      Icons.local_shipping,
                       color: Colors.amber,
                       size: size.width * 0.05,
                     ),
-                    SizedBox(width: size.width * 0.015),
+                    SizedBox(width: size.width * 0.02),
                     Text(
-                      '${userProfile?['poin'] ?? 0} Poin',
+                      userProfile?['role'] ?? 'Kurir',
                       style: TextStyle(
                         fontSize: size.width * 0.04,
                         color: Colors.white70,
@@ -449,8 +422,40 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  Widget _buildStatsSection() {
+    final size = MediaQuery.of(context).size;
+    return Transform.translate(
+      offset: Offset(0, -size.height * 0.04),
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: size.width * 0.05),
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                'Total Pengiriman',
+                userProfile?['total_deliveries'].toString() ?? '0',
+                Icons.local_shipping,
+                Colors.blue,
+              ),
+            ),
+            SizedBox(width: size.width * 0.04),
+            Expanded(
+              child: _buildStatCard(
+                'Selesai',
+                userProfile?['completed_deliveries'].toString() ?? '0',
+                Icons.check_circle,
+                Colors.green,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildStatCard(
-      String title, String value, IconData icon, Color color, Size size) {
+      String title, String value, IconData icon, Color color) {
+    final size = MediaQuery.of(context).size;
     return Container(
       padding: EdgeInsets.all(size.width * 0.04),
       decoration: BoxDecoration(
@@ -490,7 +495,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             title,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: size.width * 0.03,
+              fontSize: size.width * 0.025,
               color: Colors.grey[600],
               fontWeight: FontWeight.w500,
             ),
@@ -502,39 +507,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildStatsSection(Size size) {
-    return Transform.translate(
-      offset: Offset(0, -size.height * 0.04),
-      child: Container(
-        margin: EdgeInsets.symmetric(horizontal: size.width * 0.05),
-        child: Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                'Transaksi Aktif',
-                '${userProfile?['transaksi_aktif'] ?? 0}',
-                Icons.shopping_cart,
-                Colors.blue,
-                size,
-              ),
-            ),
-            SizedBox(width: size.width * 0.05),
-            Expanded(
-              child: _buildStatCard(
-                'Total Transaksi',
-                '${userProfile?['total_transaksi'] ?? 0}',
-                Icons.receipt_long,
-                Colors.green,
-                size,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActionsSection(Size size) {
+  Widget _buildContactInfoSection() {
+    final size = MediaQuery.of(context).size;
     return Container(
       margin: EdgeInsets.all(size.width * 0.05),
       padding: EdgeInsets.all(size.width * 0.05),
@@ -557,32 +531,40 @@ class _ProfileScreenState extends State<ProfileScreen>
             style: TextStyle(
               fontSize: size.width * 0.04,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF77784A),
+              color: const Color(0xFF7A7C52),
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           SizedBox(height: size.height * 0.02),
-          _buildContactInfo(
-            Icons.phone,
-            'Nomor Telepon',
-            userProfile?['telepon'] ?? 'Tidak tersedia',
-            () => _copyToClipboard(userProfile?['telepon'] ?? '', size),
-            size,
-          ),
-          SizedBox(height: size.height * 0.015),
           _buildContactInfo(
             Icons.email,
             'Email',
             userProfile?['email'] ?? 'Tidak tersedia',
-            () => _copyToClipboard(userProfile?['email'] ?? '', size),
-            size,
+            () => _copyToClipboard(userProfile?['email'] ?? ''),
+          ),
+          SizedBox(height: size.height * 0.015),
+          _buildContactInfo(
+            Icons.phone,
+            'Nomor Telepon',
+            userProfile?['telepon'] ?? 'Tidak tersedia',
+            () => _copyToClipboard(userProfile?['telepon'] ?? ''),
+          ),
+          SizedBox(height: size.height * 0.015),
+          _buildContactInfo(
+            Icons.location_on,
+            'Alamat',
+            userProfile?['alamat'] ?? 'Tidak tersedia',
+            () => _copyToClipboard(userProfile?['alamat'] ?? ''),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildContactInfo(IconData icon, String label, String value,
-      VoidCallback onTap, Size size) {
+  Widget _buildContactInfo(
+      IconData icon, String label, String value, VoidCallback onTap) {
+    final size = MediaQuery.of(context).size;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -597,11 +579,11 @@ class _ProfileScreenState extends State<ProfileScreen>
             Container(
               padding: EdgeInsets.all(size.width * 0.02),
               decoration: BoxDecoration(
-                color: const Color(0xFF77784A).withOpacity(0.1),
+                color: const Color(0xFF7A7C52).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon,
-                  color: const Color(0xFF77784A), size: size.width * 0.04),
+                  color: const Color(0xFF7A7C52), size: size.width * 0.04),
             ),
             SizedBox(width: size.width * 0.03),
             Expanded(
@@ -625,7 +607,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -639,22 +621,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildMenuSection(Color oliveGreen) {
-    final Size size = MediaQuery.of(context).size;
+    final size = MediaQuery.of(context).size;
     final menuItems = [
-      {
-        'icon': Icons.store,
-        'title': 'Tukar Poin dengan Merchandise',
-        'subtitle': 'Dapatkan hadiah menarik',
-        'color': Colors.purple,
-        'onTap': () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const MerchandiseListScreen(),
-            ),
-          );
-        },
-      },
       {
         'icon': Icons.logout,
         'title': 'Keluar Akun',
@@ -663,51 +631,56 @@ class _ProfileScreenState extends State<ProfileScreen>
         'onTap': () async {
           final bool? confirm = await showDialog<bool>(
             context: context,
-            builder: (context) {
-              final Size size = MediaQuery.of(context).size;
-              return AlertDialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(size.width * 0.04),
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(size.width * 0.04),
+              ),
+              title: Text(
+                'Konfirmasi Logout',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF7A7C52),
+                  fontSize: size.width * 0.045,
                 ),
-                title: Text(
-                  'Konfirmasi Logout',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF77784A),
-                    fontSize: size.width * 0.045,
-                  ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              content: Text(
+                'Apakah Anda yakin ingin keluar dari akun?',
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontSize: size.width * 0.04,
                 ),
-                content: Text(
-                  'Apakah Anda yakin ingin keluar dari akun?',
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontSize: size.width * 0.035,
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: Text(
-                      'Batal',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: size.width * 0.035,
-                      ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(
+                    'Batal',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: size.width * 0.035,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: Text(
-                      'Keluar',
-                      style: TextStyle(
-                        color: const Color(0xFF77784A),
-                        fontSize: size.width * 0.035,
-                      ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text(
+                    'Keluar',
+                    style: TextStyle(
+                      color: const Color(0xFF7A7C52),
+                      fontSize: size.width * 0.035,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
-              );
-            },
+                ),
+              ],
+            ),
           );
 
           if (confirm == true && mounted) {
@@ -727,6 +700,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                     content: Text(
                       result['message'],
                       style: TextStyle(fontSize: size.width * 0.035),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
@@ -744,14 +719,14 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Container(
       margin: EdgeInsets.symmetric(horizontal: size.width * 0.05),
       child: Column(
-        children: menuItems
-            .map((item) => _buildEnhancedMenuItem(item, size))
-            .toList(),
+        children:
+            menuItems.map((item) => _buildEnhancedMenuItem(item)).toList(),
       ),
     );
   }
 
-  Widget _buildEnhancedMenuItem(Map<String, dynamic> item, Size size) {
+  Widget _buildEnhancedMenuItem(Map<String, dynamic> item) {
+    final size = MediaQuery.of(context).size;
     return Container(
       margin: EdgeInsets.only(bottom: size.height * 0.015),
       child: Material(
@@ -808,7 +783,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           fontSize: size.width * 0.03,
                           color: Colors.grey[600],
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -834,20 +809,22 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  void _copyToClipboard(String text, Size? size) {
+  void _copyToClipboard(String text) {
+    final size = MediaQuery.of(context).size;
     if (text.isNotEmpty) {
       Clipboard.setData(ClipboardData(text: text));
       if (mounted) {
-        final screenSize = size ?? MediaQuery.of(context).size;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               '$text disalin ke clipboard',
-              style: TextStyle(fontSize: screenSize.width * 0.035),
+              style: TextStyle(fontSize: size.width * 0.035),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(screenSize.width * 0.025),
+              borderRadius: BorderRadius.circular(size.width * 0.025),
             ),
           ),
         );

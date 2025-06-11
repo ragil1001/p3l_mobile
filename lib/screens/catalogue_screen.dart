@@ -8,8 +8,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:intl/intl.dart';
 
-const String baseUrl =
-    'http://10.0.2.2:8000/api'; // Pastikan sesuai dengan server
+const String baseUrl = 'http://10.0.2.2:8000/api';
 
 class CatalogueScreen extends StatefulWidget {
   final String? selectedCategory;
@@ -23,77 +22,20 @@ class CatalogueScreen extends StatefulWidget {
 class _CatalogueScreenState extends State<CatalogueScreen>
     with SingleTickerProviderStateMixin {
   bool _isLoading = true;
-  String? _selectedCategory;
-  String? _selectedSubcategory;
   AnimationController? _animationController;
   Animation<double>? _fadeAnimation;
   Animation<Offset>? _slideAnimation;
   ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
   List<dynamic> _products = [];
-
-  final List<Map<String, dynamic>> categories = [
-    {
-      'name': 'Elektronik & Gadget',
-      'icon': Icons.devices,
-      'subcategories': ['Smartphone', 'Laptop', 'Aksesori Elektronik']
-    },
-    {
-      'name': 'Pakaian & Aksesori',
-      'icon': Icons.shopping_bag,
-      'subcategories': ['Pakaian Pria', 'Pakaian Wanita', 'Aksesori Fashion']
-    },
-    {
-      'name': 'Perabotan Rumah Tangga',
-      'icon': Icons.home,
-      'subcategories': ['Furniture', 'Dekorasi', 'Peralatan Dapur']
-    },
-    {
-      'name': 'Buku, Alat Tulis, & Peralatan Sekolah',
-      'icon': Icons.book,
-      'subcategories': ['Buku Pelajaran', 'Alat Tulis', 'Peralatan Sekolah']
-    },
-    {
-      'name': 'Hobi, Mainan, & Koleksi',
-      'icon': Icons.toys,
-      'subcategories': ['Mainan Anak', 'Koleksi Barang', 'Peralatan Hobi']
-    },
-    {
-      'name': 'Perlengkapan Bayi & Anak',
-      'icon': Icons.child_care,
-      'subcategories': ['Pakaian Bayi', 'Mainan Bayi', 'Peralatan Bayi']
-    },
-    {
-      'name': 'Otomotif & Aksesori',
-      'icon': Icons.directions_car,
-      'subcategories': ['Sparepart', 'Aksesori Mobil', 'Aksesori Motor']
-    },
-    {
-      'name': 'Perlengkapan Taman & Outdoor',
-      'icon': Icons.local_florist,
-      'subcategories': [
-        'Peralatan Taman',
-        'Dekorasi Outdoor',
-        'Peralatan Camping'
-      ]
-    },
-    {
-      'name': 'Peralatan Kantor & Industri',
-      'icon': Icons.print,
-      'subcategories': ['Peralatan Kantor', 'Mesin Industri', 'Alat Berat']
-    },
-    {
-      'name': 'Kosmetik & Perawatan Diri',
-      'icon': Icons.spa,
-      'subcategories': ['Makeup', 'Perawatan Kulit', 'Perawatan Rambut']
-    },
-  ];
+  List<dynamic> _categories = [];
+  Map<String, Set<String>> _selectedSubcategories = {};
+  TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _selectedCategory = widget.selectedCategory;
-
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -118,12 +60,57 @@ class _CatalogueScreenState extends State<CatalogueScreen>
     _animationController!.forward();
 
     _scrollController.addListener(() {
-      setState(() {
-        _isScrolled = _scrollController.offset > 50;
-      });
+      if (mounted) {
+        setState(() {
+          _isScrolled = _scrollController.offset > 50;
+        });
+      }
     });
 
-    _fetchProducts();
+    _fetchCategories().then((_) {
+      if (widget.selectedCategory != null) {
+        _applySelectedCategory();
+      } else {
+        _fetchProducts();
+      }
+    });
+
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+        _isLoading = true;
+      });
+      _fetchProducts(search: _searchQuery);
+    });
+  }
+
+  Future<void> _applySelectedCategory() async {
+    final selectedCat = widget.selectedCategory;
+    if (selectedCat == null || _categories.isEmpty) return;
+
+    final category = _categories.firstWhere(
+      (cat) => cat['NAMA'] == selectedCat,
+      orElse: () => null,
+    );
+
+    if (category != null && category['subcategories'] != null) {
+      setState(() {
+        _selectedSubcategories[selectedCat] =
+            Set<String>.from(category['subcategories']);
+        _isLoading = true;
+      });
+
+      List<String> filters = category['subcategories']
+          .map((sub) => '$selectedCat:$sub')
+          .toList()
+          .cast<String>();
+      await _fetchProducts(subcategories: filters);
+
+      if (mounted) {
+        // Show filter dialog with pre-selected category
+        _showCategoryFilterDialog(context, autoApply: false);
+      }
+    }
   }
 
   Future<bool> _checkConnectivity() async {
@@ -136,28 +123,113 @@ class _CatalogueScreenState extends State<CatalogueScreen>
     }
   }
 
-  Future<void> _fetchProducts() async {
+  Future<void> _fetchCategories() async {
+    if (!await _checkConnectivity()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tidak ada koneksi internet'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/categories'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        var jsonResponse = json.decode(response.body);
+        if (jsonResponse['success'] && jsonResponse['data'] is List) {
+          List<dynamic> categories = jsonResponse['data'];
+          for (var category in categories) {
+            final subResponse = await http.get(
+              Uri.parse(
+                  '$baseUrl/categories/${category['ID_KATEGORI']}/subcategories'),
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+              },
+            );
+            if (subResponse.statusCode == 200) {
+              var subJson = json.decode(subResponse.body);
+              if (subJson['success'] && subJson['data'] is List) {
+                category['subcategories'] =
+                    subJson['data'].map((sub) => sub['NAMASUB']).toList();
+              } else {
+                category['subcategories'] = [];
+              }
+            } else {
+              category['subcategories'] = [];
+            }
+            category['icon'] = Icons.category;
+          }
+          if (mounted) {
+            setState(() {
+              _categories = categories;
+            });
+          }
+        } else {
+          throw Exception('Unexpected response format: ${response.body}');
+        }
+      } else {
+        throw Exception('Failed to load categories: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Fetch Categories Error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat kategori: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _fetchProducts(
+      {List<String>? subcategories, String? search}) async {
     const maxRetries = 3;
     const retryDelay = Duration(seconds: 2);
     int attempt = 0;
 
     if (!await _checkConnectivity()) {
-      setState(() {
-        _isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tidak ada koneksi internet'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tidak ada koneksi internet'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
 
     while (attempt < maxRetries) {
       try {
+        var uri = Uri.parse('$baseUrl/products/mobile');
+        Map<String, dynamic> queryParams = {};
+        if (subcategories != null && subcategories.isNotEmpty) {
+          queryParams['subcategories[]'] = subcategories;
+        }
+        if (search != null && search.isNotEmpty) {
+          queryParams['search'] = search;
+        }
+        if (queryParams.isNotEmpty) {
+          uri = uri.replace(queryParameters: queryParams);
+        }
+
+        print('Fetching products with query: $uri');
         final response = await http.get(
-          Uri.parse('$baseUrl/products'),
+          uri,
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
@@ -166,38 +238,22 @@ class _CatalogueScreenState extends State<CatalogueScreen>
 
         if (response.statusCode == 200) {
           var jsonResponse = json.decode(response.body);
-          print('API Response: $jsonResponse'); // Log respons API
           if (jsonResponse['success'] && jsonResponse['data'] is List) {
-            setState(() {
-              _products = jsonResponse['data'].map((product) {
-                // Menangani baik field 'images' (list) maupun 'image' (string)
-                List<String> images = [];
-                if (product['images'] is List && product['images'].isNotEmpty) {
-                  images = product['images']
-                      .whereType<String>()
-                      .map<String>((img) =>
-                          img.startsWith('http') ? img : '$baseUrl$img')
-                      .toList();
-                } else if (product['image'] is String &&
-                    product['image'].isNotEmpty &&
-                    product['image'] != '/api/placeholder/60/60') {
-                  images = [
-                    product['image'].startsWith('http')
-                        ? product['image']
-                        : '$baseUrl${product['image']}'
-                  ];
-                } else {
-                  images = ['']; // Fallback jika tidak ada gambar valid
-                }
-                print(
-                    'Product Images for ${product['name']}: $images'); // Log URL gambar
-                return {
-                  ...product,
-                  'images': images,
-                };
-              }).toList();
-              _isLoading = false;
-            });
+            if (mounted) {
+              setState(() {
+                _products = jsonResponse['data'].map((product) {
+                  product['image'] =
+                      product['image'] != '/api/placeholder/60/60'
+                          ? '$baseUrl/products/${product['id']}/thumbnail'
+                          : '/api/placeholder/60/60';
+                  return {
+                    ...product,
+                    'images': [product['image']],
+                  };
+                }).toList();
+                _isLoading = false;
+              });
+            }
             return;
           } else {
             throw Exception('Unexpected response format: ${response.body}');
@@ -209,12 +265,14 @@ class _CatalogueScreenState extends State<CatalogueScreen>
         print('Fetch Products Error: $e');
         attempt++;
         if (attempt == maxRetries) {
-          setState(() {
-            _isLoading = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal memuat produk: $e')),
-          );
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Gagal memuat produk: $e')),
+            );
+          }
           return;
         }
         await Future.delayed(retryDelay);
@@ -223,19 +281,12 @@ class _CatalogueScreenState extends State<CatalogueScreen>
   }
 
   List<dynamic> get _filteredProducts {
-    if (_selectedCategory == null || _selectedCategory!.isEmpty) {
-      return _products;
-    }
-    return _products.where((product) {
-      String productCategory =
-          product['category']?.toString().toLowerCase() ?? '';
-      String selectedCategoryLower = _selectedCategory!.toLowerCase();
-      return productCategory == selectedCategoryLower;
-    }).toList();
+    return _products;
   }
 
   @override
   void dispose() {
+    _searchController.dispose();
     _animationController?.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -244,6 +295,9 @@ class _CatalogueScreenState extends State<CatalogueScreen>
   @override
   Widget build(BuildContext context) {
     const oliveGreen = Color(0xFF7A7C52);
+    final size = MediaQuery.of(context).size;
+    final double bottomPadding =
+        size.height * 0.15 > 100 ? 100 : size.height * 0.15;
 
     return Container(
       color: Colors.white,
@@ -257,14 +311,21 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                 floating: false,
                 elevation: 8,
                 backgroundColor: Colors.transparent,
-                flexibleSpace: AnimatedBuilder(
-                  animation: _animationController!,
-                  builder: (context, child) {
-                    return SlideTransition(
-                      position: _slideAnimation!,
-                      child: FadeTransition(
-                        opacity: _fadeAnimation!,
+                expandedHeight:
+                    _isScrolled ? size.height * 0.05 : size.height * 0.22,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: AnimatedBuilder(
+                    animation: _animationController!,
+                    builder: (context, child) {
+                      final double headerHeight =
+                          _isScrolled ? size.height * 0.1 : size.height * 0.22;
+                      return ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(25),
+                          bottomRight: Radius.circular(25),
+                        ),
                         child: Container(
+                          height: headerHeight,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
@@ -275,26 +336,15 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(25),
-                              bottomRight: Radius.circular(25),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 15,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
                           ),
                           child: Stack(
                             children: [
                               Positioned(
-                                top: -50,
-                                right: -50,
+                                top: -size.width * 0.15,
+                                right: -size.width * 0.15,
                                 child: Container(
-                                  width: 150,
-                                  height: 150,
+                                  width: size.width * 0.4,
+                                  height: size.width * 0.4,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: Colors.white.withOpacity(0.05),
@@ -302,11 +352,11 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                 ),
                               ),
                               Positioned(
-                                bottom: -30,
-                                left: -30,
+                                bottom: -size.width * 0.1,
+                                left: -size.width * 0.1,
                                 child: Container(
-                                  width: 100,
-                                  height: 100,
+                                  width: size.width * 0.3,
+                                  height: size.width * 0.3,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: Colors.white.withOpacity(0.03),
@@ -315,7 +365,9 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                               ),
                               SafeArea(
                                 child: Padding(
-                                  padding: const EdgeInsets.all(18.0),
+                                  padding: EdgeInsets.all(_isScrolled
+                                      ? size.width * 0.03
+                                      : size.width * 0.045),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -329,55 +381,49 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 FadeInDown(
-                                                  duration: const Duration(
-                                                      milliseconds: 800),
+                                                  duration: const Duration(milliseconds: 800),
                                                   child: LayoutBuilder(
-                                                    builder:
-                                                        (context, constraints) {
-                                                      double availableWidth =
-                                                          constraints.maxWidth;
-                                                      String displayText =
-                                                          _getDisplayText(
-                                                              availableWidth,
-                                                              _isScrolled);
-                                                      double fontSize =
-                                                          _getFontSize(
-                                                              _isScrolled,
-                                                              availableWidth);
+                                                    builder: (context, constraints) {
+                                                      double availableWidth = constraints.maxWidth;
+                                                      String displayText = _getDisplayText(availableWidth, _isScrolled);
+                                                      double fontSize = _getFontSize(_isScrolled, availableWidth, size);
 
-                                                      return Text(
-                                                        displayText,
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: fontSize,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          height: 1.2,
+                                                      return Padding(
+                                                        padding: EdgeInsets.only(left: size.width * 0.03), // Tambahkan padding kiri di sini
+                                                        child: Text(
+                                                          displayText,
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: fontSize,
+                                                            fontWeight: FontWeight.bold,
+                                                            height: 1.2,
+                                                          ),
+                                                          maxLines: _isScrolled ? 1 : 2,
+                                                          overflow: TextOverflow.ellipsis,
+                                                          softWrap: true,
                                                         ),
-                                                        maxLines:
-                                                            _isScrolled ? 1 : 2,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                        softWrap: true,
                                                       );
                                                     },
                                                   ),
                                                 ),
                                                 if (!_isScrolled) ...[
-                                                  const SizedBox(height: 6),
+                                                  SizedBox(
+                                                      height:
+                                                          size.height * 0.01),
                                                   FadeInDown(
-                                                    duration: const Duration(
-                                                        milliseconds: 900),
-                                                    child: const Text(
-                                                      'Temukan produk preloved berkualitas dengan harga terjangkau',
-                                                      style: TextStyle(
-                                                        color: Colors.white70,
-                                                        fontSize: 13,
-                                                        height: 1.3,
+                                                    duration: const Duration(milliseconds: 900),
+                                                    child: Padding(
+                                                      padding: EdgeInsets.only(left: size.width * 0.03), // Samakan dengan header
+                                                      child: Text(
+                                                        'Temukan produk preloved berkualitas dengan harga terjangkau',
+                                                        style: TextStyle(
+                                                          color: Colors.white70,
+                                                          fontSize: size.width * 0.035,
+                                                          height: 1.3,
+                                                        ),
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow.ellipsis,
                                                       ),
-                                                      maxLines: 2,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                 ],
@@ -387,17 +433,26 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                         ],
                                       ),
                                       if (!_isScrolled) ...[
-                                        const SizedBox(height: 16),
+                                        SizedBox(height: size.height * 0.02),
                                         FadeInUp(
                                           duration: const Duration(
                                               milliseconds: 1000),
-                                          child: Container(
-                                            height: 48,
+                                          child: AnimatedContainer(
+                                            duration: const Duration(
+                                                milliseconds: 300),
+                                            height: _isScrolled
+                                                ? 0
+                                                : (size.height * 0.06 > 48
+                                                    ? 48
+                                                    : size.height * 0.06),
                                             decoration: BoxDecoration(
                                               color: Colors.white
                                                   .withOpacity(0.95),
                                               borderRadius:
-                                                  BorderRadius.circular(25),
+                                                  BorderRadius.circular(
+                                                      _isScrolled
+                                                          ? 0
+                                                          : size.width * 0.06),
                                               boxShadow: [
                                                 BoxShadow(
                                                   color: Colors.black
@@ -414,29 +469,55 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                             ),
                                             child: Row(
                                               children: [
-                                                const Padding(
+                                                Padding(
                                                   padding: EdgeInsets.symmetric(
-                                                      horizontal: 16),
+                                                      horizontal:
+                                                          size.width * 0.04),
                                                   child: Icon(
                                                     Icons.search,
                                                     color: Colors.grey,
-                                                    size: 22,
+                                                    size: size.width * 0.055,
                                                   ),
                                                 ),
-                                                const Expanded(
+                                                Expanded(
                                                   child: TextField(
+                                                    controller:
+                                                        _searchController,
                                                     decoration: InputDecoration(
                                                       hintText:
                                                           'Cari produk impianmu...',
                                                       hintStyle: TextStyle(
                                                         color: Colors.grey,
-                                                        fontSize: 14,
+                                                        fontSize:
+                                                            size.width * 0.035,
                                                       ),
                                                       border: InputBorder.none,
                                                       contentPadding:
                                                           EdgeInsets.symmetric(
-                                                              vertical: 14),
+                                                              vertical:
+                                                                  size.height *
+                                                                      0.017),
+                                                      suffixIcon: _searchQuery
+                                                              .isNotEmpty
+                                                          ? IconButton(
+                                                              icon: Icon(
+                                                                  Icons.clear,
+                                                                  color: Colors
+                                                                      .grey,
+                                                                  size:
+                                                                      size.width *
+                                                                          0.05),
+                                                              onPressed: () {
+                                                                _searchController
+                                                                    .clear();
+                                                              },
+                                                            )
+                                                          : null,
                                                     ),
+                                                    style: TextStyle(
+                                                        color: Colors.black,
+                                                        fontSize:
+                                                            size.width * 0.035),
                                                   ),
                                                 ),
                                               ],
@@ -451,15 +532,15 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                             ],
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-                expandedHeight: _isScrolled ? 90 : 180,
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16.0, 10.0, 16.0, 0),
+                  padding: EdgeInsets.fromLTRB(size.width * 0.04,
+                      size.height * 0.015, size.width * 0.04, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -469,26 +550,26 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                           children: [
                             Container(
                               width: 4,
-                              height: 30,
+                              height: size.height * 0.04,
                               decoration: BoxDecoration(
                                 color: const Color(0xFF1A3C34),
                                 borderRadius: BorderRadius.circular(2),
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'Katalog ReuseMart',
+                            SizedBox(width: size.width * 0.03),
+                            Text(
+                              'Katalog Produk',
                               style: TextStyle(
-                                fontSize: 20,
+                                fontSize: size.width * 0.05,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1A3C34),
+                                color: const Color(0xFF1A3C34),
                               ),
                             ),
                             const Spacer(),
                             Text(
                               '${_filteredProducts.length} produk',
-                              style: const TextStyle(
-                                fontSize: 12,
+                              style: TextStyle(
+                                fontSize: size.width * 0.03,
                                 color: Colors.grey,
                               ),
                             ),
@@ -500,11 +581,11 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                childAspectRatio: 0.75,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: size.width > 600 ? 3 : 2,
+                                childAspectRatio: size.width > 600 ? 0.8 : 0.75,
+                                crossAxisSpacing: size.width * 0.02,
+                                mainAxisSpacing: size.width * 0.02,
                               ),
                               itemCount: 6,
                               itemBuilder: (context, index) {
@@ -514,7 +595,8 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                   child: Container(
                                     decoration: BoxDecoration(
                                       color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(
+                                          size.width * 0.03),
                                       boxShadow: [
                                         BoxShadow(
                                           color: Colors.black.withOpacity(0.1),
@@ -528,23 +610,25 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                           CrossAxisAlignment.start,
                                       children: [
                                         Container(
-                                          height: 100,
+                                          height: size.width * 0.25,
                                           width: double.infinity,
-                                          decoration: const BoxDecoration(
+                                          decoration: BoxDecoration(
                                             color: Colors.grey,
                                             borderRadius: BorderRadius.vertical(
-                                                top: Radius.circular(12)),
+                                                top: Radius.circular(
+                                                    size.width * 0.03)),
                                           ),
                                         ),
-                                        const Padding(
-                                          padding: EdgeInsets.all(8.0),
+                                        Padding(
+                                          padding:
+                                              EdgeInsets.all(size.width * 0.02),
                                           child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
                                               SizedBox(
-                                                height: 16,
-                                                width: 100,
+                                                height: size.width * 0.04,
+                                                width: size.width * 0.25,
                                                 child: DecoratedBox(
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey,
@@ -554,10 +638,11 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                                   ),
                                                 ),
                                               ),
-                                              SizedBox(height: 4),
                                               SizedBox(
-                                                height: 12,
-                                                width: 80,
+                                                  height: size.width * 0.01),
+                                              SizedBox(
+                                                height: size.width * 0.03,
+                                                width: size.width * 0.2,
                                                 child: DecoratedBox(
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey,
@@ -567,10 +652,11 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                                   ),
                                                 ),
                                               ),
-                                              SizedBox(height: 4),
                                               SizedBox(
-                                                height: 12,
-                                                width: 60,
+                                                  height: size.width * 0.01),
+                                              SizedBox(
+                                                height: size.width * 0.03,
+                                                width: size.width * 0.15,
                                                 child: DecoratedBox(
                                                   decoration: BoxDecoration(
                                                     color: Colors.grey,
@@ -596,16 +682,16 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
                                   gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    childAspectRatio: 0.75,
-                                    crossAxisSpacing: 16,
-                                    mainAxisSpacing: 16,
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: size.width > 600 ? 3 : 2,
+                                    childAspectRatio:
+                                        size.width > 600 ? 0.8 : 0.75,
+                                    crossAxisSpacing: size.width * 0.04,
+                                    mainAxisSpacing: size.width * 0.04,
                                   ),
                                   itemCount: _filteredProducts.length,
                                   itemBuilder: (context, index) {
                                     final product = _filteredProducts[index];
-                                    print('Rendering Product $index: $product');
                                     return FadeInUp(
                                       duration: Duration(
                                           milliseconds: 500 + (index * 100)),
@@ -615,15 +701,14 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                             'Produk Tanpa Nama',
                                         subcategory:
                                             product['subcategory'] ?? '',
-                                        price:
-                                            'Rp ${product['price']?.toStringAsFixed(0) ?? '0'}',
-                                        volume: product['volume'] ?? 'N/A',
+                                        price: _formatRupiah(
+                                            product['price'] ?? 0),
                                         condition:
                                             product['condition'] ?? 'N/A',
                                         weight: product['weight']?.toString() ??
                                             'N/A',
                                         warranty:
-                                            product['warranty_date'] ?? '–',
+                                            product['warranty_date'] ?? '-',
                                         description:
                                             product['description'] ?? '',
                                         images: List<String>.from(
@@ -632,7 +717,7 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                     );
                                   },
                                 ),
-                      const SizedBox(height: 80),
+                      SizedBox(height: bottomPadding),
                     ],
                   ),
                 ),
@@ -640,13 +725,13 @@ class _CatalogueScreenState extends State<CatalogueScreen>
             ],
           ),
           Positioned(
-            bottom: 20,
-            right: 20,
+            bottom: size.height * 0.12,
+            right: size.width * 0.04,
             child: ZoomIn(
               duration: const Duration(milliseconds: 800),
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(size.width * 0.075),
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFF1A3C34).withOpacity(0.3),
@@ -659,16 +744,18 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                   onPressed: () {
                     _showFilterSortDialog(context);
                   },
-                  backgroundColor: const Color(0xFF1A3C34),
+                  backgroundColor: const Color(0xFF5A5D3A),
                   elevation: 0,
-                  label: const Text(
+                  label: Text(
                     'Filter',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
+                      fontSize: size.width * 0.035,
                     ),
                   ),
-                  icon: const Icon(Icons.tune, color: Colors.white),
+                  icon: Icon(Icons.tune,
+                      color: Colors.white, size: size.width * 0.05),
                 ),
               ),
             ),
@@ -676,6 +763,10 @@ class _CatalogueScreenState extends State<CatalogueScreen>
         ],
       ),
     );
+  }
+
+  String _formatRupiah(num price) {
+    return 'Rp ${NumberFormat("#,##0", "id_ID").format(price)}';
   }
 
   String _getDisplayText(double availableWidth, bool isScrolled) {
@@ -690,65 +781,87 @@ class _CatalogueScreenState extends State<CatalogueScreen>
     }
   }
 
-  double _getFontSize(bool isScrolled, double availableWidth) {
+  double _getFontSize(bool isScrolled, double availableWidth, Size size) {
     if (isScrolled) {
-      return availableWidth < 250 ? 14 : 16;
+      return availableWidth < 250
+          ? size.width * 0.035
+          : size.width * 0.04; // Responsive font
     } else {
       if (availableWidth < 280) {
-        return 18;
+        return size.width * 0.05;
       } else {
-        return 20;
+        return size.width * 0.05;
       }
     }
   }
 
   void _showFilterSortDialog(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(size.width * 0.05)),
       ),
       builder: (context) {
         return Container(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(size.width * 0.04),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Filter & Sort',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: size.width * 0.045, // Responsive font
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A3C34),
+                  color: const Color(0xFF1A3C34),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: size.height * 0.02),
               ListTile(
-                leading: const Icon(Icons.sort, color: Color(0xFF1A3C34)),
-                title: const Text('Sort by Price: Low to High'),
+                leading: Icon(Icons.sort,
+                    color: const Color(0xFF1A3C34),
+                    size: size.width * 0.05), // Responsive icon
+                title: Text(
+                  'Sort by Price: Low to High',
+                  style: TextStyle(
+                      fontSize: size.width * 0.035), // Responsive font
+                ),
                 onTap: () {
-                  setState(() {
-                    _products.sort(
-                        (a, b) => (a['price'] ?? 0).compareTo(b['price'] ?? 0));
-                  });
+                  if (mounted) {
+                    setState(() {
+                      _products.sort((a, b) =>
+                          (a['price'] ?? 0).compareTo(b['price'] ?? 0));
+                    });
+                  }
                   Navigator.pop(context);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.sort, color: Color(0xFF1A3C34)),
-                title: const Text('Sort by Price: High to Low'),
+                leading: Icon(Icons.sort,
+                    color: const Color(0xFF1A3C34), size: size.width * 0.05),
+                title: Text(
+                  'Sort by Price: High to Low',
+                  style: TextStyle(fontSize: size.width * 0.035),
+                ),
                 onTap: () {
-                  setState(() {
-                    _products.sort(
-                        (a, b) => (b['price'] ?? 0).compareTo(a['price'] ?? 0));
-                  });
+                  if (mounted) {
+                    setState(() {
+                      _products.sort((a, b) =>
+                          (b['price'] ?? 0).compareTo(a['price'] ?? 0));
+                    });
+                  }
                   Navigator.pop(context);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.filter_alt, color: Color(0xFF1A3C34)),
-                title: const Text('Filter by Category'),
+                leading: Icon(Icons.filter_alt,
+                    color: const Color(0xFF1A3C34), size: size.width * 0.05),
+                title: Text(
+                  'Filter by Category',
+                  style: TextStyle(fontSize: size.width * 0.035),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _showCategoryFilterDialog(context);
@@ -761,69 +874,175 @@ class _CatalogueScreenState extends State<CatalogueScreen>
     );
   }
 
-  void _showCategoryFilterDialog(BuildContext context) {
+  void _showCategoryFilterDialog(BuildContext context,
+      {bool autoApply = true}) {
+    final size = MediaQuery.of(context).size;
+    Map<String, Set<String>> localSelected = {};
+    _selectedSubcategories.forEach((cat, subs) {
+      localSelected[cat] = Set.from(subs);
+    });
+
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(size.width * 0.05)),
       ),
       builder: (context) {
-        return SingleChildScrollView(
-          child: Container(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Filter by Category',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A3C34),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: categories.length,
-                  itemBuilder: (context, index) {
-                    final category = categories[index];
-                    return ExpansionTile(
-                      leading: Icon(category['icon'],
-                          color: const Color(0xFF1A3C34)),
-                      title: Text(category['name']),
-                      children: (category['subcategories'] as List<String>)
-                          .map((subcategory) {
-                        return ListTile(
-                          title: Text(subcategory),
-                          onTap: () {
-                            setState(() {
-                              _selectedCategory = category['name'];
-                              _selectedSubcategory = subcategory;
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return SingleChildScrollView(
+              child: Container(
+                padding: EdgeInsets.all(size.width * 0.04),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Filter by Category',
+                      style: TextStyle(
+                        fontSize: size.width * 0.045, // Responsive font
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF5A5D3A),
+                      ),
+                    ),
+                    SizedBox(height: size.height * 0.02),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            icon: Icon(Icons.clear,
+                                color: const Color(0xFF5A5D3A),
+                                size: size.width * 0.05), // Responsive icon
+                            label: Text(
+                              'Clear Filter',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF5A5D3A),
+                                fontSize: size.width * 0.035, // Responsive font
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF5A5D3A),
+                              elevation: 0,
+                              side: const BorderSide(color: Color(0xFF5A5D3A)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(size.width * 0.02),
+                              ),
+                            ),
+                            onPressed: () {
+                              setStateDialog(() {
+                                localSelected.clear();
+                              });
+                              if (mounted) {
+                                setState(() {
+                                  _selectedSubcategories = {};
+                                  _isLoading = true;
+                                });
+                              }
+                              _fetchProducts();
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ),
+                        SizedBox(width: size.width * 0.02),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              List<String> filters = [];
+                              localSelected.forEach((cat, subs) {
+                                for (var sub in subs) {
+                                  filters.add('$cat:$sub');
+                                }
+                              });
+                              if (mounted) {
+                                setState(() {
+                                  _selectedSubcategories = localSelected;
+                                  _isLoading = true;
+                                });
+                              }
+                              _fetchProducts(subcategories: filters);
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF5A5D3A),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(size.width * 0.02),
+                              ),
+                            ),
+                            child: Text(
+                              'Apply Filter',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                                fontSize: size.width * 0.035, // Responsive font
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: size.height * 0.02),
+                    ..._categories.map((category) {
+                      String catName = category['NAMA'];
+                      List<String> subcats =
+                          List<String>.from(category['subcategories']);
+                      bool isAllSelected = subcats.isNotEmpty &&
+                          subcats.every((sub) =>
+                              localSelected[catName]?.contains(sub) ?? false);
+                      return ExpansionTile(
+                        leading: Checkbox(
+                          value: isAllSelected,
+                          onChanged: (bool? value) {
+                            setStateDialog(() {
+                              if (value == true) {
+                                localSelected[catName] = Set.from(subcats);
+                              } else {
+                                localSelected[catName] = {};
+                              }
                             });
-                            Navigator.pop(context);
                           },
-                        );
-                      }).toList(),
-                    );
-                  },
+                        ),
+                        title: Text(
+                          catName,
+                          style: TextStyle(
+                              fontSize: size.width * 0.035), // Responsive font
+                        ),
+                        children: subcats.map((subcategory) {
+                          return CheckboxListTile(
+                            title: Text(
+                              subcategory,
+                              style: TextStyle(
+                                  fontSize:
+                                      size.width * 0.03), // Responsive font
+                            ),
+                            value:
+                                localSelected[catName]?.contains(subcategory) ??
+                                    false,
+                            onChanged: (bool? value) {
+                              setStateDialog(() {
+                                if (value == true) {
+                                  localSelected[catName] ??= {};
+                                  localSelected[catName]!.add(subcategory);
+                                } else {
+                                  localSelected[catName]?.remove(subcategory);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      );
+                    }).toList(),
+                  ],
                 ),
-                ListTile(
-                  leading: const Icon(Icons.clear, color: Color(0xFF1A3C34)),
-                  title: const Text('Clear Filter'),
-                  onTap: () {
-                    setState(() {
-                      _selectedCategory = null;
-                      _selectedSubcategory = null;
-                    });
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -835,7 +1054,6 @@ class ProductCard extends StatefulWidget {
   final String title;
   final String subcategory;
   final String price;
-  final String volume;
   final String condition;
   final String weight;
   final String warranty;
@@ -848,7 +1066,6 @@ class ProductCard extends StatefulWidget {
     required this.title,
     required this.subcategory,
     required this.price,
-    required this.volume,
     required this.condition,
     required this.weight,
     required this.warranty,
@@ -861,11 +1078,6 @@ class ProductCard extends StatefulWidget {
 }
 
 class _ProductCardState extends State<ProductCard> {
-  String _formatRupiah(String price) {
-    final number = int.tryParse(price.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-    return 'Rp ${NumberFormat("#,##0", "id_ID").format(number)}';
-  }
-
   double _scale = 1.0;
 
   void _onTapDown(TapDownDetails details) {
@@ -894,7 +1106,10 @@ class _ProductCardState extends State<ProductCard> {
 
   @override
   Widget build(BuildContext context) {
-    print('ProductCard Image URLs: ${widget.images}'); // Log URL gambar
+    final size = MediaQuery.of(context).size;
+    final imageUrl = widget.images.isNotEmpty && widget.images[0].isNotEmpty
+        ? widget.images[0]
+        : '/api/placeholder/60/60';
     return GestureDetector(
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
@@ -904,75 +1119,68 @@ class _ProductCardState extends State<ProductCard> {
         duration: const Duration(milliseconds: 200),
         child: Card(
           elevation: 10,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(size.width * 0.04)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Hero(
                 tag: 'productImage${widget.id}_0',
                 child: ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: widget.images.isNotEmpty &&
-                          widget.images[0].isNotEmpty &&
-                          widget.images[0].startsWith('http')
-                      ? CachedNetworkImage(
-                          imageUrl: widget.images[0],
-                          height: 100,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              const Center(child: CircularProgressIndicator()),
-                          errorWidget: (context, url, error) {
-                            print(
-                                'Image Load Error for ${widget.images[0]}: $error');
-                            return Image.asset(
-                              'assets/images/placeholder.png',
-                              height: 100,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            );
-                          },
-                        )
-                      : Image.asset(
-                          'assets/images/placeholder.png',
-                          height: 100,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
+                  borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(size.width * 0.04)),
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    height: size.width * 0.25, // Responsive height
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        color: Colors.grey,
+                      ),
+                    ),
+                    errorWidget: (context, url, error) {
+                      print('Image Load Error for $url: $error');
+                      return Image.asset(
+                        'assets/images/placeholder.png',
+                        height: size.width * 0.25,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      );
+                    },
+                  ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: EdgeInsets.all(size.width * 0.02),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       widget.title,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: size.width * 0.035, // Responsive font
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      widget.volume,
-                      style: const TextStyle(fontSize: 10, color: Colors.grey),
-                    ),
+                    SizedBox(height: size.width * 0.005),
                     Text(
                       widget.subcategory,
-                      style: const TextStyle(fontSize: 10, color: Colors.grey),
+                      style: TextStyle(
+                          fontSize: size.width * 0.025, // Responsive font
+                          color: Colors.grey),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: size.width * 0.01),
                     Text(
-                      _formatRupiah(widget.price),
-                      style: const TextStyle(
-                        fontSize: 12,
+                      widget.price,
+                      style: TextStyle(
+                        fontSize: size.width * 0.03, // Responsive font
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A3C34),
+                        color: const Color(0xFF1A3C34),
                       ),
                     ),
                   ],

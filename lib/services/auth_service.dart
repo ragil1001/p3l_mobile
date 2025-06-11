@@ -17,6 +17,16 @@ class AuthService {
     return prefs.getString('role');
   }
 
+  Future<String?> getUserType() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_type');
+  }
+
+  Future<String?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_id');
+  }
+
   Future<void> _requestNotificationPermission() async {
     NotificationSettings settings = await _messaging.requestPermission(
       alert: true,
@@ -27,7 +37,6 @@ class AuthService {
       provisional: false,
       sound: true,
     );
-    print('Permission: ${settings.authorizationStatus}');
     if (settings.authorizationStatus == AuthorizationStatus.authorized ||
         settings.authorizationStatus == AuthorizationStatus.provisional) {
       print('Notification permission granted');
@@ -79,13 +88,13 @@ class AuthService {
         await prefs.setString('token', data['token']);
         await prefs.setString('user_type', data['user_type']);
         await prefs.setString('role', data['user']['role'][0] ?? '');
+        await prefs.setString('user_id', data['user']['id'].toString());
 
-        // Request notification permission and send FCM token
         await _requestNotificationPermission();
         final fcmToken = await _messaging.getToken();
         if (fcmToken != null) {
           await sendFcmTokenToBackend(fcmToken);
-          print('FCM Token: $fcmToken'); // Debug
+          print('FCM Token: $fcmToken');
         }
 
         return {
@@ -94,6 +103,7 @@ class AuthService {
             'token': data['token'],
             'user_type': data['user_type'],
             'role': data['user']['role'][0],
+            'user_id': data['user']['id'],
           },
         };
       } else {
@@ -131,12 +141,9 @@ class AuthService {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 201) {
-        // Request notification permission and send FCM token
         await _requestNotificationPermission();
         final fcmToken = await _messaging.getToken();
         if (fcmToken != null) {
-          // Note: We can't send the token yet because the user isn't logged in.
-          // We'll send it after login.
           print('FCM token retrieved: $fcmToken');
         }
 
@@ -169,6 +176,7 @@ class AuthService {
         await prefs.remove('token');
         await prefs.remove('user_type');
         await prefs.remove('role');
+        await prefs.remove('user_id');
         return {'success': true, 'message': 'Logged out locally'};
       }
 
@@ -183,6 +191,7 @@ class AuthService {
       await prefs.remove('token');
       await prefs.remove('user_type');
       await prefs.remove('role');
+      await prefs.remove('user_id');
 
       if (response.statusCode == 200) {
         return {'success': true, 'message': 'Successfully logged out'};
@@ -197,6 +206,7 @@ class AuthService {
       await prefs.remove('token');
       await prefs.remove('user_type');
       await prefs.remove('role');
+      await prefs.remove('user_id');
       return {
         'success': true,
         'message': 'Logged out locally due to network error',

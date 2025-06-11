@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
-import 'courier_profile.dart';
-import 'courier_delivery_history.dart';
-import 'courier_dashboard_content.dart';
+import 'hunter_profile.dart';
+import 'hunter_commission_history.dart';
+import 'hunter_dashboard_content.dart';
 import '../../services/auth_service.dart';
 
-class CourierDashboard extends StatefulWidget {
-  const CourierDashboard({super.key});
+class HunterDashboard extends StatefulWidget {
+  const HunterDashboard({super.key});
 
   @override
-  _CourierDashboardState createState() => _CourierDashboardState();
+  _HunterDashboardState createState() => _HunterDashboardState();
 }
 
-class _CourierDashboardState extends State<CourierDashboard>
+class _HunterDashboardState extends State<HunterDashboard>
     with TickerProviderStateMixin {
   int _selectedIndex = 0;
   AnimationController? _animationController;
@@ -22,14 +22,14 @@ class _CourierDashboardState extends State<CourierDashboard>
   String? _errorMessage;
 
   final List<Widget> _pages = [
-    const CourierDashboardContent(),
-    const DeliveryHistoryScreen(),
-    const CourierProfileScreen(),
+    const DashboardContent(),
+    const CommissionHistoryScreen(),
+    const ProfileScreen(),
   ];
 
   final List<NavItem> _navItems = [
     NavItem(icon: Icons.dashboard, label: 'Dashboard'),
-    NavItem(icon: Icons.history, label: 'Deliveries'),
+    NavItem(icon: Icons.monetization_on, label: 'Commissions'),
     NavItem(icon: Icons.person, label: 'Profile'),
   ];
 
@@ -58,10 +58,10 @@ class _CourierDashboardState extends State<CourierDashboard>
     try {
       final token = await _authService.getToken();
       final role = await _authService.getRole();
-      if (token == null || role != 'kurir') {
+      if (token == null || role != 'hunter') {
         if (mounted) {
           setState(() {
-            _errorMessage = 'Akses tidak sah. Silakan login sebagai Kurir.';
+            _errorMessage = 'Akses tidak sah. Silakan login sebagai Hunter.';
             _isLoading = false;
           });
           Navigator.pushReplacementNamed(context, '/login');

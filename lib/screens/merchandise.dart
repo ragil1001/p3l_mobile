@@ -38,7 +38,7 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
 
     _headerSlideAnimation = Tween<double>(
       begin: -100.0,
-      end: 0.0,
+      end: 0,
     ).animate(CurvedAnimation(
       parent: _headerAnimationController,
       curve: Curves.easeOutBack,
@@ -115,7 +115,7 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
       }
 
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:8000/api/pembeli/merchandise'),
+        Uri.parse('http://10.0.2.2:8000/api/merchandise'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -150,6 +150,10 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final baseFontSize =
+        size.width < 360 ? size.width * 0.035 : size.width * 0.04;
+
     if (_isLoading) {
       return Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -158,7 +162,16 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
 
     if (_errorMessage != null) {
       return Scaffold(
-        body: Center(child: Text(_errorMessage!)),
+        body: Center(
+          child: Text(
+            _errorMessage!,
+            style: TextStyle(
+              fontSize: baseFontSize,
+              color: Colors.red,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
       );
     }
 
@@ -182,68 +195,46 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
             SliverAppBar(
               pinned: true,
               floating: false,
-              expandedHeight: 140,
-              elevation: 0,
+              expandedHeight: size.height * 0.22,
+              elevation: 8,
               backgroundColor: Colors.transparent,
-              leading: AnimatedBuilder(
-                animation: _headerFadeAnimation,
-                builder: (context, child) {
-                  return Transform.translate(
-                    offset: Offset(_headerSlideAnimation.value, 0),
-                    child: Opacity(
-                      opacity: _headerFadeAnimation.value,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            color: Colors.white.withOpacity(0.9),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              color: Color(0xFF77784A),
-                            ),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ),
-                      ),
+              leading: Padding(
+                padding: EdgeInsets.all(size.width * 0.02),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Color(0xFF7A7C52).withOpacity(0.7),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: size.width * 0.05,
                     ),
-                  );
-                },
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
               ),
               actions: [
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: EdgeInsets.all(size.width * 0.02),
                   child: Container(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: Colors.white.withOpacity(0.9),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      borderRadius: BorderRadius.circular(10),
+                      color: Color(0xFF7A7C52).withOpacity(0.7),
                     ),
                     child: IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.history,
-                        color: Color(0xFF77784A),
+                        color: Colors.white,
+                        size: size.width * 0.05,
                       ),
                       onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const PenukaranHistoryScreen(),
+                            builder: (context) =>
+                                const PenukaranHistoryScreen(),
                           ),
                         );
                       },
@@ -252,128 +243,142 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
                 ),
               ],
               flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFF77784A),
-                        const Color(0xFF8B8C5E),
-                        const Color(0xFF5A5D3A),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(30),
-                      bottomRight: Radius.circular(30),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF77784A).withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+                background: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(25),
+                    bottomRight: Radius.circular(25),
                   ),
-                  child: SafeArea(
-                    child: AnimatedBuilder(
-                      animation: _headerFadeAnimation,
-                      builder: (context, child) {
-                        return Transform.translate(
-                          offset: Offset(0, _headerSlideAnimation.value * 0.5),
-                          child: Opacity(
-                            opacity: _headerFadeAnimation.value,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const SizedBox(height: 15),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: const Icon(
-                                        Icons.redeem_rounded,
-                                        color: Colors.white,
-                                        size: 24,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    const Text(
-                                      'Tukar Poin',
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: Colors.white.withOpacity(0.3),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF77784A),
+                          const Color(0xFF8B8C5E),
+                          const Color(0xFF5A5D3A),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: SafeArea(
+                      child: AnimatedBuilder(
+                        animation: _headerFadeAnimation,
+                        builder: (context, child) {
+                          return Transform.translate(
+                            offset:
+                                Offset(0, _headerSlideAnimation.value * 0.5),
+                            child: Opacity(
+                              opacity: _headerFadeAnimation.value,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(height: size.height * 0.02),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      const Icon(
-                                        Icons.stars_rounded,
-                                        color: Colors.amber,
-                                        size: 20,
+                                      Container(
+                                        padding:
+                                            EdgeInsets.all(size.width * 0.02),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: Icon(
+                                          Icons.redeem_rounded,
+                                          color: Colors.white,
+                                          size: baseFontSize * 1.5,
+                                        ),
                                       ),
-                                      const SizedBox(width: 8),
+                                      SizedBox(width: size.width * 0.03),
                                       Text(
-                                        'Poin Anda: ${userPoints ?? 0}',
-                                        style: const TextStyle(
-                                          fontSize: 16,
+                                        'Tukar Poin',
+                                        style: TextStyle(
+                                          fontSize: baseFontSize * 1.5,
                                           fontWeight: FontWeight.bold,
                                           color: Colors.white,
+                                          letterSpacing: 0.5,
                                         ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Tukarkan poin dengan merchandise eksklusif',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.white.withOpacity(0.8),
-                                    letterSpacing: 0.3,
+                                  SizedBox(height: size.height * 0.015),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: size.width * 0.04,
+                                      vertical: size.height * 0.01,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.stars_rounded,
+                                          color: Colors.amber,
+                                          size: baseFontSize * 1.25,
+                                        ),
+                                        SizedBox(width: size.width * 0.02),
+                                        Text(
+                                          'Poin Anda: ${userPoints ?? 0}',
+                                          style: TextStyle(
+                                            fontSize: baseFontSize,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  SizedBox(height: size.height * 0.01),
+                                  Text(
+                                    'Tukarkan poin dengan merchandise eksklusif',
+                                    style: TextStyle(
+                                      fontSize: baseFontSize * 0.875,
+                                      color: Colors.white.withOpacity(0.8),
+                                      letterSpacing: 0.3,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+              padding: EdgeInsets.fromLTRB(
+                size.width * 0.04,
+                size.height * 0.02,
+                size.width * 0.04,
+                size.height * 0.02,
+              ),
               sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: size.width < 600 ? 2 : 3,
+                  crossAxisSpacing: size.width * 0.03,
+                  mainAxisSpacing: size.height * 0.015,
                   childAspectRatio: 0.75,
                 ),
                 delegate: SliverChildBuilderDelegate(
@@ -387,7 +392,7 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
                         productName: item['NAMA'],
                         pointsRequired: item['POIN_DIBUTUHKAN'],
                         stock: item['STOK'],
-                        imageAsset: item['URL_GAMBAR'],
+                        imageUrl: item['URL_GAMBAR'],
                         userPoints: userPoints ?? 0,
                         isPopular: index == 0 || index == 3,
                         onExchangeSuccess: () {
@@ -413,7 +418,7 @@ class PointsMerchandiseCard extends StatelessWidget {
   final String productName;
   final int pointsRequired;
   final int stock;
-  final String imageAsset;
+  final String? imageUrl;
   final int userPoints;
   final bool isPopular;
   final VoidCallback onExchangeSuccess;
@@ -424,7 +429,7 @@ class PointsMerchandiseCard extends StatelessWidget {
     required this.productName,
     required this.pointsRequired,
     required this.stock,
-    required this.imageAsset,
+    required this.imageUrl,
     required this.userPoints,
     this.isPopular = false,
     required this.onExchangeSuccess,
@@ -435,6 +440,10 @@ class PointsMerchandiseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final baseFontSize =
+        size.width < 360 ? size.width * 0.035 : size.width * 0.04;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -477,7 +486,7 @@ class PointsMerchandiseCard extends StatelessWidget {
                     flex: 3,
                     child: Container(
                       width: double.infinity,
-                      margin: const EdgeInsets.all(8),
+                      margin: EdgeInsets.all(size.width * 0.02),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
@@ -495,12 +504,30 @@ class PointsMerchandiseCard extends StatelessWidget {
                       ),
                       child: Stack(
                         children: [
-                          const Center(
-                            child: Icon(
-                              Icons.image_outlined,
-                              color: Color(0xFF77784A),
-                              size: 40,
-                            ),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: imageUrl != null
+                                ? Image.network(
+                                    imageUrl!,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    errorBuilder:
+                                        (context, error, stackTrace) => Center(
+                                      child: Icon(
+                                        Icons.image_outlined,
+                                        color: Color(0xFF77784A),
+                                        size: baseFontSize * 2.5,
+                                      ),
+                                    ),
+                                  )
+                                : Center(
+                                    child: Icon(
+                                      Icons.image_outlined,
+                                      color: Color(0xFF77784A),
+                                      size: baseFontSize * 2.5,
+                                    ),
+                                  ),
                           ),
                           Positioned.fill(
                             child: Container(
@@ -530,10 +557,10 @@ class PointsMerchandiseCard extends StatelessWidget {
                                   child: Text(
                                     !inStock ? 'HABIS' : 'POIN\nTIDAK CUKUP',
                                     textAlign: TextAlign.center,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 12,
+                                      fontSize: baseFontSize * 0.75,
                                     ),
                                   ),
                                 ),
@@ -546,14 +573,19 @@ class PointsMerchandiseCard extends StatelessWidget {
                   Expanded(
                     flex: 2,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                      padding: EdgeInsets.fromLTRB(
+                        size.width * 0.03,
+                        0,
+                        size.width * 0.03,
+                        size.height * 0.015,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             productName,
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: baseFontSize * 0.725,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF1A3C34),
                               height: 1.2,
@@ -561,32 +593,33 @@ class PointsMerchandiseCard extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 6),
+                          SizedBox(height: size.height * 0.01),
                           Row(
                             children: [
                               Icon(
                                 Icons.inventory_2_outlined,
-                                size: 14,
+                                size: baseFontSize * 0.875,
                                 color: inStock ? Colors.green : Colors.red,
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: size.width * 0.01),
                               Text(
                                 'Stok: $stock',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: baseFontSize * 0.75,
                                   color: inStock
                                       ? Colors.green[700]
                                       : Colors.red[700],
                                   fontWeight: FontWeight.w600,
                                 ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
-                          const Spacer(),
+                          Spacer(),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: size.width * 0.02,
+                              vertical: size.height * 0.005,
                             ),
                             decoration: BoxDecoration(
                               gradient: canAfford
@@ -607,19 +640,20 @@ class PointsMerchandiseCard extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.stars_rounded,
                                   color: Colors.white,
-                                  size: 14,
+                                  size: baseFontSize * 0.875,
                                 ),
-                                const SizedBox(width: 4),
+                                SizedBox(width: size.width * 0.01),
                                 Text(
                                   '$pointsRequired Poin',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 12,
+                                    fontSize: baseFontSize * 0.75,
                                     fontWeight: FontWeight.bold,
                                   ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
@@ -632,12 +666,12 @@ class PointsMerchandiseCard extends StatelessWidget {
               ),
               if (isPopular)
                 Positioned(
-                  top: 12,
-                  left: 12,
+                  top: size.height * 0.015,
+                  left: size.width * 0.03,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 3,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: size.width * 0.015,
+                      vertical: size.height * 0.005,
                     ),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
@@ -652,11 +686,11 @@ class PointsMerchandiseCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const Text(
+                    child: Text(
                       'POPULER',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 8,
+                        fontSize: baseFontSize * 0.5,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -670,104 +704,189 @@ class PointsMerchandiseCard extends StatelessWidget {
   }
 
   void _showExchangeDialog(BuildContext context, int merchandiseId) {
+    final size = MediaQuery.of(context).size;
+    final baseFontSize =
+        size.width < 360 ? size.width * 0.035 : size.width * 0.04;
+    bool isProcessing = false;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Text(
-            'Konfirmasi Penukaran',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A3C34),
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Apakah Anda yakin ingin menukar:'),
-              const SizedBox(height: 8),
-              Text(
-                productName,
-                style: const TextStyle(
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Text(
+                'Konfirmasi Penukaran',
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF77784A),
+                  color: Color(0xFF1A3C34),
+                  fontSize: baseFontSize * 1.125,
                 ),
               ),
-              const SizedBox(height: 8),
-              Text('Dengan $pointsRequired poin?'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final prefs = await SharedPreferences.getInstance();
-                final token = prefs.getString('token');
-                if (token == null) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Silakan login kembali.')),
-                  );
-                  return;
-                }
-
-                final response = await http.post(
-                  Uri.parse('http://10.0.2.2:8000/api/pembeli/penukaran'),
-                  headers: {
-                    'Authorization': 'Bearer $token',
-                    'Content-Type': 'application/json',
-                  },
-                  body: jsonEncode({'ID_MERCHANDISE': merchandiseId}),
-                );
-
-                print('Status Code: ${response.statusCode}');
-                print('Response Body: ${response.body}'); // Debugging
-
-                Navigator.of(context).pop();
-                if (response.statusCode == 201) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Penukaran berhasil!'),
-                      backgroundColor: Color(0xFF77784A),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Apakah Anda yakin ingin menukar:',
+                    style: TextStyle(
+                      fontSize: baseFontSize * 0.875,
                     ),
-                  );
-                  onExchangeSuccess();
-                } else {
-                  try {
-                    final errorData = jsonDecode(response.body);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(errorData['message'] ?? 'Penukaran gagal.'),
-                        backgroundColor: Colors.red,
+                  ),
+                  SizedBox(height: size.height * 0.01),
+                  Text(
+                    productName,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF77784A),
+                      fontSize: baseFontSize,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: size.height * 0.01),
+                  Text(
+                    'Dengan $pointsRequired poin?',
+                    style: TextStyle(
+                      fontSize: baseFontSize * 0.875,
+                    ),
+                  ),
+                  if (isProcessing)
+                    Padding(
+                      padding: EdgeInsets.only(top: size.height * 0.02),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF77784A),
+                        ),
                       ),
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Terjadi kesalahan saat memproses penukaran.'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF77784A),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                    ),
+                ],
               ),
-              child: const Text('Tukar'),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed:
+                      isProcessing ? null : () => Navigator.of(context).pop(),
+                  child: Text(
+                    'Batal',
+                    style: TextStyle(
+                      fontSize: baseFontSize * 0.875,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: isProcessing
+                      ? null
+                      : () async {
+                          setDialogState(() {
+                            isProcessing = true;
+                          });
+
+                          final prefs = await SharedPreferences.getInstance();
+                          final token = prefs.getString('token');
+                          if (token == null) {
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Silakan login kembali.',
+                                  style: TextStyle(
+                                    fontSize: baseFontSize * 0.875,
+                                  ),
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+
+                          try {
+                            final response = await http.post(
+                              Uri.parse(
+                                  'http://10.0.2.2:8000/api/penukaran'),
+                              headers: {
+                                'Authorization': 'Bearer $token',
+                                'Content-Type': 'application/json',
+                              },
+                              body:
+                                  jsonEncode({'ID_MERCHANDISE': merchandiseId}),
+                            );
+
+                            Navigator.of(context).pop();
+                            if (response.statusCode == 201) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Penukaran berhasil!',
+                                    style: TextStyle(
+                                      fontSize: baseFontSize * 0.875,
+                                    ),
+                                  ),
+                                  backgroundColor: Color(0xFF77784A),
+                                ),
+                              );
+                              onExchangeSuccess();
+                            } else {
+                              final errorData = jsonDecode(response.body);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    errorData['message'] ?? 'Penukaran gagal.',
+                                    style: TextStyle(
+                                      fontSize: baseFontSize * 0.875,
+                                    ),
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Terjadi kesalahan: ${e.toString()}',
+                                  style: TextStyle(
+                                    fontSize: baseFontSize * 0.875,
+                                  ),
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF77784A),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: size.width * 0.04,
+                      vertical: size.height * 0.015,
+                    ),
+                  ),
+                  child: isProcessing
+                      ? SizedBox(
+                          width: baseFontSize * 1.25,
+                          height: baseFontSize * 1.25,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          'Tukar',
+                          style: TextStyle(
+                            fontSize: baseFontSize * 0.875,
+                          ),
+                        ),
+                ),
+              ],
+            );
+          },
         );
       },
     );

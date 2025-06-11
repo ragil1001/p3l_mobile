@@ -7,6 +7,7 @@ import 'package:animate_do/animate_do.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'transaction_detail.dart';
+import '../screens/otentikasi/login.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -24,6 +25,22 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
   ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
   List<Transaction> _transactions = [];
+  String _selectedStatus = "Semua";
+  String _sortBy = "Tanggal Pesanan";
+  bool _isAscending = false;
+
+  final List<String> _statusFilters = [
+    "Semua",
+    "Menunggu Pembayaran",
+    "Menunggu Verifikasi",
+    "Sedang Dikemas",
+    "Siap Dikirim",
+    "Sedang Dikirim",
+    "Siap Diambil",
+    "Sudah Diambil",
+    "Sudah Diterima",
+    "Dibatalkan",
+  ];
 
   @override
   void initState() {
@@ -36,22 +53,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-
-    Animation<double> fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeInOut,
-    ));
-
-    Animation<Offset> slideAnimation = Tween<Offset>(
-      begin: const Offset(0, -0.5),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.elasticOut,
-    ));
 
     _fadeController.forward();
     _slideController.forward();
@@ -69,13 +70,17 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
-      print('Token: $token');
       if (token == null) {
-        setState(() {
-          _errorMessage = 'Token tidak ditemukan. Silakan login kembali.';
-          _isLoading = false;
-        });
-        Navigator.pushReplacementNamed(context, '/login');
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Token tidak ditemukan. Silakan login kembali.';
+            _isLoading = false;
+          });
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+          );
+        }
         return;
       }
 
@@ -86,8 +91,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
           'Content-Type': 'application/json',
         },
       );
-
-      print('Status: ${response.statusCode}, Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
@@ -102,11 +105,16 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
           final products = item['products'] as List<dynamic>? ?? [];
           final totalItemPrice = products.fold(
               0, (sum, p) => sum + (p['product_price_raw'] as int? ?? 0));
-          final pointsDiscount = ((item['poin_digunakan'] as int? ?? 0) / 100).floor() * 10000;
+          final pointsDiscount =
+              ((item['poin_digunakan'] as int? ?? 0) / 100).floor() * 10000;
 
           final Map<String, List<dynamic>> groupedProducts = {};
           for (var product in products) {
-            final penitipName = product['nama_penitip'] as String? ?? 'Unknown Penitip';
+            final penitipName =
+                product['nama_penitip'] as String? ?? 'Unknown Penitip';
+            product['image'] = product['image'] != '/api/placeholder/60/60'
+                ? 'http://10.0.2.2:8000/api/products/${product['product_id']}/thumbnail'
+                : 'http://10.0.2.2:8000/api/placeholder/60/60';
             if (!groupedProducts.containsKey(penitipName)) {
               groupedProducts[penitipName] = [];
             }
@@ -120,12 +128,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                 ? productsList[0]['nama_qc'] as String? ?? 'Unknown QC'
                 : 'Unknown QC';
 
-            final items = productsList.map((p) => TransactionItem(
-                  name: p['nama_barang'] as String? ?? 'Unknown Item',
-                  price: p['harga_barang'] as String? ?? 'Rp0',
-                  imagePath: p['image'] as String? ??
-                      'http://10.0.2.2:8000/storage/images/default.jpg',
-                )).toList();
+            final items = productsList
+                .map((p) => TransactionItem(
+                      name: p['nama_barang'] as String? ?? 'Unknown Item',
+                      price: p['harga_barang'] as String? ?? 'Rp0',
+                      imagePath: p['image'] as String,
+                    ))
+                .toList();
 
             return PenitipItems(
               penitipName: penitipName,
@@ -142,7 +151,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
             buyerName: item['nama_pembeli'] as String? ?? 'Unknown Buyer',
             buyerEmail: item['email_pembeli'] as String? ?? 'Unknown Email',
             buyerAddress: item['alamat'] as String? ?? 'Unknown Address',
-            deliveryMethod: item['metode_pengiriman'] as String? ?? 'Unknown Method',
+            deliveryMethod:
+                item['metode_pengiriman'] as String? ?? 'Unknown Method',
             penitipItems: penitipItems,
             paymentBreakdown: PaymentBreakdown(
               totalItemPrice: formatCurrency(totalItemPrice),
@@ -155,29 +165,37 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
           );
         }).toList();
 
-        setState(() {
-          _transactions = fetchedTransactions;
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _transactions = fetchedTransactions;
+            _isLoading = false;
+          });
+        }
       } else if (response.statusCode == 401) {
         await prefs.remove('token');
-        setState(() {
-          _errorMessage = 'Sesi telah berakhir. Silakan login kembali.';
-          _isLoading = false;
-        });
-        Navigator.pushReplacementNamed(context, '/login');
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Sesi telah berakhir. Silakan login kembali.';
+            _isLoading = false;
+          });
+          Navigator.pushReplacementNamed(context, '/login');
+        }
       } else {
+        if (mounted) {
+          setState(() {
+            _errorMessage =
+                'Gagal memuat riwayat pesanan: ${response.statusCode} - ${response.body}';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         setState(() {
-          _errorMessage =
-              'Gagal memuat riwayat pesanan: ${response.statusCode} - ${response.body}';
+          _errorMessage = 'Error saat mengambil riwayat pesanan: $e';
           _isLoading = false;
         });
       }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Error saat mengambil riwayat pesanan: $e';
-        _isLoading = false;
-      });
       print('Error: $e');
     }
   }
@@ -194,11 +212,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
     if (isScrolled) {
       return availableWidth < 250 ? 'Riwayat Pesanan' : 'Riwayat Pesanan';
     } else {
-      if (availableWidth < 280) {
-        return 'Riwayat\nPesanan';
-      } else {
-        return 'Riwayat Pesanan';
-      }
+      return availableWidth < 150 ? 'Riwayat\nPesanan' : 'Riwayat Pesanan';
     }
   }
 
@@ -206,15 +220,32 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
     if (isScrolled) {
       return availableWidth < 250 ? 14 : 16;
     } else {
-      if (availableWidth < 280) {
-        return 18;
-      } else {
-        return 20;
-      }
+      return availableWidth < 150 ? 12 : 16;
     }
   }
 
+  List<Transaction> _getFilteredAndSortedTransactions() {
+    List<Transaction> filtered = _selectedStatus == "Semua"
+        ? _transactions
+        : _transactions.where((tx) => tx.status == _selectedStatus).toList();
+
+    filtered.sort((a, b) {
+      if (_sortBy == "No. Nota") {
+        return _isAscending
+            ? a.transactionId.compareTo(b.transactionId)
+            : b.transactionId.compareTo(a.transactionId);
+      } else {
+        return _isAscending
+            ? a.date.compareTo(b.date)
+            : b.date.compareTo(a.date);
+      }
+    });
+
+    return filtered;
+  }
+
   Widget _buildTransactionList() {
+    final filteredTransactions = _getFilteredAndSortedTransactions();
     return FadeTransition(
       opacity: _fadeController,
       child: SlideTransition(
@@ -228,15 +259,18 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
         child: ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          itemCount: _transactions.length,
+          padding: EdgeInsets.symmetric(
+            horizontal: MediaQuery.of(context).size.width * 0.04,
+            vertical: 8,
+          ),
+          itemCount: filteredTransactions.length,
           itemBuilder: (context, index) {
             return FadeInUp(
               duration: Duration(milliseconds: 600 + (index * 200)),
               child: SlideInLeft(
                 duration: Duration(milliseconds: 800 + (index * 150)),
                 child: TransactionCard(
-                  transaction: _transactions[index],
+                  transaction: filteredTransactions[index],
                   index: index,
                 ),
               ),
@@ -251,7 +285,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.of(context).size.width * 0.04,
+        vertical: 8,
+      ),
       itemCount: 3,
       itemBuilder: (context, index) {
         return Shimmer.fromColors(
@@ -259,7 +296,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
           highlightColor: Colors.grey[100]!,
           child: Container(
             margin: const EdgeInsets.only(bottom: 16),
-            height: 200,
+            height: MediaQuery.of(context).size.height * 0.25,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
@@ -292,34 +329,38 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
                 ),
                 child: Icon(
                   Icons.error_outline,
-                  size: 80,
+                  size: MediaQuery.of(context).size.width * 0.2,
                   color: Colors.red[400],
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.03),
             FadeInUp(
               delay: const Duration(milliseconds: 300),
               child: Text(
                 'Gagal Memuat Pesanan',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: MediaQuery.of(context).size.width * 0.05,
                   color: Colors.grey[700],
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
             FadeInUp(
               delay: const Duration(milliseconds: 500),
-              child: Text(
-                _errorMessage!,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[500],
-                  fontWeight: FontWeight.w400,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.width * 0.1),
+                child: Text(
+                  _errorMessage!,
+                  style: TextStyle(
+                    fontSize: MediaQuery.of(context).size.width * 0.04,
+                    color: Colors.grey[500],
+                    fontWeight: FontWeight.w400,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
               ),
             ),
           ],
@@ -339,34 +380,156 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
               ),
               child: Icon(
                 Icons.receipt_long_outlined,
-                size: 80,
+                size: MediaQuery.of(context).size.width * 0.2,
                 color: Colors.grey[400],
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.03),
           FadeInUp(
             delay: const Duration(milliseconds: 300),
             child: Text(
               'Belum ada riwayat pesanan',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: MediaQuery.of(context).size.width * 0.05,
                 color: Colors.grey[700],
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: MediaQuery.of(context).size.height * 0.01),
           FadeInUp(
             delay: const Duration(milliseconds: 500),
             child: Text(
               'Ayo mulai belanja di ReuseMart!',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: MediaQuery.of(context).size.width * 0.04,
                 color: Colors.grey[500],
                 fontWeight: FontWeight.w400,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterSection() {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.of(context).size.width * 0.04,
+        vertical: 8,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _statusFilters.map((status) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: ChoiceChip(
+                    label: Text(
+                      status,
+                      style: TextStyle(
+                        fontSize: MediaQuery.of(context).size.width * 0.035,
+                        fontWeight: FontWeight.w500,
+                        color: _selectedStatus == status
+                            ? Colors.white
+                            : const Color(0xFF1A3C34),
+                      ),
+                    ),
+                    selected: _selectedStatus == status,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() {
+                          _selectedStatus = status;
+                        });
+                      }
+                    },
+                    selectedColor: const Color(0xFF7A7C52),
+                    backgroundColor: Colors.grey[100],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(
+                        color: const Color(0xFF7A7C52).withOpacity(0.2),
+                      ),
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: MediaQuery.of(context).size.width * 0.03,
+                      vertical: 4,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _sortBy,
+                  decoration: InputDecoration(
+                    labelText: 'Urutkan Berdasarkan',
+                    labelStyle: TextStyle(
+                      fontSize: MediaQuery.of(context).size.width * 0.035,
+                      color: Colors.grey[600],
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: const Color(0xFF7A7C52).withOpacity(0.2),
+                      ),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: MediaQuery.of(context).size.width * 0.03,
+                      vertical: 10,
+                    ),
+                  ),
+                  items: ['Tanggal Pesanan', 'No. Nota']
+                      .map((sortOption) => DropdownMenuItem(
+                            value: sortOption,
+                            child: Text(
+                              sortOption,
+                              style: TextStyle(
+                                fontSize:
+                                    MediaQuery.of(context).size.width * 0.035,
+                                color: const Color(0xFF1A3C34),
+                              ),
+                            ),
+                          ))
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _sortBy = value!;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(width: 8),
+              IconButton(
+                icon: Icon(
+                  _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                  color: const Color(0xFF7A7C52),
+                  size: MediaQuery.of(context).size.width * 0.06,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isAscending = !_isAscending;
+                  });
+                },
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.grey[50],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -398,175 +561,164 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
               floating: false,
               elevation: 8,
               backgroundColor: Colors.transparent,
-              leading: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: Color(0xFF7A7C52).withOpacity(0.7),
+              expandedHeight:
+                  _isScrolled ? 90 : MediaQuery.of(context).size.height * 0.1,
+              flexibleSpace: FlexibleSpaceBar(
+                background: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(25),
+                    bottomRight: Radius.circular(25),
                   ),
-                  child: IconButton(
-                    icon: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          oliveGreen,
+                          oliveGreen.withOpacity(0.9),
+                          const Color(0xFF5A5D3A),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                        BoxShadow(
+                          color: oliveGreen.withOpacity(0.2),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          top: -50,
+                          right: -50,
+                          child: Container(
+                            width: MediaQuery.of(context).size.width * 0.4,
+                            height: MediaQuery.of(context).size.width * 0.4,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.05),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: -30,
+                          left: -30,
+                          child: Container(
+                            width: MediaQuery.of(context).size.width * 0.25,
+                            height: MediaQuery.of(context).size.width * 0.25,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.03),
+                            ),
+                          ),
+                        ),
+                        SafeArea(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal:
+                                  MediaQuery.of(context).size.width * 0.04,
+                              vertical:
+                                  MediaQuery.of(context).size.height * 0.015,
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                    width: MediaQuery.of(context).size.width *
+                                        0.12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      FadeInDown(
+                                        duration:
+                                            const Duration(milliseconds: 800),
+                                        child: LayoutBuilder(
+                                          builder: (context, constraints) {
+                                            double availableWidth =
+                                                constraints.maxWidth;
+                                            String displayText =
+                                                _getDisplayText(availableWidth,
+                                                    _isScrolled);
+                                            double fontSize = _getFontSize(
+                                                _isScrolled, availableWidth);
+
+                                            return Text(
+                                              displayText,
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: fontSize,
+                                                fontWeight: FontWeight.bold,
+                                                height: 1.2,
+                                              ),
+                                              maxLines: _isScrolled ? 1 : 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              softWrap: true,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      if (!_isScrolled) ...[
+                                        SizedBox(
+                                            height: MediaQuery.of(context)
+                                                    .size
+                                                    .height *
+                                                0.01),
+                                        FadeInDown(
+                                          duration:
+                                              const Duration(milliseconds: 900),
+                                          child: Text(
+                                            '${_transactions.length} Transaksi',
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  0.035,
+                                              height: 1.3,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              flexibleSpace: AnimatedBuilder(
-                animation: _fadeController,
-                builder: (context, child) {
-                  return SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, -0.5),
-                      end: Offset.zero,
-                    ).animate(CurvedAnimation(
-                      parent: _slideController,
-                      curve: Curves.elasticOut,
-                    )),
-                    child: FadeTransition(
-                      opacity: Tween<double>(
-                        begin: 0.0,
-                        end: 1.0,
-                      ).animate(CurvedAnimation(
-                        parent: _fadeController,
-                        curve: Curves.easeInOut,
-                      )),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              oliveGreen,
-                              oliveGreen.withOpacity(0.9),
-                              const Color(0xFF5A5D3A),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: const BorderRadius.only(
-                            bottomLeft: Radius.circular(25),
-                            bottomRight: Radius.circular(25),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5),
-                            ),
-                            BoxShadow(
-                              color: oliveGreen.withOpacity(0.2),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Stack(
-                          children: [
-                            Positioned(
-                              top: -50,
-                              right: -50,
-                              child: Container(
-                                width: 150,
-                                height: 150,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white.withOpacity(0.05),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: -30,
-                              left: -30,
-                              child: Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white.withOpacity(0.03),
-                                ),
-                              ),
-                            ),
-                            SafeArea(
-                              child: Padding(
-                                padding: const EdgeInsets.all(10.0),
-                                child: Row(
-                                  children: [
-                                    const SizedBox(width: 48),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          FadeInDown(
-                                            duration: const Duration(
-                                                milliseconds: 800),
-                                            child: LayoutBuilder(
-                                              builder: (context, constraints) {
-                                                double availableWidth =
-                                                    constraints.maxWidth;
-                                                String displayText =
-                                                    _getDisplayText(
-                                                        availableWidth,
-                                                        _isScrolled);
-                                                double fontSize = _getFontSize(
-                                                    _isScrolled,
-                                                    availableWidth);
-
-                                                return Text(
-                                                  displayText,
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: fontSize,
-                                                    fontWeight: FontWeight.bold,
-                                                    height: 1.2,
-                                                  ),
-                                                  maxLines: _isScrolled ? 1 : 2,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  softWrap: true,
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                          if (!_isScrolled) ...[
-                                            const SizedBox(height: 6),
-                                            FadeInDown(
-                                              duration: const Duration(
-                                                  milliseconds: 900),
-                                              child: Text(
-                                                '${_transactions.length} Transaksi',
-                                                style: const TextStyle(
-                                                  color: Colors.white70,
-                                                  fontSize: 13,
-                                                  height: 1.3,
-                                                ),
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              expandedHeight: _isScrolled ? 90 : 130,
+            ),
+            SliverToBoxAdapter(
+              child: _buildFilterSection(),
             ),
             SliverToBoxAdapter(
               child: _isLoading
                   ? _buildLoadingShimmer()
-                  : _transactions.isEmpty
+                  : _getFilteredAndSortedTransactions().isEmpty
                       ? _buildEmptyState()
-                      : _buildTransactionList(),
+                      : Column(
+                          children: [
+                            _buildTransactionList(),
+                            SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.1),
+                          ],
+                        ),
             ),
           ],
         ),
@@ -725,7 +877,8 @@ class _TransactionCardState extends State<TransactionCard>
         );
       },
       child: Card(
-        margin: const EdgeInsets.only(bottom: 16),
+        margin:
+            EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.02),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -800,7 +953,7 @@ class _TransactionCardState extends State<TransactionCard>
       },
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -814,47 +967,62 @@ class _TransactionCardState extends State<TransactionCard>
                     children: [
                       Text(
                         'No. ${widget.transaction.transactionId}',
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: TextStyle(
+                          fontSize: MediaQuery.of(context).size.width * 0.045,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A3C34),
+                          color: const Color(0xFF1A3C34),
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.01),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor().withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: _getStatusColor().withOpacity(0.3),
-                                width: 1,
+                          Flexible(
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal:
+                                    MediaQuery.of(context).size.width * 0.03,
+                                vertical:
+                                    MediaQuery.of(context).size.height * 0.008,
                               ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _getStatusIcon(),
-                                  color: _getStatusColor(),
-                                  size: 15,
+                              decoration: BoxDecoration(
+                                color: _getStatusColor().withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: _getStatusColor().withOpacity(0.3),
+                                  width: 1,
                                 ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  widget.transaction.status,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _getStatusIcon(),
                                     color: _getStatusColor(),
+                                    size: MediaQuery.of(context).size.width *
+                                        0.04,
                                   ),
-                                ),
-                              ],
+                                  SizedBox(
+                                      width: MediaQuery.of(context).size.width *
+                                          0.01),
+                                  Flexible(
+                                    child: Text(
+                                      widget.transaction.status,
+                                      style: TextStyle(
+                                        fontSize:
+                                            MediaQuery.of(context).size.width *
+                                                0.035,
+                                        fontWeight: FontWeight.w600,
+                                        color: _getStatusColor(),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           AnimatedRotation(
@@ -863,7 +1031,7 @@ class _TransactionCardState extends State<TransactionCard>
                             child: Icon(
                               Icons.expand_circle_down_outlined,
                               color: const Color(0xFF7A7C52),
-                              size: 25,
+                              size: MediaQuery.of(context).size.width * 0.06,
                             ),
                           ),
                         ],
@@ -873,7 +1041,7 @@ class _TransactionCardState extends State<TransactionCard>
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.015),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -884,19 +1052,22 @@ class _TransactionCardState extends State<TransactionCard>
                       Text(
                         'Tanggal Pesanan',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: MediaQuery.of(context).size.width * 0.035,
                           color: Colors.grey[600],
                           fontWeight: FontWeight.w500,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.005),
                       Text(
                         widget.transaction.date.split(' ')[0],
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: MediaQuery.of(context).size.width * 0.04,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1A3C34),
+                          color: const Color(0xFF1A3C34),
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -907,25 +1078,28 @@ class _TransactionCardState extends State<TransactionCard>
                     Text(
                       'Total Pesanan',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: MediaQuery.of(context).size.width * 0.035,
                         color: Colors.grey[600],
                         fontWeight: FontWeight.w500,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.005),
                     Text(
                       widget.transaction.total,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: MediaQuery.of(context).size.width * 0.045,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF7A7C52),
+                        color: const Color(0xFF7A7C52),
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.015),
             Align(
               alignment: Alignment.centerRight,
               child: ElevatedButton(
@@ -944,16 +1118,16 @@ class _TransactionCardState extends State<TransactionCard>
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.width * 0.04,
+                    vertical: MediaQuery.of(context).size.height * 0.01,
                   ),
                   elevation: 2,
                 ),
-                child: const Text(
+                child: Text(
                   'Lihat Detail',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: MediaQuery.of(context).size.width * 0.035,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -967,7 +1141,12 @@ class _TransactionCardState extends State<TransactionCard>
 
   Widget _buildExpandedContent() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: EdgeInsets.fromLTRB(
+        MediaQuery.of(context).size.width * 0.04,
+        8,
+        MediaQuery.of(context).size.width * 0.04,
+        16,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -978,8 +1157,10 @@ class _TransactionCardState extends State<TransactionCard>
             return FadeInUp(
               duration: Duration(milliseconds: 300 + (penitipIndex * 100)),
               child: Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(16),
+                margin: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).size.height * 0.02),
+                padding:
+                    EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -1001,31 +1182,35 @@ class _TransactionCardState extends State<TransactionCard>
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: EdgeInsets.all(
+                              MediaQuery.of(context).size.width * 0.02),
                           decoration: BoxDecoration(
                             color: const Color(0xFF7A7C52).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.store,
-                            size: 16,
-                            color: Color(0xFF7A7C52),
+                            size: MediaQuery.of(context).size.width * 0.04,
+                            color: const Color(0xFF7A7C52),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.03),
                         Expanded(
                           child: Text(
                             penitip.penitipName,
-                            style: const TextStyle(
-                              fontSize: 16,
+                            style: TextStyle(
+                              fontSize:
+                                  MediaQuery.of(context).size.width * 0.04,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A3C34),
+                              color: const Color(0xFF1A3C34),
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                     ...penitip.items.asMap().entries.map((itemEntry) {
                       int itemIndex = itemEntry.key;
                       TransactionItem item = itemEntry.value;
@@ -1055,8 +1240,9 @@ class TransactionItemWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      margin:
+          EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.015),
+      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.03),
       decoration: BoxDecoration(
         color: Colors.grey[50]!,
         borderRadius: BorderRadius.circular(12),
@@ -1066,6 +1252,7 @@ class TransactionItemWidget extends StatelessWidget {
         ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             decoration: BoxDecoration(
@@ -1082,45 +1269,52 @@ class TransactionItemWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               child: CachedNetworkImage(
                 imageUrl: item.imagePath,
-                height: 70,
-                width: 70,
+                height: MediaQuery.of(context).size.width * 0.18,
+                width: MediaQuery.of(context).size.width * 0.18,
                 fit: BoxFit.cover,
+                placeholder: (context, url) => Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: Container(
+                    color: Colors.grey,
+                  ),
+                ),
                 errorWidget: (context, url, error) => Container(
-                  height: 70,
-                  width: 70,
+                  height: MediaQuery.of(context).size.width * 0.18,
+                  width: MediaQuery.of(context).size.width * 0.18,
                   decoration: BoxDecoration(
                     color: Colors.grey[200],
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.image_not_supported_outlined,
                     color: Colors.grey,
-                    size: 32,
+                    size: MediaQuery.of(context).size.width * 0.08,
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: MediaQuery.of(context).size.width * 0.04),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   item.name,
-                  style: const TextStyle(
-                    fontSize: 15,
+                  style: TextStyle(
+                    fontSize: MediaQuery.of(context).size.width * 0.04,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A3C34),
+                    color: const Color(0xFF1A3C34),
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.01),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.width * 0.025,
+                    vertical: MediaQuery.of(context).size.height * 0.005,
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF7A7C52).withOpacity(0.1),
@@ -1128,11 +1322,12 @@ class TransactionItemWidget extends StatelessWidget {
                   ),
                   child: Text(
                     item.price,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: MediaQuery.of(context).size.width * 0.035,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF7A7C52),
+                      color: const Color(0xFF7A7C52),
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
