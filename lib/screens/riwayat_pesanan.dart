@@ -85,7 +85,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
       }
 
       final response = await http.get(
-        Uri.parse('http://192.168.154.254:8000/api/pembeli/transaksi'),
+        Uri.parse('http://10.0.2.2:8000/api/pembeli/transaksi'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -113,8 +113,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
             final penitipName =
                 product['nama_penitip'] as String? ?? 'Unknown Penitip';
             product['image'] = product['image'] != '/api/placeholder/60/60'
-                ? 'http://192.168.154.254:8000/api/products/${product['product_id']}/thumbnail'
-                : 'http://192.168.154.254:8000/api/placeholder/60/60';
+                ? 'http://10.0.2.2:8000/api/products/${product['product_id']}/thumbnail'
+                : 'http://10.0.2.2:8000/api/placeholder/60/60';
             if (!groupedProducts.containsKey(penitipName)) {
               groupedProducts[penitipName] = [];
             }

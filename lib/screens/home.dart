@@ -9,8 +9,9 @@ import 'product_detail.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 import '../screens/otentikasi/login.dart';
+import '../screens/catalogue_screen.dart'; // Import CatalogueScreen
 
-const String baseUrl = 'http://192.168.154.254:8000/api';
+const String baseUrl = 'http://10.0.2.2:8000/api';
 
 class HomeScreen extends StatefulWidget {
   final Function(String)? onCategorySelected; // Callback for category selection
@@ -75,8 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
           }
 
           if (categories.isNotEmpty &&
-              categories
-                  .every((cat) => cat is Map && cat.containsKey('NAMA'))) {
+              categories.every((cat) => cat is Map && cat.containsKey('NAMA'))) {
             if (mounted) {
               setState(() {
                 _categories = categories;
@@ -89,8 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
             throw Exception('Categories missing NAMA field: ${response.body}');
           }
         } else {
-          throw Exception(
-              'Failed to load categories: ${response.statusCode} - ${response.body}');
+          throw Exception('Failed to load categories: ${response.statusCode} - ${response.body}');
         }
       } catch (e) {
         attempt++;
@@ -230,8 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               children: [
                 Padding(
-                  padding:
-                      EdgeInsets.all(size.width * 0.04), // Responsive padding
+                  padding: EdgeInsets.all(size.width * 0.04),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -241,22 +239,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Expanded(
                               child: Container(
-                                height: size.height * 0.05 > 40
-                                    ? 40
-                                    : size.height * 0.05, // Responsive height
+                                height: size.height * 0.05 > 40 ? 40 : size.height * 0.05,
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.9),
-                                  borderRadius:
-                                      BorderRadius.circular(size.width * 0.05),
+                                  borderRadius: BorderRadius.circular(size.width * 0.05),
                                 ),
                                 child: TextField(
                                   decoration: InputDecoration(
                                     hintText: 'Cari Produk....',
-                                    prefixIcon:
-                                        Icon(Icons.search, color: Colors.grey),
+                                    prefixIcon: Icon(Icons.search, color: Colors.grey),
                                     border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(
-                                        vertical: size.height * 0.012),
+                                    contentPadding: EdgeInsets.symmetric(vertical: size.height * 0.012),
                                   ),
                                 ),
                               ),
@@ -264,38 +257,29 @@ class _HomeScreenState extends State<HomeScreen> {
                             SizedBox(width: size.width * 0.03),
                             _isLoggedIn
                                 ? Container(
-                                    height: size.height * 0.05 > 40
-                                        ? 40
-                                        : size.height * 0.05,
+                                    height: size.height * 0.05 > 40 ? 40 : size.height * 0.05,
                                     decoration: BoxDecoration(
                                       color: Colors.white.withOpacity(0.4),
-                                      borderRadius: BorderRadius.circular(
-                                          size.width * 0.025),
+                                      borderRadius: BorderRadius.circular(size.width * 0.025),
                                     ),
                                     child: IconButton(
-                                      icon: const Icon(Icons.notifications,
-                                          color: Colors.white),
+                                      icon: const Icon(Icons.notifications, color: Colors.white),
                                       onPressed: () {},
                                     ),
                                   )
                                 : Container(
-                                    height: size.height * 0.05 > 40
-                                        ? 40
-                                        : size.height * 0.05,
+                                    height: size.height * 0.05 > 40 ? 40 : size.height * 0.05,
                                     decoration: BoxDecoration(
                                       color: Colors.white.withOpacity(0.4),
-                                      borderRadius: BorderRadius.circular(
-                                          size.width * 0.025),
+                                      borderRadius: BorderRadius.circular(size.width * 0.025),
                                     ),
                                     child: IconButton(
-                                      icon: const Icon(Icons.login,
-                                          color: Colors.white),
+                                      icon: const Icon(Icons.login, color: Colors.white),
                                       onPressed: () {
                                         Navigator.pushReplacement(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) =>
-                                                const LoginScreen(),
+                                            builder: (context) => const LoginScreen(),
                                           ),
                                         );
                                       },
@@ -311,7 +295,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           'Temukan\nKesempatan Baru\ndalam Barang Lama',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: size.width * 0.05, // Responsive font
+                            fontSize: size.width * 0.05,
                             fontWeight: FontWeight.w600,
                             height: 1.3,
                           ),
@@ -383,7 +367,16 @@ class _HomeScreenState extends State<HomeScreen> {
                               isLoading: _isLoadingCategories,
                               errorMessage: _errorMessage,
                               onRetry: _fetchCategories,
-                              onCategorySelected: widget.onCategorySelected,
+                              onCategorySelected: (categoryName) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => CatalogueScreen(
+                                      selectedCategory: categoryName,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                             SizedBox(height: size.height * 0.03),
                             FadeInUp(
@@ -392,10 +385,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: oliveGreen.withOpacity(0.3),
                                 width: double.infinity,
                                 padding: EdgeInsets.fromLTRB(
-                                    size.width * 0.04,
-                                    size.height * 0.03,
-                                    size.width * 0.04,
-                                    size.height * 0.03),
+                                    size.width * 0.04, size.height * 0.03, size.width * 0.04, size.height * 0.03),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
@@ -403,15 +393,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                       'Mengapa Memilih ReuseMart',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        fontSize: size.width *
-                                            0.045, // Responsive font
+                                        fontSize: size.width * 0.045,
                                         color: oliveGreen,
                                       ),
                                     ),
                                     SizedBox(height: size.height * 0.03),
                                     Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                                      mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         _InfoCard(
                                           icon: Icons.eco,
@@ -438,29 +426,20 @@ class _HomeScreenState extends State<HomeScreen> {
                               duration: const Duration(milliseconds: 1200),
                               child: Padding(
                                 padding: EdgeInsets.fromLTRB(
-                                    size.width * 0.04,
-                                    size.height * 0.03,
-                                    size.width * 0.04,
-                                    size.height * 0.03),
+                                    size.width * 0.04, size.height * 0.03, size.width * 0.04, size.height * 0.03),
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(
-                                        size.width * 0.04),
+                                    borderRadius: BorderRadius.circular(size.width * 0.04),
                                     image: const DecorationImage(
-                                      image: AssetImage(
-                                          'assets/images/hero-bg.png'),
+                                      image: AssetImage('assets/images/hero-bg.png'),
                                       fit: BoxFit.cover,
                                     ),
                                   ),
-                                  height: size.height * 0.4 > 350
-                                      ? 350
-                                      : size.height *
-                                          0.4, // Adjusted responsive height
+                                  height: size.height * 0.4 > 350 ? 350 : size.height * 0.4,
                                   width: double.infinity,
                                   child: Container(
                                     decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(
-                                          size.width * 0.04),
+                                      borderRadius: BorderRadius.circular(size.width * 0.04),
                                       gradient: const LinearGradient(
                                         colors: [
                                           Colors.black12,
@@ -471,15 +450,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                         end: Alignment.bottomCenter,
                                       ),
                                     ),
-                                    padding: EdgeInsets.all(
-                                        size.width * 0.04), // Reduced padding
+                                    padding: EdgeInsets.all(size.width * 0.04),
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        SizedBox(
-                                            height: size.height *
-                                                0.1), // Reduced top space
+                                        SizedBox(height: size.height * 0.1),
                                         Text(
                                           'Temukan Barang Berkualitas dengan Mudah',
                                           style: TextStyle(
@@ -490,9 +465,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        SizedBox(
-                                            height: size.height *
-                                                0.005), // Reduced spacing
+                                        SizedBox(height: size.height * 0.005),
                                         Text(
                                           'Daftar sekarang sebagai pembeli dan jelajahi ribuan produk preloved yang telah dikurasi. Hemat lebih banyak, temukan lebih cepat.',
                                           style: TextStyle(
@@ -503,22 +476,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                           maxLines: 3,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        SizedBox(
-                                            height: size.height *
-                                                0.01), // Reduced spacing
+                                        SizedBox(height: size.height * 0.01),
                                         Center(
                                           child: ElevatedButton(
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: oliveGreen,
                                               shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                        size.width * 0.03),
+                                                borderRadius: BorderRadius.circular(size.width * 0.03),
                                               ),
                                               padding: EdgeInsets.symmetric(
-                                                  vertical: size.height * 0.01,
-                                                  horizontal: size.width *
-                                                      0.04), // Reduced button padding
+                                                  vertical: size.height * 0.01, horizontal: size.width * 0.04),
                                             ),
                                             onPressed: () {},
                                             child: Text(
@@ -526,8 +493,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               style: TextStyle(
                                                 color: Colors.white,
                                                 fontWeight: FontWeight.bold,
-                                                fontSize: size.width *
-                                                    0.032, // Slightly smaller font
+                                                fontSize: size.width * 0.032,
                                               ),
                                               textAlign: TextAlign.center,
                                               maxLines: 2,
@@ -547,10 +513,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Container(
                                 width: double.infinity,
                                 padding: EdgeInsets.fromLTRB(
-                                    size.width * 0.04,
-                                    size.height * 0.03,
-                                    size.width * 0.04,
-                                    size.height * 0.03),
+                                    size.width * 0.04, size.height * 0.03, size.width * 0.04, size.height * 0.03),
                                 color: const Color(0xFF7A7C52),
                                 constraints: BoxConstraints(
                                   minHeight: size.height * 0.3,
@@ -572,30 +535,24 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Text(
                                       'ReuseMart adalah platform jual beli barang bekas terpercaya di Yogyakarta, mendukung transaksi mudah dan ramah lingkungan. Gabunglah dengan kami untuk menemukan barang berkualitas dengan harga terjangkau.',
                                       textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          fontSize: size.width * 0.03,
-                                          color: Colors.white70),
+                                      style: TextStyle(fontSize: size.width * 0.03, color: Colors.white70),
                                     ),
                                     SizedBox(height: size.height * 0.005),
                                     Text(
                                       '© 2025 ReuseMart. All Rights Reserved.',
                                       textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          fontSize: size.width * 0.03,
-                                          color: Colors.white70),
+                                      style: TextStyle(fontSize: size.width * 0.03, color: Colors.white70),
                                     ),
                                     SizedBox(height: size.height * 0.005),
                                     Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                                      mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Text(
                                           'Privacy Policy',
                                           style: TextStyle(
                                             fontSize: size.width * 0.03,
                                             color: Colors.white70,
-                                            decoration:
-                                                TextDecoration.underline,
+                                            decoration: TextDecoration.underline,
                                           ),
                                         ),
                                         SizedBox(width: size.width * 0.04),
@@ -604,8 +561,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           style: TextStyle(
                                             fontSize: size.width * 0.03,
                                             color: Colors.white70,
-                                            decoration:
-                                                TextDecoration.underline,
+                                            decoration: TextDecoration.underline,
                                           ),
                                         ),
                                       ],
@@ -655,7 +611,7 @@ class ProductSection extends StatelessWidget {
           baseColor: Colors.grey[300]!,
           highlightColor: Colors.grey[100]!,
           child: Container(
-            width: size.width * 0.4, // Responsive width
+            width: size.width * 0.4,
             height: size.width * 0.4,
             decoration: BoxDecoration(
               color: Colors.white,
@@ -676,8 +632,7 @@ class ProductSection extends StatelessWidget {
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: Colors.grey,
-                    borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(size.width * 0.03)),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(size.width * 0.03)),
                   ),
                 ),
                 Padding(
@@ -718,16 +673,14 @@ class ProductSection extends StatelessWidget {
           Text(
             'Temukan Barang Berkualitas dan Mudah',
             style: TextStyle(
-              fontSize: size.width * 0.05, // Responsive font
+              fontSize: size.width * 0.05,
               fontWeight: FontWeight.w700,
               color: const Color(0xFF1A3C34),
             ),
           ),
           SizedBox(height: size.height * 0.015),
           SizedBox(
-            height: size.width * 0.45 > 180
-                ? 180
-                : size.width * 0.45, // Responsive height
+            height: size.width * 0.45 > 180 ? 180 : size.width * 0.45,
             child: isLoading
                 ? _buildProductLoadingShimmer(context)
                 : errorMessage != null
@@ -748,10 +701,7 @@ class ProductSection extends StatelessWidget {
                               ),
                               child: Text(
                                 'Coba Lagi',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize:
-                                        size.width * 0.035), // Responsive font
+                                style: TextStyle(color: Colors.white, fontSize: size.width * 0.035),
                               ),
                             ),
                           ],
@@ -763,35 +713,24 @@ class ProductSection extends StatelessWidget {
                             itemCount: (products.length / 2).ceil(),
                             itemBuilder: (context, index) {
                               final int firstProductIndex = index * 2;
-                              final int secondProductIndex =
-                                  firstProductIndex + 1;
+                              final int secondProductIndex = firstProductIndex + 1;
                               return Padding(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: size.width * 0.015),
+                                padding: EdgeInsets.symmetric(horizontal: size.width * 0.015),
                                 child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     ProductCard(
                                       id: products[firstProductIndex]['id'],
-                                      title: products[firstProductIndex]
-                                          ['name'],
-                                      price: products[firstProductIndex]
-                                              ['price']
-                                          .toString(),
-                                      imageUrl: products[firstProductIndex]
-                                          ['image'],
+                                      title: products[firstProductIndex]['name'],
+                                      price: products[firstProductIndex]['price'].toString(),
+                                      imageUrl: products[firstProductIndex]['image'],
                                     ),
                                     if (secondProductIndex < products.length)
                                       ProductCard(
                                         id: products[secondProductIndex]['id'],
-                                        title: products[secondProductIndex]
-                                            ['name'],
-                                        price: products[secondProductIndex]
-                                                ['price']
-                                            .toString(),
-                                        imageUrl: products[secondProductIndex]
-                                            ['image'],
+                                        title: products[secondProductIndex]['name'],
+                                        price: products[secondProductIndex]['price'].toString(),
+                                        imageUrl: products[secondProductIndex]['image'],
                                       ),
                                   ],
                                 ),
@@ -804,7 +743,7 @@ class ProductSection extends StatelessWidget {
             child: Text(
               'Lanjutkan Pembelian di Website Kami',
               style: TextStyle(
-                fontSize: size.width * 0.035, // Responsive font
+                fontSize: size.width * 0.035,
                 color: const Color(0xFF1A3C34),
                 decoration: TextDecoration.underline,
               ),
@@ -849,11 +788,10 @@ class ProductCard extends StatelessWidget {
       },
       child: Card(
         elevation: 2,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(size.width * 0.03)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(size.width * 0.03)),
         child: Container(
-          width: size.width * 0.4, // Responsive width
-          height: size.width * 0.4, // Responsive height
+          width: size.width * 0.4,
+          height: size.width * 0.4,
           color: Colors.white,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -863,12 +801,10 @@ class ProductCard extends StatelessWidget {
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(size.width * 0.03)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(size.width * 0.03)),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(size.width * 0.03)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(size.width * 0.03)),
                   child: imageUrl != '/api/placeholder/60/60'
                       ? CachedNetworkImage(
                           imageUrl: imageUrl,
@@ -902,7 +838,7 @@ class ProductCard extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: size.width * 0.035, // Responsive font
+                        fontSize: size.width * 0.035,
                         fontWeight: FontWeight.w600,
                         color: Colors.black,
                       ),
@@ -912,7 +848,7 @@ class ProductCard extends StatelessWidget {
                     Text(
                       formatRupiah(price),
                       style: TextStyle(
-                        fontSize: size.width * 0.03, // Responsive font
+                        fontSize: size.width * 0.03,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF1A3C34),
                       ),
@@ -977,8 +913,8 @@ class CategorySection extends StatelessWidget {
                 baseColor: Colors.grey[300]!,
                 highlightColor: Colors.grey[100]!,
                 child: Container(
-                  width: size.width * 0.45, // Responsive width
-                  height: size.width * 0.15, // Responsive height
+                  width: size.width * 0.45,
+                  height: size.width * 0.15,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(size.width * 0.02),
@@ -996,27 +932,24 @@ class CategorySection extends StatelessWidget {
   Widget build(BuildContext context) {
     final groupedCategories = _groupCategories();
     final size = MediaQuery.of(context).size;
-    final double cardWidth = size.width * 0.45; // Responsive card width
+    final double cardWidth = size.width * 0.45;
 
     return Padding(
-      padding: EdgeInsets.symmetric(
-          horizontal: size.width * 0.04, vertical: size.height * 0.01),
+      padding: EdgeInsets.symmetric(horizontal: size.width * 0.04, vertical: size.height * 0.01),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Kategori Barang Bekas ReuseMart',
             style: TextStyle(
-              fontSize: size.width * 0.04, // Responsive font
+              fontSize: size.width * 0.04,
               fontWeight: FontWeight.w600,
               color: const Color(0xFF1A3C34),
             ),
           ),
           SizedBox(height: size.height * 0.01),
           SizedBox(
-            height: size.width * 0.3 > 120
-                ? 120
-                : size.width * 0.3, // Responsive height
+            height: size.width * 0.3 > 120 ? 120 : size.width * 0.3,
             child: isLoading
                 ? _buildCategoryLoadingShimmer(context)
                 : errorMessage != null
@@ -1037,67 +970,51 @@ class CategorySection extends StatelessWidget {
                               ),
                               child: Text(
                                 'Coba Lagi',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize:
-                                        size.width * 0.035), // Responsive font
+                                style: TextStyle(color: Colors.white, fontSize: size.width * 0.035),
                               ),
                             ),
                           ],
                         ),
                       )
                     : groupedCategories.isEmpty
-                        ? const Center(
-                            child: Text('Tidak ada kategori tersedia'))
+                        ? const Center(child: Text('Tidak ada kategori tersedia'))
                         : ListView.builder(
                             scrollDirection: Axis.horizontal,
                             itemCount: groupedCategories.length,
                             itemBuilder: (context, index) {
                               final pair = groupedCategories[index];
                               return Padding(
-                                padding:
-                                    EdgeInsets.only(right: size.width * 0.04),
+                                padding: EdgeInsets.only(right: size.width * 0.04),
                                 child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: pair.map((category) {
                                     return GestureDetector(
                                       onTap: () {
-                                        if (onCategorySelected != null) {
-                                          onCategorySelected!(category['name']);
-                                        }
+                                        onCategorySelected!(category['name']);
                                       },
                                       child: SizedBox(
                                         width: cardWidth,
-                                        height: size.width *
-                                            0.145, // Responsive height
+                                        height: size.width * 0.145,
                                         child: Card(
                                           color: Colors.white,
                                           shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                      size.width * 0.02)),
+                                              borderRadius: BorderRadius.circular(size.width * 0.02)),
                                           child: Padding(
                                             padding: EdgeInsets.symmetric(
-                                                horizontal: size.width * 0.03,
-                                                vertical: size.height * 0.01),
+                                                horizontal: size.width * 0.03, vertical: size.height * 0.01),
                                             child: Row(
                                               children: [
                                                 Icon(
                                                   category['icon'],
-                                                  size: size.width *
-                                                      0.06, // Responsive icon size
-                                                  color:
-                                                      const Color(0xFF1A3C34),
+                                                  size: size.width * 0.06,
+                                                  color: const Color(0xFF1A3C34),
                                                 ),
-                                                SizedBox(
-                                                    width: size.width * 0.02),
+                                                SizedBox(width: size.width * 0.02),
                                                 Expanded(
                                                   child: Text(
                                                     category['name'],
                                                     style: TextStyle(
-                                                      fontSize: size.width *
-                                                          0.03, // Responsive font
+                                                      fontSize: size.width * 0.03,
                                                       color: Colors.black,
                                                     ),
                                                     textAlign: TextAlign.left,
@@ -1139,14 +1056,14 @@ class _StatItem extends StatelessWidget {
           label,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: size.width * 0.04, // Responsive font
+            fontSize: size.width * 0.04,
             color: Colors.white,
           ),
         ),
         Text(
           description,
           style: TextStyle(
-            fontSize: size.width * 0.03, // Responsive font
+            fontSize: size.width * 0.03,
             color: Colors.white70,
           ),
         ),
@@ -1169,9 +1086,8 @@ class _InfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Container(
-      width: (size.width - 56) / 2, // Keep original logic but ensure it scales
-      height:
-          size.width * 0.3 > 120 ? 120 : size.width * 0.3, // Responsive height
+      width: (size.width - 56) / 2,
+      height: size.width * 0.3 > 120 ? 120 : size.width * 0.3,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(size.width * 0.03),
         gradient: const LinearGradient(
@@ -1187,16 +1103,14 @@ class _InfoCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                color: Colors.white,
-                size: size.width * 0.07), // Responsive icon size
+            Icon(icon, color: Colors.white, size: size.width * 0.07),
             SizedBox(height: size.height * 0.01),
             Text(
               label,
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
-                fontSize: size.width * 0.035, // Responsive font
+                fontSize: size.width * 0.035,
               ),
               textAlign: TextAlign.center,
             ),

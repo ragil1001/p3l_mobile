@@ -73,7 +73,7 @@ class _CommissionHistoryScreenState extends State<CommissionHistoryScreen>
       }
 
       final response = await http.get(
-        Uri.parse('http://192.168.154.254:8000/api/hunter/komisi'),
+        Uri.parse('http://10.0.2.2:8000/api/hunter/komisi'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -90,9 +90,9 @@ class _CommissionHistoryScreenState extends State<CommissionHistoryScreen>
         final List<Commission> fetchedCommissions = data.map((item) {
           final imageUrl = item['product_image'] != null &&
                   item['product_image'] !=
-                      'http://192.168.154.254:8000/api/placeholder/60/60'
-              ? 'http://192.168.154.254:8000/api/products/${item['KODE_PRODUK']}/thumbnail'
-              : 'http://192.168.154.254:8000/api/placeholder/60/60';
+                      'http://10.0.2.2:8000/api/placeholder/60/60'
+              ? 'http://10.0.2.2:8000/api/products/${item['KODE_PRODUK']}/thumbnail'
+              : 'http://10.0.2.2:8000/api/placeholder/60/60';
           developer.log(
               'Processing item: ${item['KODE_PRODUK']}, Image URL: $imageUrl',
               name: 'CommissionHistoryScreen');

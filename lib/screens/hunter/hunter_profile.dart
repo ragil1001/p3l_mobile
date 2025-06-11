@@ -82,7 +82,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       }
 
       final profileResponse = await http.get(
-        Uri.parse('http://192.168.154.254:8000/api/auth/profile'),
+        Uri.parse('http://10.0.2.2:8000/api/auth/profile'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -94,7 +94,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (profileData['user_type'] == 'pegawai' &&
             profileData['user']['role'].contains('hunter')) {
           final commissionResponse = await http.get(
-            Uri.parse('http://192.168.154.254:8000/api/hunter/komisi'),
+            Uri.parse('http://10.0.2.2:8000/api/hunter/komisi'),
             headers: {
               'Authorization': 'Bearer $token',
               'Content-Type': 'application/json',

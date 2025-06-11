@@ -8,7 +8,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:intl/intl.dart';
 
-const String baseUrl = 'http://192.168.154.254:8000/api';
+const String baseUrl = 'http://10.0.2.2:8000/api';
 
 class CatalogueScreen extends StatefulWidget {
   final String? selectedCategory;
@@ -381,37 +381,27 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 FadeInDown(
-                                                  duration: const Duration(
-                                                      milliseconds: 800),
+                                                  duration: const Duration(milliseconds: 800),
                                                   child: LayoutBuilder(
-                                                    builder:
-                                                        (context, constraints) {
-                                                      double availableWidth =
-                                                          constraints.maxWidth;
-                                                      String displayText =
-                                                          _getDisplayText(
-                                                              availableWidth,
-                                                              _isScrolled);
-                                                      double fontSize =
-                                                          _getFontSize(
-                                                              _isScrolled,
-                                                              availableWidth,
-                                                              size);
+                                                    builder: (context, constraints) {
+                                                      double availableWidth = constraints.maxWidth;
+                                                      String displayText = _getDisplayText(availableWidth, _isScrolled);
+                                                      double fontSize = _getFontSize(_isScrolled, availableWidth, size);
 
-                                                      return Text(
-                                                        displayText,
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: fontSize,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          height: 1.2,
+                                                      return Padding(
+                                                        padding: EdgeInsets.only(left: size.width * 0.03), // Tambahkan padding kiri di sini
+                                                        child: Text(
+                                                          displayText,
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: fontSize,
+                                                            fontWeight: FontWeight.bold,
+                                                            height: 1.2,
+                                                          ),
+                                                          maxLines: _isScrolled ? 1 : 2,
+                                                          overflow: TextOverflow.ellipsis,
+                                                          softWrap: true,
                                                         ),
-                                                        maxLines:
-                                                            _isScrolled ? 1 : 2,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                        softWrap: true,
                                                       );
                                                     },
                                                   ),
@@ -421,19 +411,19 @@ class _CatalogueScreenState extends State<CatalogueScreen>
                                                       height:
                                                           size.height * 0.01),
                                                   FadeInDown(
-                                                    duration: const Duration(
-                                                        milliseconds: 900),
-                                                    child: Text(
-                                                      'Temukan produk preloved berkualitas dengan harga terjangkau',
-                                                      style: TextStyle(
-                                                        color: Colors.white70,
-                                                        fontSize:
-                                                            size.width * 0.035,
-                                                        height: 1.3,
+                                                    duration: const Duration(milliseconds: 900),
+                                                    child: Padding(
+                                                      padding: EdgeInsets.only(left: size.width * 0.03), // Samakan dengan header
+                                                      child: Text(
+                                                        'Temukan produk preloved berkualitas dengan harga terjangkau',
+                                                        style: TextStyle(
+                                                          color: Colors.white70,
+                                                          fontSize: size.width * 0.035,
+                                                          height: 1.3,
+                                                        ),
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow.ellipsis,
                                                       ),
-                                                      maxLines: 2,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                 ],

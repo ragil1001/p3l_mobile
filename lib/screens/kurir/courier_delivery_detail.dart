@@ -126,7 +126,7 @@ class _CourierDeliveryDetailScreenState
 
         final response = await http.put(
           Uri.parse(
-              'http://192.168.154.254:8000/api/kurir/transaksi-penjualan/${widget.delivery['id_penjualan']}'),
+              'http://10.0.2.2:8000/api/kurir/transaksi-penjualan/${widget.delivery['id_penjualan']}'),
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
@@ -303,7 +303,7 @@ class _CourierDeliveryDetailScreenState
                                   color: Colors.white,
                                   fontSize: size.width * 0.05,
                                   fontWeight: FontWeight.bold,
-                                  height: 1.2,
+                                  height: 1,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -316,7 +316,7 @@ class _CourierDeliveryDetailScreenState
                   ),
                 ),
               ),
-              expandedHeight: size.height * 0.14,
+              expandedHeight: size.height * 0.05,
             ),
             SliverToBoxAdapter(
               child: Padding(

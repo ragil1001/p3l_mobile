@@ -35,6 +35,7 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
   late AnimationController _fadeController;
   late AnimationController _slideController;
   List<Map<String, dynamic>> _deliveries = [];
+  bool _isSortAscending = true;
 
   @override
   void initState() {
@@ -75,7 +76,7 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
       }
 
       final response = await http.get(
-        Uri.parse('http://192.168.154.254:8000/api/kurir/transaksi-penjualan'),
+        Uri.parse('http://10.0.2.2:8000/api/kurir/transaksi-penjualan'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -90,7 +91,7 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
         for (var transaction in data) {
           final detailResponse = await http.get(
             Uri.parse(
-                'http://192.168.154.254:8000/api/kurir/transaksi-penjualan/${transaction['no_nota']}'),
+                'http://10.0.2.2:8000/api/kurir/transaksi-penjualan/${transaction['no_nota']}'),
             headers: {
               'Authorization': 'Bearer $token',
               'Content-Type': 'application/json',
@@ -102,8 +103,8 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
             final products = detailData['products'] as List<dynamic>? ?? [];
             final items = products.map((p) {
               final imageUrl = p['image'] != '/api/placeholder/60/60'
-                  ? 'http://192.168.154.254:8000/api/products/${p['product_id']}/thumbnail'
-                  : 'http://192.168.154.254:8000/api/placeholder/60/60';
+                  ? 'http://10.0.2.2:8000/api/products/${p['product_id']}/thumbnail'
+                  : 'http://10.0.2.2:8000/api/placeholder/60/60';
               print(
                   'Image URL for ${p['nama_barang']}: $imageUrl'); // Debug log
               return {
@@ -123,6 +124,7 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
               'status': transaction['status'] as String? ?? 'Unknown',
               'date':
                   transaction['tanggal_transaksi'] as String? ?? 'Unknown Date',
+              'tanggal_siap': transaction['tanggal_siap'] as String?,
               'items': items,
             });
           } else {
@@ -134,6 +136,7 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
         if (mounted) {
           setState(() {
             _deliveries = fetchedDeliveries;
+            _sortDeliveries();
             _isLoading = false;
           });
         }
@@ -170,6 +173,96 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
     }
   }
 
+  void _sortDeliveries() {
+  setState(() {
+    _deliveries.sort((a, b) {
+      try {
+        // Pakai tanggal_siap, fallback ke tanggal_pesanan jika null
+        final dateA = a['tanggal_siap'] != null && a['tanggal_siap'] != ''
+            ? DateTime.parse(a['tanggal_siap'])
+            : DateTime.parse(a['date']);
+        final dateB = b['tanggal_siap'] != null && b['tanggal_siap'] != ''
+            ? DateTime.parse(b['tanggal_siap'])
+            : DateTime.parse(b['date']);
+        return _isSortAscending
+            ? dateA.compareTo(dateB)
+            : dateB.compareTo(dateA);
+      } catch (e) {
+        return 0;
+      }
+    });
+  });
+}
+  void _showSortDialog() {
+    final size = MediaQuery.sizeOf(context);
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(size.width * 0.05)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: EdgeInsets.all(size.width * 0.04),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Sort Pengiriman',
+                style: TextStyle(
+                  fontSize: size.width * 0.045,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF7A7C52),
+                ),
+              ),
+              SizedBox(height: size.height * 0.02),
+              ListTile(
+                leading: Icon(
+                  Icons.calendar_today,
+                  color: const Color(0xFF1A3C34),
+                  size: size.width * 0.05,
+                ),
+                title: Text(
+                  'Sort by Date: Oldest to Newest',
+                  style: TextStyle(fontSize: size.width * 0.035),
+                ),
+                onTap: () {
+                  if (mounted) {
+                    setState(() {
+                      _isSortAscending = true;
+                      _sortDeliveries();
+                    });
+                  }
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.calendar_today,
+                  color: const Color(0xFF1A3C34),
+                  size: size.width * 0.05,
+                ),
+                title: Text(
+                  'Sort by Date: Newest to Oldest',
+                  style: TextStyle(fontSize: size.width * 0.035),
+                ),
+                onTap: () {
+                  if (mounted) {
+                    setState(() {
+                      _isSortAscending = false;
+                      _sortDeliveries();
+                    });
+                  }
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+  );
+  }
+
   @override
   void dispose() {
     _fadeController.dispose();
@@ -178,13 +271,13 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
   }
 
   String _getDisplayText(double availableWidth, double screenWidth) {
-    return availableWidth < screenWidth * 0.5
+    return availableWidth < screenWidth * 0.6
         ? 'Riwayat\nPengiriman'
         : 'Riwayat Pengiriman';
   }
 
   double _getFontSize(double availableWidth, double screenWidth) {
-    return availableWidth < screenWidth * 0.5
+    return availableWidth < screenWidth * 0.6
         ? screenWidth * 0.045
         : screenWidth * 0.05;
   }
@@ -368,153 +461,187 @@ class _DeliveryHistoryScreenState extends State<DeliveryHistoryScreen>
     final oliveGreen = const Color(0xFF7A7C52);
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.grey[50]!,
-              Colors.white,
-              Colors.grey[50]!,
-            ],
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.grey[50]!,
+                  Colors.white,
+                  Colors.grey[50]!,
+                ],
+              ),
+            ),
+            child: CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  pinned: true,
+                  floating: false,
+                  elevation: 8,
+                  backgroundColor: Colors.transparent,
+                  flexibleSpace: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          oliveGreen,
+                          oliveGreen.withOpacity(0.9),
+                          const Color(0xFF5A5D3A),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(size.width * 0.06),
+                        bottomRight: Radius.circular(size.width * 0.06),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: size.width * 0.04,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    height: size.height * 0.18,
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          top: -size.height * 0.06,
+                          right: -size.width * 0.12,
+                          child: Container(
+                            width: size.width * 0.35,
+                            height: size.width * 0.35,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.05),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: -size.height * 0.04,
+                          left: -size.width * 0.08,
+                          child: Container(
+                            width: size.width * 0.25,
+                            height: size.width * 0.25,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.03),
+                            ),
+                          ),
+                        ),
+                        SafeArea(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: size.width * 0.02,
+                              vertical: size.height * 0.00,
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(width: size.width * 0.02),
+                                Expanded(
+                                  child: Padding(
+                                    padding: EdgeInsets.only(left: size.width * 0.04), // Tambahkan padding kiri di sini
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        LayoutBuilder(
+                                          builder: (context, constraints) {
+                                            double availableWidth = constraints.maxWidth;
+                                            String displayText = _getDisplayText(availableWidth, size.width);
+                                            double fontSize = _getFontSize(availableWidth, size.width);
+
+                                            return Text(
+                                              displayText,
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: fontSize,
+                                                fontWeight: FontWeight.bold,
+                                                height: 1.2,
+                                              ),
+                                              maxLines: availableWidth < size.width * 0.6 ? 2 : 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              softWrap: true,
+                                            );
+                                          },
+                                        ),
+                                        SizedBox(height: size.height * 0.01),
+                                        Flexible(
+                                          child: Text(
+                                            '${_deliveries.length} Pengiriman',
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: size.width * 0.035,
+                                              height: 1.3,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: _isLoading
+                      ? _buildLoadingShimmer()
+                      : _deliveries.isEmpty
+                          ? _buildEmptyState()
+                          : Column(
+                              children: [
+                                _buildDeliveryList(),
+                                SizedBox(height: size.height * 0.1),
+                              ],
+                            ),
+                ),
+              ],
+            ),
           ),
-        ),
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              floating: false,
-              elevation: 8,
-              backgroundColor: Colors.transparent,
-              flexibleSpace: Container(
+          Positioned(
+            bottom: size.height * 0.12,
+            right: size.width * 0.04,
+            child: ZoomIn(
+              duration: const Duration(milliseconds: 800),
+              child: Container(
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      oliveGreen,
-                      oliveGreen.withOpacity(0.9),
-                      const Color(0xFF5A5D3A),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(size.width * 0.06),
-                    bottomRight: Radius.circular(size.width * 0.06),
-                  ),
+                  borderRadius: BorderRadius.circular(size.width * 0.075),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: size.width * 0.04,
-                      offset: const Offset(0, 5),
+                      color: const Color(0xFF1A3C34).withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
-                height: size.height * 0.18,
-                child: Stack(
-                  children: [
-                    Positioned(
-                      top: -size.height * 0.06,
-                      right: -size.width * 0.12,
-                      child: Container(
-                        width: size.width * 0.35,
-                        height: size.width * 0.35,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.05),
-                        ),
-                      ),
+                child: FloatingActionButton.extended(
+                  onPressed: _showSortDialog,
+                  backgroundColor: const Color(0xFF5A5D3A),
+                  elevation: 0,
+                  label: Text(
+                    'Sort',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: size.width * 0.035,
                     ),
-                    Positioned(
-                      bottom: -size.height * 0.04,
-                      left: -size.width * 0.08,
-                      child: Container(
-                        width: size.width * 0.25,
-                        height: size.width * 0.25,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.03),
-                        ),
-                      ),
-                    ),
-                    SafeArea(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: size.width * 0.02,
-                          vertical: size.height * 0.00,
-                        ),
-                        child: Row(
-                          children: [
-                            SizedBox(width: size.width * 0.12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      double availableWidth =
-                                          constraints.maxWidth;
-                                      String displayText = _getDisplayText(
-                                          availableWidth, size.width);
-                                      double fontSize = _getFontSize(
-                                          availableWidth, size.width);
-
-                                      return Text(
-                                        displayText,
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: fontSize,
-                                          fontWeight: FontWeight.bold,
-                                          height: 1.2,
-                                        ),
-                                        maxLines:
-                                            availableWidth < size.width * 0.5
-                                                ? 2
-                                                : 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        softWrap: true,
-                                      );
-                                    },
-                                  ),
-                                  SizedBox(height: size.height * 0.01),
-                                  Flexible(
-                                    child: Text(
-                                      '${_deliveries.length} Pengiriman',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: size.width * 0.035,
-                                        height: 1.3,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
+                  icon: Icon(Icons.sort, color: Colors.white, size: size.width * 0.05),
                 ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: _isLoading
-                  ? _buildLoadingShimmer()
-                  : _deliveries.isEmpty
-                      ? _buildEmptyState()
-                      : Column(
-                          children: [
-                            _buildDeliveryList(),
-                            SizedBox(height: size.height * 0.1),
-                          ],
-                        ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -773,6 +900,31 @@ class _DeliveryCardState extends State<DeliveryCard>
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (widget.delivery['tanggal_siap'] != null)
+                        ...[
+                          SizedBox(height: size.height * 0.005),
+                          Text(
+                            'Siap Dikirim',
+                            style: TextStyle(
+                              fontSize: size.width * 0.03,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(height: size.height * 0.005),
+                          Text(
+                            _formatDate(widget.delivery['tanggal_siap']),
+                            style: TextStyle(
+                              fontSize: size.width * 0.035,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF1A3C34),
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                     ],
                   ),
                 ),
@@ -999,7 +1151,7 @@ class DeliveryItem extends StatelessWidget {
                 SizedBox(height: size.height * 0.01),
                 Container(
                   padding: EdgeInsets.symmetric(
-                    horizontal: size.width * 0.025,
+                    horizontal: size.width * 0.05,
                     vertical: size.height * 0.005,
                   ),
                   decoration: BoxDecoration(

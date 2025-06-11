@@ -9,7 +9,7 @@ import 'package:p3l_mobile/screens/otentikasi/login.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:intl/intl.dart';
 
-const String baseUrl = 'http://192.168.154.254:8000/api';
+const String baseUrl = 'http://10.0.2.2:8000/api';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;

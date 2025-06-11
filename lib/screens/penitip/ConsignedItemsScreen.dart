@@ -9,7 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'ConsignedItemDetailScreen.dart'; // Adjust import based on your project structure
 
-const String baseUrl = 'http://192.168.154.254:8000/api';
+const String baseUrl = 'http://10.0.2.2:8000/api';
 
 class ConsignedItemsScreen extends StatefulWidget {
   const ConsignedItemsScreen({super.key});
