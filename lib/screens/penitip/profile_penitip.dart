@@ -16,6 +16,13 @@ class ProfilePenitipScreen extends StatefulWidget {
 
 class _ProfilePenitipScreenState extends State<ProfilePenitipScreen>
     with TickerProviderStateMixin {
+
+  String formatRupiah(num number) {
+    return 'Rp ${number.toString().replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}.',
+    )}';
+  }
   final _authService = AuthService();
   AnimationController? _fadeController;
   AnimationController? _slideController;
@@ -82,7 +89,7 @@ class _ProfilePenitipScreenState extends State<ProfilePenitipScreen>
       }
 
       final response = await http.get(
-        Uri.parse('http://192.168.154.254:8000/api/auth/profile'),
+        Uri.parse('http://10.0.2.2:8000/api/auth/profile'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -390,7 +397,7 @@ class _ProfilePenitipScreenState extends State<ProfilePenitipScreen>
             Expanded(
               child: _buildStatCard(
                 'Saldo',
-                'Rp ${userProfile?['saldo'] ?? 0}',
+                formatRupiah(userProfile?['saldo'] ?? 0),
                 Icons.account_balance_wallet,
                 Colors.blue,
                 size,

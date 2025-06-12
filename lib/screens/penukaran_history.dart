@@ -36,7 +36,7 @@ class _PenukaranHistoryScreenState extends State<PenukaranHistoryScreen> {
       }
 
       final response = await http.get(
-        Uri.parse('http://192.168.154.254:8000/api/penukaran'),
+        Uri.parse('http://10.0.2.2:8000/api/penukaran'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -207,7 +207,7 @@ class _PenukaranHistoryScreenState extends State<PenukaranHistoryScreen> {
                         : Padding(
                             padding: EdgeInsets.symmetric(
                               horizontal: size.width * 0.03,
-                              vertical: size.height * 0.01,
+                              vertical: size.height * 0,
                             ),
                             child: ListView.builder(
                               shrinkWrap: true,
@@ -217,12 +217,13 @@ class _PenukaranHistoryScreenState extends State<PenukaranHistoryScreen> {
                                 final item = penukaran[index];
                                 return Card(
                                   color: Colors.white,
-                                  elevation: 3,
+                                  elevation: 5,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(15),
                                   ),
                                   margin: EdgeInsets.symmetric(
                                     vertical: size.height * 0.01,
+                                    
                                   ),
                                   child: Padding(
                                     padding: EdgeInsets.all(size.width * 0.04),

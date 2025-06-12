@@ -58,7 +58,7 @@ class MyApp extends StatelessWidget {
     final authService = AuthService();
     final token = await authService.getToken();
     if (token == null) {
-      return const LoginScreen(); // Default to LoginScreen if no token
+      return const PembeliDashboard(); // Default to LoginScreen if no token
     }
 
     final userType = await authService.getUserType();

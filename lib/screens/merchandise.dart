@@ -75,7 +75,7 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
       }
 
       final response = await http.get(
-        Uri.parse('http://192.168.154.254:8000/api/auth/profile'),
+        Uri.parse('http://10.0.2.2:8000/api/auth/profile'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -115,7 +115,7 @@ class _MerchandiseListScreenState extends State<MerchandiseListScreen>
       }
 
       final response = await http.get(
-        Uri.parse('http://192.168.154.254:8000/api/merchandise'),
+        Uri.parse('http://10.0.2.2:8000/api/merchandise'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -805,7 +805,7 @@ class PointsMerchandiseCard extends StatelessWidget {
                           try {
                             final response = await http.post(
                               Uri.parse(
-                                  'http://192.168.154.254:8000/api/penukaran'),
+                                  'http://10.0.2.2:8000/api/penukaran'),
                               headers: {
                                 'Authorization': 'Bearer $token',
                                 'Content-Type': 'application/json',

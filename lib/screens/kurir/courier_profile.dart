@@ -84,7 +84,7 @@ class _CourierProfileScreenState extends State<CourierProfileScreen>
 
       // Fetch user profile
       final profileResponse = await http.get(
-        Uri.parse('http://192.168.154.254:8000/api/auth/profile'),
+        Uri.parse('http://10.0.2.2:8000/api/auth/profile'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -98,7 +98,7 @@ class _CourierProfileScreenState extends State<CourierProfileScreen>
           // Fetch transactions assigned to this courier
           final transactionsResponse = await http.get(
             Uri.parse(
-                'http://192.168.154.254:8000/api/kurir/transaksi-penjualan'),
+                'http://10.0.2.2:8000/api/kurir/transaksi-penjualan'),
             headers: {
               'Authorization': 'Bearer $token',
               'Content-Type': 'application/json',

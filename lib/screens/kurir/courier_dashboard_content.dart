@@ -45,7 +45,7 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
 
       // Fetch user profile
       final profileResponse = await http.get(
-        Uri.parse('http://192.168.154.254:8000/api/auth/profile'),
+        Uri.parse('http://10.0.2.2:8000/api/auth/profile'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -68,7 +68,7 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
         // Fetch transactions
         final transactionsResponse = await http.get(
           Uri.parse(
-              'http://192.168.154.254:8000/api/kurir/transaksi-penjualan'),
+              'http://10.0.2.2:8000/api/kurir/transaksi-penjualan'),
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
@@ -91,7 +91,7 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
                 .contains(transaction['status'])) {
               final detailResponse = await http.get(
                 Uri.parse(
-                    'http://192.168.154.254:8000/api/kurir/transaksi-penjualan/${transaction['no_nota']}'),
+                    'http://10.0.2.2:8000/api/kurir/transaksi-penjualan/${transaction['no_nota']}'),
                 headers: {
                   'Authorization': 'Bearer $token',
                   'Content-Type': 'application/json',
@@ -103,8 +103,8 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
                 final products = detailData['products'] as List<dynamic>? ?? [];
                 final items = products.map((p) {
                   final imageUrl = p['image'] != '/api/placeholder/60/60'
-                      ? 'http://192.168.154.254:8000/api/products/${p['product_id']}/thumbnail'
-                      : 'http://192.168.154.254:8000/api/placeholder/60/60';
+                      ? 'http://10.0.2.2:8000/api/products/${p['product_id']}/thumbnail'
+                      : 'http://10.0.2.2:8000/api/placeholder/60/60';
                   return {
                     'name': p['nama_barang'] as String? ?? 'Unknown Item',
                     'price': p['harga_barang'] as String? ?? 'Rp0',
@@ -254,7 +254,7 @@ class _CourierDashboardContentState extends State<CourierDashboardContent> {
 
         final response = await http.put(
           Uri.parse(
-              'http://192.168.154.254:8000/api/kurir/transaksi-penjualan/${task['id_penjualan']}'),
+              'http://10.0.2.2:8000/api/kurir/transaksi-penjualan/${task['id_penjualan']}'),
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
