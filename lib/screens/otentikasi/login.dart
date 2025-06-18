@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'register.dart';
 import '../../services/auth_service.dart';
 
@@ -63,62 +62,57 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          Positioned(
-            top: 0,
-            right: 0,
-            child: SvgPicture.asset(
-              'assets/images/pattern.svg',
-              width: 270,
-              height: 270,
-            ),
-          ),
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 100),
-                    const Text(
-                      'Selamat Datang,',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const Text(
-                      'Yuk Login ke Akun Kamu!',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 48),
-                    const Text(
-                      'Alamat Email',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF7F8F9),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFF00BFA5),
-                          width: 1,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Logo positioned before the form and before the padding
+              Padding(
+                padding: const EdgeInsets.only(left: 20, top: 110),
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  height: 70,
+                ),
+              ),
+
+              // The form with its own padding (24 horizontal, adjusted vertical)
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 30.0, vertical: 0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Selamat Datang,',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
                         ),
                       ),
-                      child: TextFormField(
+                      const Text(
+                        'YUK LOGIN KE AKUN KAMU!',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                      // Alamat Email Label
+                      const Text(
+                        'Alamat Email',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
                         controller: _emailController,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -130,14 +124,15 @@ class _LoginScreenState extends State<LoginScreen> {
                           return null;
                         },
                         decoration: InputDecoration(
-                          hintText: 'name@email.com',
-                          hintStyle: TextStyle(
-                            color: Colors.grey[600],
-                          ),
-                          border: InputBorder.none,
-                          prefixIcon: Icon(
-                            Icons.email_outlined,
-                            color: Colors.grey[600],
+                          hintText: 'example@gmail.com',
+                          hintStyle: const TextStyle(color: Colors.grey),
+                          prefixIcon: const Icon(Icons.email_outlined,
+                              color: Colors.grey),
+                          filled: true,
+                          fillColor: const Color(0xFFF5F5F5),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
                           ),
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -145,27 +140,18 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Password',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF7F8F9),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFF00BFA5),
-                          width: 1,
+                      const SizedBox(height: 24),
+                      // Password Label
+                      const Text(
+                        'Password',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
                         ),
                       ),
-                      child: TextFormField(
+                      const SizedBox(height: 8),
+                      TextFormField(
                         controller: _passwordController,
                         obscureText: _obscureText,
                         validator: (value) {
@@ -179,17 +165,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                         decoration: InputDecoration(
                           hintText: '••••••••',
-                          border: InputBorder.none,
-                          prefixIcon: Icon(
-                            Icons.lock_outline,
-                            color: Colors.grey[600],
-                          ),
+                          hintStyle: const TextStyle(color: Colors.grey),
+                          prefixIcon: const Icon(Icons.lock_outline,
+                              color: Colors.grey),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscureText
                                   ? Icons.visibility_off
                                   : Icons.visibility,
-                              color: Colors.grey[600],
+                              color: Colors.grey,
                             ),
                             onPressed: () {
                               setState(() {
@@ -197,141 +181,156 @@ class _LoginScreenState extends State<LoginScreen> {
                               });
                             },
                           ),
+                          filled: true,
+                          fillColor: const Color(0xFFF5F5F5),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 16,
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: Checkbox(
-                                value: _rememberMe,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _rememberMe = value ?? false;
-                                  });
-                                },
-                                activeColor: const Color(0xFF00BFA5),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4),
+                      const SizedBox(height: 16),
+                      // Remember Me & Forget Password
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: Checkbox(
+                                  value: _rememberMe,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _rememberMe = value ?? false;
+                                    });
+                                  },
+                                  activeColor: const Color(0xFF4A5E2A),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Remember me',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF757575),
-                              ),
-                            ),
-                          ],
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            // Implement forgot password navigation
-                          },
-                          child: const Text(
-                            'Forgot Password',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF00BFA5),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _handleLogin,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00BFA5),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _isLoading
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Text(
-                                    'Login',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                            if (!_isLoading) ...[
                               const SizedBox(width: 8),
-                              const Icon(
-                                Icons.arrow_forward,
-                                color: Colors.white,
-                                size: 20,
+                              const Text(
+                                'Remember Me',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black54,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ],
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'Belum memiliki akun?',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.black87,
                           ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const RegisterScreen(),
+                          TextButton(
+                            onPressed: () {
+                              // Implement forgot password navigation
+                            },
+                            child: const Text(
+                              'Forget Password',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                                fontWeight: FontWeight.w500,
                               ),
-                            );
-                          },
-                          child: const Text(
-                            'Daftar',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF00BFA5),
-                              fontWeight: FontWeight.w500,
                             ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 30),
+                      // Login Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _handleLogin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4A5E2A),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: const [
+                                        Text(
+                                          'Login',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        SizedBox(
+                                            width:
+                                                2), // space between text and icon
+                                        Icon(
+                                          Icons.chevron_right,
+                                          color: Colors.white,
+                                        ),
+                                      ],
+                                    ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(height: 15),
+                      // Belum punya akun? Daftar
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Belum memiliki akun?',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const RegisterScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'Daftar',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.black54,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -1,13 +1,73 @@
-import 'dart:convert';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   static const String baseUrl = 'http://10.0.2.2:8000/api/auth';
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
 
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('token');
+  }
+
+  Future<String?> getRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('role');
+  }
+
+  Future<String?> getUserType() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_type');
+  }
+
+  Future<String?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_id');
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    NotificationSettings settings = await _messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
+    if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+        settings.authorizationStatus == AuthorizationStatus.provisional) {
+      print('Notification permission granted');
+    } else {
+      print('Notification permission denied');
+    }
+  }
+
+  Future<void> sendFcmTokenToBackend(String? fcmToken) async {
+    if (fcmToken == null) return;
+    final token = await getToken();
+    if (token == null) return;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/update-fcm-token'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'fcm_token': fcmToken}),
+      );
+
+      if (response.statusCode == 200) {
+        print('FCM token sent to backend');
+      } else {
+        print('Failed to send FCM token: ${response.body}');
+      }
+    } catch (e) {
+      print('Error sending FCM token: $e');
+    }
   }
 
   Future<Map<String, dynamic>> login(String email, String password) async {
@@ -28,6 +88,14 @@ class AuthService {
         await prefs.setString('token', data['token']);
         await prefs.setString('user_type', data['user_type']);
         await prefs.setString('role', data['user']['role'][0] ?? '');
+        await prefs.setString('user_id', data['user']['id'].toString());
+
+        await _requestNotificationPermission();
+        final fcmToken = await _messaging.getToken();
+        if (fcmToken != null) {
+          await sendFcmTokenToBackend(fcmToken);
+          print('FCM Token: $fcmToken');
+        }
 
         return {
           'success': true,
@@ -35,6 +103,7 @@ class AuthService {
             'token': data['token'],
             'user_type': data['user_type'],
             'role': data['user']['role'][0],
+            'user_id': data['user']['id'],
           },
         };
       } else {
@@ -72,6 +141,12 @@ class AuthService {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 201) {
+        await _requestNotificationPermission();
+        final fcmToken = await _messaging.getToken();
+        if (fcmToken != null) {
+          print('FCM token retrieved: $fcmToken');
+        }
+
         return {
           'success': true,
           'message': data['message'],
@@ -101,6 +176,7 @@ class AuthService {
         await prefs.remove('token');
         await prefs.remove('user_type');
         await prefs.remove('role');
+        await prefs.remove('user_id');
         return {'success': true, 'message': 'Logged out locally'};
       }
 
@@ -115,6 +191,7 @@ class AuthService {
       await prefs.remove('token');
       await prefs.remove('user_type');
       await prefs.remove('role');
+      await prefs.remove('user_id');
 
       if (response.statusCode == 200) {
         return {'success': true, 'message': 'Successfully logged out'};
@@ -129,6 +206,7 @@ class AuthService {
       await prefs.remove('token');
       await prefs.remove('user_type');
       await prefs.remove('role');
+      await prefs.remove('user_id');
       return {
         'success': true,
         'message': 'Logged out locally due to network error',
