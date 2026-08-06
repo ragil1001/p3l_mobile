@@ -1,0 +1,183 @@
+name: Run P3L Mobile on Android
+
+on:
+  push:
+    branches:
+      - chatgpt/deploy-p3l-mobile-android
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Build untouched production APK
+        run: |
+          mkdir -p runtime
+          flutter build apk --release
+          cp build/app/outputs/flutter-apk/app-release.apk runtime/p3l-mobile-production-release.apk
+
+      - name: Prepare isolated capture build
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('android/app/src/main/AndroidManifest.xml')
+          text = path.read_text()
+          old = '<application\n        android:label="p3l_mobile"'
+          new = '<application\n        android:usesCleartextTraffic="true"\n        android:label="p3l_mobile"'
+          if old not in text:
+              raise SystemExit('Expected application tag was not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          flutter build apk --debug -t lib/capture_android_main.dart
+
+      - name: Start isolated mock backend
+        shell: bash
+        run: |
+          python3 tooling/mock_backend.py > runtime/mock-backend.log 2>&1 &
+          echo $! > runtime/mock-backend.pid
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:8000/health >/dev/null && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8000/health
+
+      - name: Enable KVM access
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Capture original screens on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: bash tooling/capture_android.sh
+
+      - name: Validate emulator screenshots
+        shell: bash
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from PIL import Image, ImageChops, ImageStat
+
+          root = Path('runtime/screenshots')
+          required = [
+              'p3l-login-mobile.png',
+              'p3l-register-mobile.png',
+              'p3l-pembeli-mobile.png',
+              'p3l-penitip-mobile.png',
+              'p3l-hunter-mobile.png',
+              'p3l-kurir-mobile.png',
+          ]
+          menu = Image.open(root / 'p3l-capture-menu.png').convert('RGB')
+          results = {}
+          failed = False
+
+          for name in required:
+              path = root / name
+              if not path.exists():
+                  results[name] = {'missing': True}
+                  failed = True
+                  continue
+
+              image = Image.open(path).convert('RGB')
+              reduced = image.resize((108, 233))
+              colors = reduced.getcolors(maxcolors=108 * 233) or []
+              unique_colors = len(colors)
+              extrema = ImageStat.Stat(reduced).extrema
+              channel_ranges = [high - low for low, high in extrema]
+
+              comparison = image.resize(menu.size)
+              difference = ImageChops.difference(comparison, menu)
+              mean_difference = sum(ImageStat.Stat(difference).mean) / 3
+
+              suspicious = (
+                  image.width < 400
+                  or image.height < 850
+                  or unique_colors < 25
+                  or max(channel_ranges) < 30
+                  or mean_difference < 3
+              )
+              results[name] = {
+                  'width': image.width,
+                  'height': image.height,
+                  'unique_colors_sampled': unique_colors,
+                  'channel_ranges': channel_ranges,
+                  'mean_difference_from_menu': round(mean_difference, 3),
+                  'suspicious': suspicious,
+              }
+              failed = failed or suspicious
+
+          Path('runtime/android-visual-validation.json').write_text(
+              json.dumps(results, indent=2)
+          )
+          print(json.dumps(results, indent=2))
+          if failed:
+              raise SystemExit('One or more Android screenshots failed visual validation')
+          PY
+
+      - name: Prepare verification notes
+        if: always()
+        run: |
+          cat > runtime/README.md <<'EOF'
+          # P3L Mobile Android runtime verification
+
+          - `p3l-mobile-production-release.apk` was built from the untouched repository entrypoint.
+          - Screenshots were captured on an Android 14 Google APIs emulator at 430x932.
+          - The capture-only entrypoint imports and displays the original Flutter screens.
+          - The backend address `10.0.2.2:8000` was served by an isolated dummy API matching the screen schemas.
+          - No production backend or Firebase data was accessed or changed.
+          EOF
+          kill "$(cat runtime/mock-backend.pid)" || true
+
+      - name: Upload Android verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p3l_mobile-android-verification
+          path: |
+            runtime/screenshots
+            runtime/android-visual-validation.json
+            runtime/android-logcat.txt
+            runtime/mock-backend.log
+            runtime/README.md
+          retention-days: 90
+
+      - name: Upload untouched production APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: p3l_mobile-production-apk
+          path: runtime/p3l-mobile-production-release.apk
+          retention-days: 90
