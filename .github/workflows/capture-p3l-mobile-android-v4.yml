@@ -1,0 +1,166 @@
+name: Capture P3L Mobile Android V4
+
+on:
+  push:
+    branches:
+      - chatgpt/deploy-p3l-mobile-android-v4
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Build Firebase-initialized capture APK
+        shell: bash
+        run: |
+          mkdir -p runtime
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('android/app/src/main/AndroidManifest.xml')
+          text = path.read_text()
+          old = '<application\n        android:label="p3l_mobile"'
+          new = '<application\n        android:usesCleartextTraffic="true"\n        android:label="p3l_mobile"'
+          if old not in text:
+              raise SystemExit('Expected application tag was not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          flutter build apk --debug -t lib/capture_android_main.dart
+
+      - name: Start isolated mock backend
+        run: |
+          python3 tooling/mock_backend.py > runtime/mock-backend.log 2>&1 &
+          echo $! > runtime/mock-backend.pid
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:8000/health >/dev/null && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8000/health
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Capture screens on Android 14
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: bash tooling/capture_android.sh
+
+      - name: Validate screenshots
+        shell: bash
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          from PIL import Image, ImageStat
+
+          root = Path('runtime/screenshots')
+          required = [
+              'p3l-login-mobile.png',
+              'p3l-register-mobile.png',
+              'p3l-pembeli-mobile.png',
+              'p3l-penitip-mobile.png',
+              'p3l-hunter-mobile.png',
+              'p3l-kurir-mobile.png',
+          ]
+          results = {}
+          hashes = set()
+          failed = False
+
+          for name in required:
+              path = root / name
+              if not path.exists():
+                  results[name] = {'missing': True}
+                  failed = True
+                  continue
+
+              raw = path.read_bytes()
+              digest = hashlib.sha256(raw).hexdigest()
+              image = Image.open(path).convert('RGB')
+              reduced = image.resize((108, 240))
+              colors = reduced.getcolors(maxcolors=108 * 240) or []
+              extrema = ImageStat.Stat(reduced).extrema
+              channel_ranges = [high - low for low, high in extrema]
+              duplicate = digest in hashes
+              hashes.add(digest)
+
+              suspicious = (
+                  image.width < 1000
+                  or image.height < 2200
+                  or len(colors) < 25
+                  or max(channel_ranges) < 30
+                  or duplicate
+              )
+              results[name] = {
+                  'width': image.width,
+                  'height': image.height,
+                  'sha256': digest,
+                  'unique_colors_sampled': len(colors),
+                  'channel_ranges': channel_ranges,
+                  'duplicate': duplicate,
+                  'suspicious': suspicious,
+              }
+              failed = failed or suspicious
+
+          Path('runtime/android-visual-validation.json').write_text(
+              json.dumps(results, indent=2)
+          )
+          print(json.dumps(results, indent=2))
+          if failed:
+              raise SystemExit('Android screenshot validation failed')
+          PY
+
+      - name: Prepare notes
+        if: always()
+        run: |
+          cat > runtime/README.md <<'EOF'
+          # P3L Mobile Android capture V4
+
+          Screens were launched directly through a temporary Android MethodChannel and intent extra, then rendered by the original Flutter widgets after the same Firebase initialization used by the production entrypoint.
+          API calls to 10.0.2.2:8000 were answered by an isolated dummy backend matching the original screen schemas.
+          No production backend or Firebase data was accessed or modified.
+          EOF
+          kill "$(cat runtime/mock-backend.pid)" || true
+
+      - name: Upload Android screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p3l_mobile-android-screenshots-v4
+          path: |
+            runtime/screenshots
+            runtime/android-visual-validation.json
+            runtime/android-logcat.txt
+            runtime/mock-backend.log
+            runtime/README.md
+          retention-days: 90
