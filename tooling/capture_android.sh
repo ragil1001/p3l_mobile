@@ -36,11 +36,11 @@ capture_screen() {
   adb exec-out screencap -p > "$OUT/$name.png"
 }
 
-capture_screen "login" "p3l-login-mobile" 6
-capture_screen "register" "p3l-register-mobile" 6
-capture_screen "pembeli" "p3l-pembeli-mobile" 11
-capture_screen "penitip" "p3l-penitip-mobile" 7
-capture_screen "hunter" "p3l-hunter-mobile" 11
-capture_screen "kurir" "p3l-kurir-mobile" 11
+capture_screen "login" "p3l-login-mobile" 14
+capture_screen "register" "p3l-register-mobile" 14
+capture_screen "pembeli" "p3l-pembeli-mobile" 17
+capture_screen "penitip" "p3l-penitip-mobile" 14
+capture_screen "hunter" "p3l-hunter-mobile" 17
+capture_screen "kurir" "p3l-kurir-mobile" 17
 
 adb logcat -d > runtime/android-logcat.txt
