@@ -1,0 +1,291 @@
+name: Capture P3L Mobile V2
+
+on:
+  push:
+    branches:
+      - chatgpt/deploy-p3l-mobile-v2
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          flutter pub get
+          npm install --no-save --ignore-scripts puppeteer-core@24.16.0 serve@14.2.4 pngjs@7.0.0
+
+      - name: Create capture-only entrypoint
+        shell: bash
+        run: |
+          mkdir -p runtime/screenshots
+          cat > lib/capture_main.dart <<'DART'
+          import 'package:flutter/material.dart';
+          import 'package:shared_preferences/shared_preferences.dart';
+          import 'screens/dashboard.dart';
+          import 'screens/otentikasi/login.dart';
+          import 'screens/otentikasi/register.dart';
+          import 'screens/penitip/dashboardPenitip.dart';
+          import 'screens/hunter/hunter_dashboard.dart';
+          import 'screens/kurir/courier_dashboard.dart';
+
+          Future<void> main() async {
+            WidgetsFlutterBinding.ensureInitialized();
+            final screen = Uri.base.queryParameters['screen'] ?? 'pembeli';
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.clear();
+
+            if (screen == 'hunter') {
+              await prefs.setString('token', 'capture-token');
+              await prefs.setString('role', 'hunter');
+              await prefs.setString('user_type', 'pegawai');
+              await prefs.setString('user_id', '17');
+            } else if (screen == 'kurir') {
+              await prefs.setString('token', 'capture-token');
+              await prefs.setString('role', 'kurir');
+              await prefs.setString('user_type', 'pegawai');
+              await prefs.setString('user_id', '21');
+            } else if (screen == 'penitip') {
+              await prefs.setString('token', 'capture-token');
+              await prefs.setString('role', 'penitip');
+              await prefs.setString('user_type', 'penitip');
+              await prefs.setString('user_id', '9');
+            }
+
+            Widget page;
+            switch (screen) {
+              case 'login': page = const LoginScreen(); break;
+              case 'register': page = const RegisterScreen(); break;
+              case 'penitip': page = const PenitipDashboard(); break;
+              case 'hunter': page = const HunterDashboard(); break;
+              case 'kurir': page = const CourierDashboard(); break;
+              default: page = const PembeliDashboard();
+            }
+
+            runApp(MaterialApp(
+              title: 'ReuseMart',
+              debugShowCheckedModeBanner: false,
+              theme: ThemeData(
+                primaryColor: const Color(0xFF4A5E2A),
+                colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4A5E2A)),
+                useMaterial3: true,
+                fontFamily: 'Poppins',
+              ),
+              routes: {
+                '/login': (_) => const LoginScreen(),
+                '/pembeli_dashboard': (_) => const PembeliDashboard(),
+                '/penitip_dashboard': (_) => const PenitipDashboard(),
+                '/hunter_dashboard': (_) => const HunterDashboard(),
+                '/kurir_dashboard': (_) => const CourierDashboard(),
+              },
+              home: page,
+            ));
+          }
+          DART
+
+      - name: Build capture app with HTML renderer
+        run: flutter build web --release --web-renderer html -t lib/capture_main.dart
+
+      - name: Serve and capture screens
+        shell: bash
+        run: |
+          npx serve -s build/web -l 4174 > runtime/server.log 2>&1 &
+          echo $! > runtime/server.pid
+          for i in {1..60}; do
+            curl -fsS http://127.0.0.1:4174 >/dev/null && break
+            sleep 1
+          done
+
+          cat > capture.mjs <<'NODE'
+          import puppeteer from 'puppeteer-core';
+          import { execSync } from 'node:child_process';
+          import { writeFileSync } from 'node:fs';
+
+          const executablePath = execSync(
+            'command -v google-chrome-stable || command -v google-chrome || command -v chromium-browser || command -v chromium',
+            { encoding: 'utf8' }
+          ).trim();
+
+          const browser = await puppeteer.launch({
+            executablePath,
+            headless: true,
+            args: [
+              '--no-sandbox',
+              '--disable-dev-shm-usage',
+              '--disable-web-security',
+              '--enable-webgl',
+              '--use-gl=swiftshader'
+            ]
+          });
+
+          const tinyPng = Buffer.from(
+            'iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAJElEQVR4nO3BMQEAAADCoPVPbQ0PoAAAAAAAAAAAAAAAAAAAgKcBnAAB7j3JggAAAABJRU5ErkJggg==',
+            'base64'
+          );
+
+          const products = [
+            { id:'BRG001', name:'Kamera Mirrorless Sony', price:4750000, image:'/api/placeholder/60/60' },
+            { id:'BRG002', name:'Kursi Kerja Ergonomis', price:850000, image:'/api/placeholder/60/60' },
+            { id:'BRG003', name:'Gitar Akustik', price:1200000, image:'/api/placeholder/60/60' },
+            { id:'BRG004', name:'Set Buku Pemrograman', price:325000, image:'/api/placeholder/60/60' }
+          ];
+
+          const categories = [
+            { NAMA:'Elektronik & Gadget' },
+            { NAMA:'Perabotan Rumah Tangga' },
+            { NAMA:'Pakaian & Aksesori' },
+            { NAMA:'Buku, Alat Tulis, & Peralatan Sekolah' },
+            { NAMA:'Hobi, Mainan, & Koleksi' },
+            { NAMA:'Otomotif & Aksesori' }
+          ];
+
+          function apiPayload(path) {
+            if (path.endsWith('/categories')) return categories;
+            if (path.endsWith('/products/mobile')) return { success:true, data:products };
+            if (path.endsWith('/auth/profile')) return {
+              user_type:'pegawai',
+              user:{ nama:'Raka Wibowo', role:['hunter','kurir'] }
+            };
+            if (path.endsWith('/hunter/komisi')) return [
+              { KOMISI_HUNTER:350000 },
+              { KOMISI_HUNTER:225000 },
+              { KOMISI_HUNTER:180000 }
+            ];
+            if (path.endsWith('/hunter/barang-titipan')) return { data:[
+              { KODE_PRODUK:'BRG001', product_name:'Kamera Mirrorless Sony', penitip_name:'Nadia Putri', consignment_date:'2026-07-15', status:'Terjual', product_image:'/api/placeholder/60/60' },
+              { KODE_PRODUK:'BRG005', product_name:'Laptop Lenovo ThinkPad', penitip_name:'Budi Santoso', consignment_date:'2026-07-22', status:'Tersedia', product_image:'/api/placeholder/60/60' },
+              { KODE_PRODUK:'BRG008', product_name:'Sepeda Lipat', penitip_name:'Sari Dewi', consignment_date:'2026-08-01', status:'Tersedia', product_image:'/api/placeholder/60/60' }
+            ]};
+            if (path.endsWith('/kurir/transaksi-penjualan')) return { data:[
+              { id_penjualan:31, no_nota:'NOTA-2026-081', status:'Siap Dikirim', tanggal_transaksi:'2026-08-05' },
+              { id_penjualan:29, no_nota:'NOTA-2026-076', status:'Sedang Dikirim', tanggal_transaksi:'2026-08-04' },
+              { id_penjualan:22, no_nota:'NOTA-2026-061', status:'Sudah Diterima', tanggal_transaksi:'2026-08-01' }
+            ]};
+            if (path.includes('/kurir/transaksi-penjualan/')) return { data:{
+              nama_pembeli:'Alya Ramadhani',
+              alamat:'Jl. Kaliurang KM 7, Sleman, Yogyakarta',
+              products:[{ product_id:'BRG001', nama_barang:'Kamera Mirrorless Sony', harga_barang:'Rp4.750.000', image:'/api/placeholder/60/60' }]
+            }};
+            return { success:true, data:[] };
+          }
+
+          const summary = {};
+          async function capture(name, screen, viewport, waitMs) {
+            const page = await browser.newPage();
+            const errors = [];
+            page.on('pageerror', error => errors.push(error.message));
+            page.on('console', msg => {
+              if (msg.type() === 'error') errors.push(msg.text());
+            });
+            await page.setRequestInterception(true);
+            page.on('request', request => {
+              const url = request.url();
+              if (url.startsWith('http://10.0.2.2:8000/api/')) {
+                const path = new URL(url).pathname;
+                if (path.endsWith('/thumbnail') || path.includes('/placeholder/')) {
+                  request.respond({ status:200, contentType:'image/png', body:tinyPng });
+                } else {
+                  request.respond({
+                    status:200,
+                    contentType:'application/json',
+                    headers:{ 'Access-Control-Allow-Origin':'*' },
+                    body:JSON.stringify(apiPayload(path))
+                  });
+                }
+              } else {
+                request.continue();
+              }
+            });
+
+            await page.setViewport(viewport);
+            await page.goto(`http://127.0.0.1:4174/?screen=${screen}`, {
+              waitUntil:'networkidle2',
+              timeout:120000
+            });
+            await page.waitForSelector('flt-glass-pane, flutter-view', { timeout:60000 });
+            await new Promise(resolve => setTimeout(resolve, waitMs));
+            const file = `runtime/screenshots/${name}.png`;
+            await page.screenshot({ path:file, fullPage:true });
+            summary[name] = {
+              url:page.url(),
+              canvasCount:await page.evaluate(() => document.querySelectorAll('canvas').length),
+              flutterViews:await page.evaluate(() => document.querySelectorAll('flt-glass-pane, flutter-view').length),
+              errors
+            };
+            await page.close();
+          }
+
+          const mobile = { width:430, height:932, deviceScaleFactor:1 };
+          const tablet = { width:820, height:1180, deviceScaleFactor:1 };
+          await capture('p3l-login-mobile','login',mobile,3500);
+          await capture('p3l-register-mobile','register',mobile,3500);
+          await capture('p3l-pembeli-mobile','pembeli',mobile,7000);
+          await capture('p3l-penitip-mobile','penitip',mobile,4500);
+          await capture('p3l-hunter-mobile','hunter',mobile,7000);
+          await capture('p3l-kurir-mobile','kurir',mobile,7000);
+          await capture('p3l-pembeli-tablet','pembeli',tablet,7000);
+          writeFileSync('runtime/page-summary.json', JSON.stringify(summary,null,2));
+          await browser.close();
+          NODE
+
+          node capture.mjs
+          kill "$(cat runtime/server.pid)" || true
+
+      - name: Validate screenshots are not blank
+        shell: bash
+        run: |
+          cat > validate.mjs <<'NODE'
+          import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+          import { PNG } from 'pngjs';
+
+          const results = {};
+          let failed = false;
+          for (const name of readdirSync('runtime/screenshots').filter(x => x.endsWith('.png'))) {
+            const png = PNG.sync.read(readFileSync(`runtime/screenshots/${name}`));
+            const colors = new Set();
+            let nonGrey = 0;
+            for (let y = 0; y < png.height; y += 8) {
+              for (let x = 0; x < png.width; x += 8) {
+                const i = (png.width * y + x) * 4;
+                const r = png.data[i], g = png.data[i+1], b = png.data[i+2], a = png.data[i+3];
+                if (a < 20) continue;
+                colors.add(`${Math.round(r/8)},${Math.round(g/8)},${Math.round(b/8)}`);
+                if (Math.max(r,g,b) - Math.min(r,g,b) > 12) nonGrey++;
+              }
+            }
+            results[name] = { width:png.width, height:png.height, sampledColors:colors.size, nonGreySamples:nonGrey };
+            if (colors.size < 20 || nonGrey < 25) failed = true;
+          }
+          writeFileSync('runtime/visual-validation.json', JSON.stringify(results,null,2));
+          if (failed) process.exit(1);
+          NODE
+          node validate.mjs
+
+      - name: Add notes
+        run: |
+          cat > runtime/README.md <<'EOF'
+          # P3L Mobile screenshot verification V2
+
+          The screenshots use the original Flutter screen widgets and styles.
+          Only the capture entrypoint, authentication state, and HTTP responses are isolated dummy data.
+          No production backend or Firebase data was changed.
+          EOF
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: p3l_mobile-final-screenshots
+          path: runtime
+          retention-days: 90
