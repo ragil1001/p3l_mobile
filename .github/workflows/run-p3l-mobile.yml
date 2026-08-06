@@ -1,0 +1,271 @@
+name: Run Original P3L Mobile
+
+on:
+  push:
+    branches:
+      - chatgpt/deploy-p3l-mobile
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+          cache: true
+
+      - name: Resolve locked dependencies
+        run: flutter pub get
+
+      - name: Analyze source
+        continue-on-error: true
+        run: flutter analyze --no-fatal-infos
+
+      - name: Build untouched production source
+        run: |
+          flutter build web --release
+          mv build/web build/production-web
+
+      - name: Install browser capture tools
+        run: npm install --no-save --ignore-scripts puppeteer-core@24.16.0 serve@14.2.4
+
+      - name: Prepare capture-only Flutter entrypoint
+        shell: bash
+        run: |
+          mkdir -p runtime/screenshots
+          cat > lib/capture_main.dart <<'DART'
+          import 'package:flutter/material.dart';
+          import 'package:shared_preferences/shared_preferences.dart';
+          import 'screens/dashboard.dart';
+          import 'screens/otentikasi/login.dart';
+          import 'screens/otentikasi/register.dart';
+          import 'screens/penitip/dashboardPenitip.dart';
+          import 'screens/hunter/hunter_dashboard.dart';
+          import 'screens/kurir/courier_dashboard.dart';
+
+          Future<void> main() async {
+            WidgetsFlutterBinding.ensureInitialized();
+            final screen = Uri.base.queryParameters['screen'] ?? 'pembeli';
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.clear();
+            if (screen == 'hunter') {
+              await prefs.setString('token', 'capture-token');
+              await prefs.setString('role', 'hunter');
+              await prefs.setString('user_type', 'pegawai');
+              await prefs.setString('user_id', '17');
+            } else if (screen == 'kurir') {
+              await prefs.setString('token', 'capture-token');
+              await prefs.setString('role', 'kurir');
+              await prefs.setString('user_type', 'pegawai');
+              await prefs.setString('user_id', '21');
+            } else if (screen == 'penitip') {
+              await prefs.setString('token', 'capture-token');
+              await prefs.setString('role', 'penitip');
+              await prefs.setString('user_type', 'penitip');
+              await prefs.setString('user_id', '9');
+            }
+
+            Widget page;
+            switch (screen) {
+              case 'login':
+                page = const LoginScreen();
+                break;
+              case 'register':
+                page = const RegisterScreen();
+                break;
+              case 'penitip':
+                page = const PenitipDashboard();
+                break;
+              case 'hunter':
+                page = const HunterDashboard();
+                break;
+              case 'kurir':
+                page = const CourierDashboard();
+                break;
+              default:
+                page = const PembeliDashboard();
+            }
+
+            runApp(MaterialApp(
+              title: 'ReuseMart Capture',
+              debugShowCheckedModeBanner: false,
+              theme: ThemeData(
+                primaryColor: const Color(0xFF4A5E2A),
+                colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4A5E2A)),
+                useMaterial3: true,
+                fontFamily: 'Poppins',
+              ),
+              routes: {
+                '/login': (_) => const LoginScreen(),
+                '/pembeli_dashboard': (_) => const PembeliDashboard(),
+                '/penitip_dashboard': (_) => const PenitipDashboard(),
+                '/hunter_dashboard': (_) => const HunterDashboard(),
+                '/kurir_dashboard': (_) => const CourierDashboard(),
+              },
+              home: page,
+            ));
+          }
+          DART
+
+          flutter build web --release -t lib/capture_main.dart
+          mv build/web build/capture-web
+
+      - name: Capture production and role screens
+        shell: bash
+        run: |
+          npx serve -s build/production-web -l 4173 > runtime/production-server.log 2>&1 &
+          echo $! > runtime/production-server.pid
+          npx serve -s build/capture-web -l 4174 > runtime/capture-server.log 2>&1 &
+          echo $! > runtime/capture-server.pid
+          for i in {1..60}; do
+            curl -fsS http://127.0.0.1:4173 >/dev/null && curl -fsS http://127.0.0.1:4174 >/dev/null && break
+            sleep 1
+          done
+
+          cat > capture.mjs <<'NODE'
+          import puppeteer from 'puppeteer-core';
+          import { execSync } from 'node:child_process';
+          import { writeFileSync } from 'node:fs';
+
+          const executablePath = execSync(
+            'command -v google-chrome-stable || command -v google-chrome || command -v chromium-browser || command -v chromium',
+            { encoding: 'utf8' }
+          ).trim();
+          const browser = await puppeteer.launch({
+            executablePath,
+            headless: true,
+            args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-web-security']
+          });
+
+          const svg = (fill, text) => `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="420"><rect width="600" height="420" fill="${fill}"/><circle cx="300" cy="170" r="85" fill="white" opacity=".42"/><text x="300" y="330" font-family="Arial" font-size="34" text-anchor="middle" fill="white">${text}</text></svg>`)}`;
+          const products = [
+            { id: 'BRG001', name: 'Kamera Mirrorless Sony', price: 4750000, image: svg('#64748b','Kamera') },
+            { id: 'BRG002', name: 'Kursi Kerja Ergonomis', price: 850000, image: svg('#78716c','Kursi') },
+            { id: 'BRG003', name: 'Gitar Akustik', price: 1200000, image: svg('#a16207','Gitar') },
+            { id: 'BRG004', name: 'Set Buku Pemrograman', price: 325000, image: svg('#0369a1','Buku') }
+          ];
+          const categories = [
+            { NAMA: 'Elektronik & Gadget' },
+            { NAMA: 'Perabotan Rumah Tangga' },
+            { NAMA: 'Pakaian & Aksesori' },
+            { NAMA: 'Buku, Alat Tulis, & Peralatan Sekolah' },
+            { NAMA: 'Hobi, Mainan, & Koleksi' },
+            { NAMA: 'Otomotif & Aksesori' }
+          ];
+
+          function responseFor(url) {
+            const path = new URL(url).pathname;
+            if (path.endsWith('/api/categories')) return categories;
+            if (path.endsWith('/api/products/mobile')) return { success: true, data: products };
+            if (/\/api\/products\/[^/]+\/thumbnail$/.test(path)) return null;
+            if (path.endsWith('/api/auth/profile')) {
+              if (url.includes('kurir')) return { user_type:'pegawai', user:{ nama:'Dimas Pratama', role:['kurir'] } };
+              return { user_type:'pegawai', user:{ nama:'Raka Wibowo', role:['hunter','kurir'] } };
+            }
+            if (path.endsWith('/api/hunter/komisi')) return [
+              { KOMISI_HUNTER: 350000 }, { KOMISI_HUNTER: 225000 }, { KOMISI_HUNTER: 180000 }
+            ];
+            if (path.endsWith('/api/hunter/barang-titipan')) return { data: [
+              { KODE_PRODUK:'BRG001', product_name:'Kamera Mirrorless Sony', penitip_name:'Nadia Putri', consignment_date:'2026-07-15', status:'Terjual', product_image:'/api/placeholder/60/60' },
+              { KODE_PRODUK:'BRG005', product_name:'Laptop Lenovo ThinkPad', penitip_name:'Budi Santoso', consignment_date:'2026-07-22', status:'Tersedia', product_image:'/api/placeholder/60/60' },
+              { KODE_PRODUK:'BRG008', product_name:'Sepeda Lipat', penitip_name:'Sari Dewi', consignment_date:'2026-08-01', status:'Tersedia', product_image:'/api/placeholder/60/60' }
+            ]};
+            if (path.endsWith('/api/kurir/transaksi-penjualan')) return { data: [
+              { id_penjualan:31, no_nota:'NOTA-2026-081', status:'Siap Dikirim', tanggal_transaksi:'2026-08-05' },
+              { id_penjualan:29, no_nota:'NOTA-2026-076', status:'Sedang Dikirim', tanggal_transaksi:'2026-08-04' },
+              { id_penjualan:22, no_nota:'NOTA-2026-061', status:'Sudah Diterima', tanggal_transaksi:'2026-08-01' }
+            ]};
+            if (/\/api\/kurir\/transaksi-penjualan\//.test(path)) return { data: {
+              nama_pembeli:'Alya Ramadhani', alamat:'Jl. Kaliurang KM 7, Sleman, Yogyakarta',
+              products:[{ product_id:'BRG001', nama_barang:'Kamera Mirrorless Sony', harga_barang:'Rp4.750.000', image:'/api/placeholder/60/60' }]
+            }};
+            return { success:true, data:[] };
+          }
+
+          async function makePage() {
+            const page = await browser.newPage();
+            const errors = [];
+            page.on('pageerror', e => errors.push(e.message));
+            page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
+            await page.setRequestInterception(true);
+            page.on('request', req => {
+              const url = req.url();
+              if (url.startsWith('http://10.0.2.2:8000/api/')) {
+                const payload = responseFor(url);
+                if (payload === null) {
+                  req.respond({ status: 302, headers: { location: svg('#475569','ReuseMart') } });
+                } else {
+                  req.respond({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin':'*' }, body: JSON.stringify(payload) });
+                }
+              } else req.continue();
+            });
+            return { page, errors };
+          }
+
+          const summary = {};
+          async function capture(name, url, viewport, wait = 5000) {
+            const { page, errors } = await makePage();
+            await page.setViewport(viewport);
+            await page.goto(url, { waitUntil:'networkidle2', timeout:120000 });
+            await new Promise(r => setTimeout(r, wait));
+            await page.screenshot({ path:`runtime/screenshots/${name}.png`, fullPage:true });
+            const body = await page.evaluate(() => document.body.innerText);
+            summary[name] = { url:page.url(), body:body.slice(0,2500), errors };
+            await page.close();
+          }
+
+          const mobile = { width:430, height:932, deviceScaleFactor:1 };
+          const tablet = { width:820, height:1180, deviceScaleFactor:1 };
+          await capture('p3l-production-pembeli-mobile','http://127.0.0.1:4173/',mobile,7000);
+          await capture('p3l-login-mobile','http://127.0.0.1:4174/?screen=login',mobile,2500);
+          await capture('p3l-register-mobile','http://127.0.0.1:4174/?screen=register',mobile,2500);
+          await capture('p3l-pembeli-mobile','http://127.0.0.1:4174/?screen=pembeli',mobile,6000);
+          await capture('p3l-penitip-mobile','http://127.0.0.1:4174/?screen=penitip',mobile,3500);
+          await capture('p3l-hunter-mobile','http://127.0.0.1:4174/?screen=hunter',mobile,6000);
+          await capture('p3l-kurir-mobile','http://127.0.0.1:4174/?screen=kurir',mobile,6000);
+          await capture('p3l-pembeli-tablet','http://127.0.0.1:4174/?screen=pembeli',tablet,6000);
+          writeFileSync('runtime/page-summary.json', JSON.stringify(summary,null,2));
+          await browser.close();
+          NODE
+
+          node capture.mjs
+          kill "$(cat runtime/production-server.pid)" || true
+          kill "$(cat runtime/capture-server.pid)" || true
+
+      - name: Prepare verification notes
+        if: always()
+        run: |
+          cat > runtime/README.md <<'EOF'
+          # P3L Mobile runtime verification
+
+          - `production-web/` is the untouched Flutter Web release build from repository source.
+          - `capture-web/` is a screenshot-only build whose entrypoint imports the original screens.
+          - Backend calls were intercepted in the browser with dummy responses.
+          - No production backend, Firebase data, or credentials were modified.
+          EOF
+          cp -R build/production-web runtime/production-web
+
+      - name: Upload runtime verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p3l_mobile-runtime-verification
+          path: runtime
+          retention-days: 90
+
+      - name: Upload untouched production build
+        uses: actions/upload-artifact@v4
+        with:
+          name: p3l_mobile-production-web
+          path: build/production-web
+          retention-days: 90
