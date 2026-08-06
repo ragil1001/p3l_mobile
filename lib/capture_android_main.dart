@@ -9,19 +9,67 @@ import 'screens/otentikasi/login.dart';
 import 'screens/otentikasi/register.dart';
 import 'screens/penitip/dashboardPenitip.dart';
 
+const _captureChannel = MethodChannel('com.example.p3l_mobile/capture');
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  runApp(const CaptureApp());
+
+  final screen =
+      await _captureChannel.invokeMethod<String>('getCaptureScreen') ?? 'pembeli';
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.clear();
+
+  if (screen == 'penitip') {
+    await prefs.setString('token', 'capture-token');
+    await prefs.setString('role', 'penitip');
+    await prefs.setString('user_type', 'penitip');
+    await prefs.setString('user_id', '9');
+  } else if (screen == 'hunter') {
+    await prefs.setString('token', 'capture-token');
+    await prefs.setString('role', 'hunter');
+    await prefs.setString('user_type', 'pegawai');
+    await prefs.setString('user_id', '17');
+  } else if (screen == 'kurir') {
+    await prefs.setString('token', 'capture-token');
+    await prefs.setString('role', 'kurir');
+    await prefs.setString('user_type', 'pegawai');
+    await prefs.setString('user_id', '21');
+  }
+
+  Widget home;
+  switch (screen) {
+    case 'login':
+      home = const LoginScreen();
+      break;
+    case 'register':
+      home = const RegisterScreen();
+      break;
+    case 'penitip':
+      home = const PenitipDashboard();
+      break;
+    case 'hunter':
+      home = const HunterDashboard();
+      break;
+    case 'kurir':
+      home = const CourierDashboard();
+      break;
+    default:
+      home = const PembeliDashboard();
+  }
+
+  runApp(CaptureApp(home: home));
 }
 
 class CaptureApp extends StatelessWidget {
-  const CaptureApp({super.key});
+  const CaptureApp({super.key, required this.home});
+
+  final Widget home;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ReuseMart Capture',
+      title: 'ReuseMart',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primaryColor: const Color(0xFF4A5E2A),
@@ -46,16 +94,6 @@ class CaptureApp extends StatelessWidget {
             borderSide: const BorderSide(color: Color(0xFF4A5E2A)),
           ),
         ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF4A5E2A),
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 16),
-          ),
-        ),
       ),
       routes: {
         '/login': (_) => const LoginScreen(),
@@ -64,131 +102,7 @@ class CaptureApp extends StatelessWidget {
         '/hunter_dashboard': (_) => const HunterDashboard(),
         '/kurir_dashboard': (_) => const CourierDashboard(),
       },
-      home: const CaptureMenu(),
-    );
-  }
-}
-
-class CaptureMenu extends StatelessWidget {
-  const CaptureMenu({super.key});
-
-  Future<void> _open(
-    BuildContext context,
-    Widget screen, {
-    String? userType,
-    String? role,
-    String? userId,
-  }) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-
-    if (role != null) {
-      await prefs.setString('token', 'capture-token');
-      await prefs.setString('role', role);
-      await prefs.setString('user_type', userType ?? 'pegawai');
-      await prefs.setString('user_id', userId ?? '1');
-    }
-
-    if (!context.mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => screen),
-    );
-  }
-
-  Widget _button(
-    BuildContext context,
-    String label,
-    IconData icon,
-    VoidCallback onPressed,
-  ) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: ElevatedButton.icon(
-        key: ValueKey(label),
-        onPressed: onPressed,
-        icon: Icon(icon),
-        label: Text(label),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('ReuseMart Screen Capture'),
-        backgroundColor: const Color(0xFF7A7C52),
-        foregroundColor: Colors.white,
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              _button(
-                context,
-                'Login',
-                Icons.login,
-                () => _open(context, const LoginScreen()),
-              ),
-              const SizedBox(height: 12),
-              _button(
-                context,
-                'Register',
-                Icons.person_add,
-                () => _open(context, const RegisterScreen()),
-              ),
-              const SizedBox(height: 12),
-              _button(
-                context,
-                'Pembeli',
-                Icons.shopping_bag,
-                () => _open(context, const PembeliDashboard()),
-              ),
-              const SizedBox(height: 12),
-              _button(
-                context,
-                'Penitip',
-                Icons.inventory_2,
-                () => _open(
-                  context,
-                  const PenitipDashboard(),
-                  userType: 'penitip',
-                  role: 'penitip',
-                  userId: '9',
-                ),
-              ),
-              const SizedBox(height: 12),
-              _button(
-                context,
-                'Hunter',
-                Icons.search,
-                () => _open(
-                  context,
-                  const HunterDashboard(),
-                  userType: 'pegawai',
-                  role: 'hunter',
-                  userId: '17',
-                ),
-              ),
-              const SizedBox(height: 12),
-              _button(
-                context,
-                'Kurir',
-                Icons.local_shipping,
-                () => _open(
-                  context,
-                  const CourierDashboard(),
-                  userType: 'pegawai',
-                  role: 'kurir',
-                  userId: '21',
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      home: home,
     );
   }
 }
