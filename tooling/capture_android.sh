@@ -11,13 +11,26 @@ adb shell input keyevent 82 || true
 adb shell settings put global window_animation_scale 0
 adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
-adb shell wm size 430x932
-adb shell wm density 160
+adb shell wm size reset || true
+adb shell wm density reset || true
 adb install -r "$APK"
-adb shell am force-stop "$PACKAGE"
-adb shell monkey -p "$PACKAGE" -c android.intent.category.LAUNCHER 1 >/dev/null
-sleep 5
 
+launch_menu() {
+  adb shell am force-stop "$PACKAGE"
+  adb shell monkey -p "$PACKAGE" -c android.intent.category.LAUNCHER 1 >/dev/null
+  sleep 4
+}
+
+assert_foreground() {
+  if ! adb shell dumpsys activity activities | grep -E 'mResumedActivity|topResumedActivity' | grep -q "$PACKAGE"; then
+    echo "Expected $PACKAGE to be foreground" >&2
+    adb shell dumpsys activity activities | grep -E 'mResumedActivity|topResumedActivity' || true
+    exit 1
+  fi
+}
+
+launch_menu
+assert_foreground
 adb exec-out screencap -p > "$OUT/p3l-capture-menu.png"
 
 capture_screen() {
@@ -25,21 +38,21 @@ capture_screen() {
   local y="$2"
   local wait_seconds="$3"
 
-  adb shell input tap 215 "$y"
+  launch_menu
+  assert_foreground
+  adb shell input tap 540 "$y"
   sleep "$wait_seconds"
+  assert_foreground
   adb exec-out screencap -p > "$OUT/$name.png"
-  adb shell input keyevent 4
-  sleep 2
 }
 
-# Fixed coordinates are based on the temporary capture menu at 430x932 and 160 dpi.
-capture_screen "p3l-login-mobile" 128 4
-capture_screen "p3l-register-mobile" 196 4
-capture_screen "p3l-pembeli-mobile" 264 9
-capture_screen "p3l-penitip-mobile" 332 5
-capture_screen "p3l-hunter-mobile" 400 9
-capture_screen "p3l-kurir-mobile" 468 9
+# Pixel 6 physical resolution is 1080x2400. Button centers were measured from
+# the temporary menu at the emulator's native resolution.
+capture_screen "p3l-login-mobile" 330 5
+capture_screen "p3l-register-mobile" 505 5
+capture_screen "p3l-pembeli-mobile" 680 10
+capture_screen "p3l-penitip-mobile" 855 6
+capture_screen "p3l-hunter-mobile" 1030 10
+capture_screen "p3l-kurir-mobile" 1205 10
 
 adb logcat -d > runtime/android-logcat.txt
-adb shell wm size reset || true
-adb shell wm density reset || true
