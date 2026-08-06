@@ -2,6 +2,7 @@
 set -euo pipefail
 
 PACKAGE="com.example.p3l_mobile"
+ACTIVITY="$PACKAGE/.MainActivity"
 APK="build/app/outputs/flutter-apk/app-debug.apk"
 OUT="runtime/screenshots"
 
@@ -15,12 +16,6 @@ adb shell wm size reset || true
 adb shell wm density reset || true
 adb install -r "$APK"
 
-launch_menu() {
-  adb shell am force-stop "$PACKAGE"
-  adb shell monkey -p "$PACKAGE" -c android.intent.category.LAUNCHER 1 >/dev/null
-  sleep 4
-}
-
 assert_foreground() {
   if ! adb shell dumpsys activity activities | grep -E 'mResumedActivity|topResumedActivity' | grep -q "$PACKAGE"; then
     echo "Expected $PACKAGE to be foreground" >&2
@@ -29,30 +24,23 @@ assert_foreground() {
   fi
 }
 
-launch_menu
-assert_foreground
-adb exec-out screencap -p > "$OUT/p3l-capture-menu.png"
-
 capture_screen() {
-  local name="$1"
-  local y="$2"
+  local screen="$1"
+  local name="$2"
   local wait_seconds="$3"
 
-  launch_menu
-  assert_foreground
-  adb shell input tap 540 "$y"
+  adb shell am force-stop "$PACKAGE"
+  adb shell am start -S -n "$ACTIVITY" --es capture_screen "$screen" >/dev/null
   sleep "$wait_seconds"
   assert_foreground
   adb exec-out screencap -p > "$OUT/$name.png"
 }
 
-# Pixel 6 physical resolution is 1080x2400. Button centers were measured from
-# the temporary menu at the emulator's native resolution.
-capture_screen "p3l-login-mobile" 330 5
-capture_screen "p3l-register-mobile" 505 5
-capture_screen "p3l-pembeli-mobile" 680 10
-capture_screen "p3l-penitip-mobile" 855 6
-capture_screen "p3l-hunter-mobile" 1030 10
-capture_screen "p3l-kurir-mobile" 1205 10
+capture_screen "login" "p3l-login-mobile" 6
+capture_screen "register" "p3l-register-mobile" 6
+capture_screen "pembeli" "p3l-pembeli-mobile" 11
+capture_screen "penitip" "p3l-penitip-mobile" 7
+capture_screen "hunter" "p3l-hunter-mobile" 11
+capture_screen "kurir" "p3l-kurir-mobile" 11
 
 adb logcat -d > runtime/android-logcat.txt
