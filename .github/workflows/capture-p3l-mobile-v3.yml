@@ -1,0 +1,68 @@
+name: Capture P3L Mobile V3
+
+on:
+  push:
+    branches:
+      - chatgpt/deploy-p3l-mobile-v3
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          flutter pub get
+          npm install --no-save --ignore-scripts puppeteer-core@24.16.0 serve@14.2.4 pngjs@7.0.0
+
+      - name: Build screenshot app
+        run: flutter build web --release --web-renderer html -t lib/capture_main.dart
+
+      - name: Capture original Flutter screens
+        shell: bash
+        run: |
+          mkdir -p runtime/screenshots
+          npx serve -s build/web -l 4174 > runtime/server.log 2>&1 &
+          echo $! > runtime/server.pid
+          for i in {1..60}; do
+            curl -fsS http://127.0.0.1:4174 >/dev/null && break
+            sleep 1
+          done
+          node tooling/capture.mjs
+          kill "$(cat runtime/server.pid)" || true
+
+      - name: Calculate visual metrics
+        if: always()
+        run: node tooling/validate.mjs
+
+      - name: Add notes
+        if: always()
+        run: |
+          cat > runtime/README.md <<'EOF'
+          # P3L Mobile screenshot diagnostics V3
+
+          The application screens, widgets, styling, navigation, and animations come from the original Flutter repository.
+          The capture entrypoint only selects the initial role screen and preloads isolated SharedPreferences values.
+          HTTP calls to the local Android-emulator backend address were intercepted with dummy responses.
+          No production backend or Firebase data was accessed or changed.
+          EOF
+
+      - name: Upload screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p3l_mobile-screenshot-diagnostics-v3
+          path: runtime
+          retention-days: 90
